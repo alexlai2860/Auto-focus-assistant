@@ -1,0 +1,3 @@
+/home/alex/桌面/sleep monitor/build/CMakeFiles/rebuild_cache.dir
+/home/alex/桌面/sleep monitor/build/CMakeFiles/edit_cache.dir
+/home/alex/桌面/sleep monitor/build/CMakeFiles/main.dir
