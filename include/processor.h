@@ -47,7 +47,9 @@ protected:
     vector<cv::Mat> function;
 
 public:
-    int init(Data &);
+    int init(Data &, TransferData &, TransferData &);
+    void readPulse(Data &, TransferData &, TransferData &);
+    void writePulse(int, TransferData &, TransferData &);
     cv::Mat polyFit(vector<cv::Point2f> &, int n);
 };
 

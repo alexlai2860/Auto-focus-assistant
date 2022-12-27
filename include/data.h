@@ -66,10 +66,12 @@ struct SendData4
 // };
 
 // 视觉接收协议
-struct ReceiveEncoder
+struct ReceivePulse
 {
-    uint16_t read_encoder;
-} __attribute__((packed));
+    uint8_t read_pulse[4];  // 注意这里不能用int8_t
+};
+#pragma pack()
+// __attribute__((packed));
 
 // stepping motor data
 class Data : public protocol
@@ -79,7 +81,7 @@ private:
     SendData2 __send_data2;
     SendData3 __send_data3;
     SendData4 __send_data4;
-    ReceiveEncoder __receive_data; // 视觉接收数据
+    ReceivePulse __receive_data; // 视觉接收数据
 
     TransferData __last_data; // 上一帧的传递数据
 

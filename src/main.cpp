@@ -33,8 +33,10 @@ int main()
     Face face1;
     Dis dis1;
     Frame cam1;
-
+    TransferData readData, writeData;
+    Motor motor;
     Data data1;
+    motor.init(data1, readData, writeData);
     cam1.processFrame(colorStream, depthStream, face1, dis1, t0, data1);
 
     return 0;

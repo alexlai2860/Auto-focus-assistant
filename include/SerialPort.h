@@ -19,7 +19,7 @@
 class SerialPort
 {
 public:
-  SerialPort(int baud_rate = B38400);
+  SerialPort(int baud_rate = B115200);
 
   ~SerialPort();
 

@@ -20,6 +20,9 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
     std::mutex mtx;
     std::condition_variable dataReady;
     std::atomic<bool> isFinish;
+    TransferData readData, writeData;
+    Motor motor;
+    int round = 0;
 
     isFinish = false;
 
@@ -39,7 +42,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                      cerr << "ERROR: Failed to decode frame from depth stream" << endl;
                      break;
                  }
- 
+
                  {
                      std::lock_guard<std::mutex> lk(mtx);
                      if (depthFrames.size() >= maxFrames)
@@ -66,7 +69,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                      cerr << "ERROR: Failed to decode frame from color stream" << endl;
                      break;
                  }
- 
+                 
                  {
                      std::lock_guard<std::mutex> lk(mtx);
                      if (colorFrames.size() >= maxFrames)
@@ -180,7 +183,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 // continue;
             }
             TransferData move_test;
-            move_test.direction_and_speed1 = 0x14;
+            move_test.direction_and_speed1 = 0x04;
             move_test.direction_and_speed2 = 0xFF;
             move_test.pulse_h = 0x00;
             move_test.pulse_m = 0x00;

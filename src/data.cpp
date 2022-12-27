@@ -23,25 +23,31 @@ using namespace std;
 TransferData Data::read(uint8_t head, uint8_t tail)
 {
     // init
-    if (!__is_init)
-    {
-        // 初始化接收数据
-        TransferData transfer_data;
-        transfer_data.command3 = 0x0000;
-        __last_data = transfer_data;
+    // if (!__is_init)
+    // {
+    //     // 初始化接收数据
+    //     TransferData transfer_data;
+    //     for (int i = 0; i < 4; i++)
+    //     {
+    //         transfer_data.read1[i] = {0x00};
+    //     }
+    //     __last_data = transfer_data;
 
-        __is_init = true;
-        return __last_data;
-    }
+    //     __is_init = true;
+    //     return __last_data;
+    // }
     // 接收数据
-    vector<ReceiveEncoder> data = __port.readStruct<ReceiveEncoder>(head, tail);
+    vector<ReceivePulse> data = __port.readStruct<ReceivePulse>(head, tail);
     // 判空
     if (!data.empty())
     {
         __receive_data = data.back();
         // 整合得到传递数据
         TransferData transfer_data;
-        transfer_data.command3 = data.back().read_encoder;
+        for (int i = 0; i < 4; i++)
+        {
+            transfer_data.read1[i] = data.back().read_pulse[i];
+        }
         // 更新信息数据
         __last_data = transfer_data;
     }
@@ -50,7 +56,7 @@ TransferData Data::read(uint8_t head, uint8_t tail)
 
 /**
  * @brief 写入串口115200
- 
+
  * @param transfer_data 传递数据
  */
 void Data::write(int mode, const TransferData &transfer_data)
