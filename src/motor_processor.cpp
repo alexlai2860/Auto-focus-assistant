@@ -18,22 +18,30 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
 {
     writeData.command2 = 0x00;
     data.write(3, writeData); // 关闭使能
-    int key;
+    int key, lens_num;
     cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
     while (key != 1)
     {
         cin >> key;
     }
     this->readPulse(data, readData, writeData);
+    this->writePulse(100, data, readData, writeData);
 
     key = -1;
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
     cin >> key;
-    // if (key != 0)
-    // {
-    //     return key - 1;
-    // }
-    // cout << "选择新镜头编号(1/2/3/4/5),若重复将覆盖之前数据 回车确认" << endl;
+    if (key != 0)
+    {
+        lens_num = key;
+        return lens_num;
+    }
+    else
+    {
+        cout << "选择新镜头编号(1/2/3/4/5),若重复将覆盖之前数据 回车确认" << endl;
+        cin >> key;
+        lens_num = key;
+        return -lens_num;
+    }
     return 0;
 }
 
@@ -61,7 +69,13 @@ void Motor::readPulse(Data &data, TransferData &readData, TransferData &writeDat
     }
 }
 
-void Motor::writePulse(int pulse_num, TransferData &readData, TransferData &writeData)
+void Motor::writePulse(int pulse_num, Data &data, TransferData &readData, TransferData &writeData)
 {
-
+    cout << uint16_t(pulse_num) << endl; // todo : 十进制转十六进制
+    writeData.direction_and_speed1 = 0x04;
+    writeData.direction_and_speed2 = 0xFF;
+    writeData.pulse_h = 0x00;
+    writeData.pulse_m = 0x00;
+    writeData.pulse_l = 0x64;
+    data.write(4, writeData);
 }

@@ -49,7 +49,7 @@ protected:
 public:
     int init(Data &, TransferData &, TransferData &);
     void readPulse(Data &, TransferData &, TransferData &);
-    void writePulse(int, TransferData &, TransferData &);
+    void writePulse(int, Data &, TransferData &, TransferData &);
     cv::Mat polyFit(vector<cv::Point2f> &, int n);
 };
 
