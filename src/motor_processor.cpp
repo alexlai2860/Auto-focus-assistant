@@ -10,6 +10,7 @@
  */
 
 #include "processor.h"
+#include "lens_param.h"
 #include "param.h"
 
 using namespace std;
@@ -25,7 +26,8 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         cin >> key;
     }
     this->readPulse(data, readData, writeData);
-    this->writePulse(100, data, readData, writeData);
+    cv::waitKey(30);
+    this->writePulse(3000, data, readData, writeData);
 
     key = -1;
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
@@ -71,11 +73,52 @@ void Motor::readPulse(Data &data, TransferData &readData, TransferData &writeDat
 
 void Motor::writePulse(int pulse_num, Data &data, TransferData &readData, TransferData &writeData)
 {
-    cout << uint16_t(pulse_num) << endl; // todo : 十进制转十六进制
-    writeData.direction_and_speed1 = 0x04;
+    writeData.command2 = 0x01;
+    data.write(3, writeData); // 打开使能
+    cv::waitKey(30);
+    // step1 确定正方向和旋转方向(待观察)
+    int positive_direction = lens_param.INFINIT_PULSE_1 - lens_param.INIT_PULSE_1;
+    bool direction = 0;
+    if (positive_direction < 0 && pulse_num < 0)
+    {
+        pulse_num = -pulse_num;
+        direction = 0;
+    }
+    else if (positive_direction > 0 && pulse_num < 0)
+    {
+        pulse_num = -pulse_num;
+        direction = 0;
+    }
+    else if (positive_direction > 0 && pulse_num > 0)
+    {
+        direction = 0;
+    }
+    else
+    {
+        direction = 0;
+    }
+
+    // step2 确定脉冲数目 : 十进制转十六进制
+    uint32_t u32 = uint32_t(pulse_num);
+    // cout <<  << endl;
+    uint8_t pulse[4] = {0};
+    pulse[0] = u32 & 0xFF;
+    pulse[1] = (u32 >> 8) & 0xFF;
+    pulse[2] = (u32 >> 16) & 0xFF;
+    pulse[3] = (u32 >> 24) & 0xFF;
+
+    if (direction = 1)
+    {
+        writeData.direction_and_speed1 = 0x01;
+    }
+    else
+    {
+        writeData.direction_and_speed1 = 0x11;
+    }
     writeData.direction_and_speed2 = 0xFF;
-    writeData.pulse_h = 0x00;
-    writeData.pulse_m = 0x00;
-    writeData.pulse_l = 0x64;
+    writeData.pulse_h = pulse[2];
+    writeData.pulse_m = pulse[1];
+    writeData.pulse_l = pulse[0];
+
     data.write(4, writeData);
 }
