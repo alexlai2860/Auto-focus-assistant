@@ -21,6 +21,8 @@ struct Param
     int FACE_DEQUE;
     int MOVE_JUDGE;
 
+    string param_path;
+
     Param(const std::string &param);
 };
 extern Param param;

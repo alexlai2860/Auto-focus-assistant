@@ -18,7 +18,14 @@ struct LensParam
 {
     int INIT_PULSE_1;
     int INFINIT_PULSE_1;
+    double A_1;
+    double B_1;
+    double C_1;
+    double D_1;
+
+    string param_path;
 
     LensParam(const std::string &param);
+    void write();
 };
 extern LensParam lens_param;

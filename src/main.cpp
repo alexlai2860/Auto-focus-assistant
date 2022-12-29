@@ -37,11 +37,21 @@ int main()
     Motor motor;
     Data data1;
     int lens_num = motor.init(data1, readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
+    lens_num = -1;
     if (lens_num < 0)
     {
         // 创建新镜头函数
         // todo:读取多点电机数据与距离数据，拟合曲线，储存为图片格式
+        vector<cv::Point2f> points;
+        motor.polyFit(points, 3);
+        int x;
+        cin >> x;
         // 最后对lens_num取反，传入processor
+        // 打开使能，准备驱动电机
+        lens_num = -lens_num;
+        writeData.command2 = 0x01;
+        data1.write(3, writeData); // 打开使能
+        cv::waitKey(3);
     }
     // 每次循环：先读取当前电机位置（注意error判断，可以尝试不用waitkey）
     // 随后根据目标距离解算电机脉冲目标值，求差

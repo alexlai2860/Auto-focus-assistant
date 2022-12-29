@@ -48,8 +48,8 @@ protected:
 
 public:
     int init(Data &, TransferData &, TransferData &);
-    void readPulse(Data &, TransferData &, TransferData &);
-    void writePulse(int, Data &, TransferData &, TransferData &);
+    int readPulse(Data &);
+    void writePulse(int, Data &);
     cv::Mat polyFit(vector<cv::Point2f> &, int n);
 };
 

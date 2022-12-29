@@ -16,6 +16,7 @@ using namespace std;
 
 Param::Param(const string &param)
 {
+    param_path = param;
     cv::FileStorage arm(param, cv::FileStorage::READ);
     assert(arm.isOpened());
 
