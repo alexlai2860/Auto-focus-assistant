@@ -117,7 +117,7 @@ void SerialPort::close()
  */
 ssize_t SerialPort::write(void *data, size_t len)
 {
-    cout << "数据长度" << len << endl;
+    // cout << "数据长度" << len << endl;
     ssize_t len_result = -1;
     if (is_open)
     {
@@ -132,7 +132,7 @@ ssize_t SerialPort::write(void *data, size_t len)
     }
     else
     {
-        cout << "写入数据成功" << endl;
+        // cout << "写入数据成功" << endl;
     }
 
     return len_result;
@@ -165,7 +165,7 @@ ssize_t SerialPort::read(void *data, size_t len)
     }
     else
     {
-        cout << "串口读取成功" << endl;
+        // cout << "串口读取成功" << endl;
     }
     return len_result;
 }

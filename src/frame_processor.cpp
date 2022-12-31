@@ -10,6 +10,7 @@
  */
 
 #include "processor.h"
+#include "lens_param.h"
 #include "param.h"
 
 void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthStream, Face &face, Dis &dis, int64 &t0, Data &data)
@@ -117,6 +118,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             lk.unlock();
 
             cv::Mat d8, d16, dColor;
+            int DIS = 0;
             this->depth_frames = depthFrames;
             this->color_frames = colorFrames;
             this->drop_count = 0;
@@ -141,17 +143,17 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 if (detected)
                 {
                     dis.disCalculate(1, d16, face.face_center);
-                    if (!dis.face_dis.empty())
+                    if (!dis.target_dis.empty())
                     {
-                        if (dis.movDecider(t0, face.face_center))
-                        {
-                            cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        }
-                        else
-                        {
-                            cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        }
-                        int DIS = dis.face_dis.back();
+                        // if (dis.movDecider(t0, face.face_center))
+                        // {
+                        //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                        // }
+                        // else
+                        // {
+                        //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                        // }
+                        DIS = dis.target_dis.back();
                         cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
                         cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                     }
@@ -163,17 +165,17 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 if (!face.face_center.empty())
                 {
                     dis.disCalculate(1, d16, face.face_center);
-                    if (!dis.face_dis.empty())
+                    if (!dis.target_dis.empty())
                     {
-                        if (dis.movDecider(t0, face.face_center))
-                        {
-                            cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        }
-                        else
-                        {
-                            cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        }
-                        int DIS = dis.face_dis.back();
+                        // if (dis.movDecider(t0, face.face_center))
+                        // {
+                        //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                        // }
+                        // else
+                        // {
+                        //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                        // }
+                        DIS = dis.target_dis.back();
                         cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
                         cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                     }
@@ -182,13 +184,28 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 this->detect_count = this->detect_count - 1;
                 // continue;
             }
-            TransferData move_test;
-            move_test.direction_and_speed1 = 0x04;
-            move_test.direction_and_speed2 = 0xFF;
-            move_test.pulse_h = 0x00;
-            move_test.pulse_m = 0x00;
-            move_test.pulse_l = 0x64;
-            data.write(4, move_test);
+            // TransferData move_test;
+            // move_test.direction_and_speed1 = 0x04;
+            // move_test.direction_and_speed2 = 0xFF;
+            // move_test.pulse_h = 0x00;
+            // move_test.pulse_m = 0x00;
+            // move_test.pulse_l = 0x64;
+            // data.write(4, move_test);
+            cout << "dis = " << DIS << endl;
+            int current_pulse = motor.readPulse(data);
+            int target_pulse = lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1;
+            if (target_pulse < lens_param.INFINIT_PULSE_1 && target_pulse > lens_param.INIT_PULSE_1)
+            {
+                motor.writePulse((target_pulse - current_pulse), data);
+            }
+            else if (target_pulse > lens_param.INFINIT_PULSE_1 && target_pulse < lens_param.INIT_PULSE_1)
+            {
+                motor.writePulse((target_pulse - current_pulse), data);
+            }
+            else
+            {
+                cout << "ERROR!" << endl;
+            }
 
             // show dcolor frame
             imshow("Depth (colored)", dColor);
@@ -201,7 +218,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             if (key == 27) // ESC
             {
                 isFinish = true;
-                break;
+                // break;
             }
             cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
         }
