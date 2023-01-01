@@ -191,20 +191,31 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             // move_test.pulse_m = 0x00;
             // move_test.pulse_l = 0x64;
             // data.write(4, move_test);
-            cout << "dis = " << DIS << endl;
+            // cout << "dis = " << DIS << endl;
             int current_pulse = motor.readPulse(data);
-            int target_pulse = lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1;
-            if (target_pulse < lens_param.INFINIT_PULSE_1 && target_pulse > lens_param.INIT_PULSE_1)
+            int target_pulse = (lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1);
+            cout << "current_pulse = " << current_pulse << endl;
+            cout << "target_pulse = " << target_pulse << endl;
+            if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE_1 - lens_param.INIT_PULSE_1))
             {
-                motor.writePulse((target_pulse - current_pulse), data);
-            }
-            else if (target_pulse > lens_param.INFINIT_PULSE_1 && target_pulse < lens_param.INIT_PULSE_1)
-            {
-                motor.writePulse((target_pulse - current_pulse), data);
+                if (target_pulse < lens_param.INFINIT_PULSE_1 && target_pulse > lens_param.INIT_PULSE_1)
+                {
+                    motor.writePulse((target_pulse - current_pulse), data);
+                    cout << "写入中-1" << endl;
+                }
+                else if (target_pulse > lens_param.INFINIT_PULSE_1 && target_pulse < lens_param.INIT_PULSE_1)
+                {
+                    motor.writePulse((target_pulse - current_pulse), data);
+                    cout << "写入中-2" << endl;
+                }
+                else
+                {
+                    cout << "ERROR!-目标值异常" << endl;
+                }
             }
             else
             {
-                cout << "ERROR!" << endl;
+                cout << "ERROR!-差值过大" << endl;
             }
 
             // show dcolor frame
@@ -220,7 +231,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 isFinish = true;
                 // break;
             }
-            cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
+            // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
         }
     }
 }

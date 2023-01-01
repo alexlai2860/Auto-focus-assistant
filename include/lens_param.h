@@ -19,6 +19,8 @@ struct LensParam
     // 起点（最近对焦位置）和终点（最远对焦位置）坐标
     int INIT_PULSE_1;
     int INFINIT_PULSE_1;
+    // 起点脉冲补偿值
+    int COMPENSATE;
     // 拟合函数: Y（脉冲差） = AX^3 + BX^2 + CX + D
     double A_1;
     double B_1;

@@ -29,6 +29,8 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
     int compensate = init_pulse - lens_param.INIT_PULSE_1; // 补偿脉冲，用于矫正拟合函数的常数项
     lens_param.INIT_PULSE_1 = init_pulse;
     lens_param.INFINIT_PULSE_1 = lens_param.INFINIT_PULSE_1 + compensate;
+    lens_param.D_1 = lens_param.D_1 + compensate;
+    lens_param.COMPENSATE = compensate;
     lens_param.write();
 
     // cv::waitKey(3);
@@ -70,7 +72,7 @@ int Motor::readPulse(Data &data)
     {
         writeData.command1 = 0x33;
         data.write(2, writeData);
-        cv::waitKey(3); // 限制发送速率，根据电脑运行速度和波特率进行调整(默认为3,默认比特率为115200)(update:取消while循环)
+        cv::waitKey(param.WAIT_TIME); // 限制发送速率，根据电脑运行速度和波特率进行调整(默认为3,默认比特率为115200)(update:取消while循环)
         readData = data.read(0x01, 0x6B);
         // data.write(2, writeData);
         pulse = (((int32_t)readData.read1[0] << 24) |
@@ -81,7 +83,7 @@ int Motor::readPulse(Data &data)
         round++;
         if (round >= 10)
         {
-            cout << "ERROR" << endl;
+            cout << "READ ERROR" << endl;
             return 4000000;
         }
     }
@@ -97,19 +99,10 @@ void Motor::writePulse(int pulse_num, Data &data)
     // step1 确定正方向和旋转方向(待观察)
     bool positive_direction = (lens_param.INFINIT_PULSE_1 - lens_param.INIT_PULSE_1 > 0);
     bool direction = 0;
-    if (positive_direction && pulse_num < 0)
+    if (pulse_num < 0)
     {
         pulse_num = -pulse_num;
         direction = 0;
-    }
-    else if (positive_direction && pulse_num < 0)
-    {
-        pulse_num = -pulse_num;
-        direction = 0;
-    }
-    else if (!positive_direction && pulse_num > 0)
-    {
-        direction = 1;
     }
     else
     {
@@ -125,15 +118,17 @@ void Motor::writePulse(int pulse_num, Data &data)
     pulse[2] = (u32 >> 16) & 0xFF;
     pulse[3] = (u32 >> 24) & 0xFF;
 
-    if (direction = 1)
+    if (direction == 1)
     {
         writeData.direction_and_speed1 = 0x10;
+        cout << "顺时针" << endl;
     }
     else
     {
         writeData.direction_and_speed1 = 0x00;
+        cout << "逆时针" << endl;
     }
-    writeData.direction_and_speed2 = 0x02;
+    writeData.direction_and_speed2 = uint8_t(param.SPEED);
     writeData.pulse_h = pulse[2];
     writeData.pulse_m = pulse[1];
     writeData.pulse_l = pulse[0];

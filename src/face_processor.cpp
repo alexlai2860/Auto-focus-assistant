@@ -76,7 +76,7 @@ bool Face::faceDetect(cv::Mat &color_frame, cv::Mat &faces, int &count)
 
             // 储存face_center
             this->face_center.push_back(center);
-            cout << "center: " << center << endl;
+            // cout << "center: " << center << endl;
         }
         if (this->face_center.size() >= param.FACE_DEQUE)
         {

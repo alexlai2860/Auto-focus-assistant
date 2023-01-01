@@ -8,3 +8,9 @@ DIS_DEQUE: 150
 FACE_DEQUE: 15
 # 移动判别(mm)
 MOVE_JUDGE: 25
+# 读取指令waitkey时间(ms)
+WAIT_TIME: 5
+# 电机速度(0-255)
+SPEED: 10
+# 电机加速度(0-255)
+A: 200

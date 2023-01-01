@@ -24,5 +24,8 @@ Param::Param(const string &param)
     arm["DIS_DEQUE"] >> DIS_DEQUE;
     arm["FACE_DEQUE"] >> FACE_DEQUE;
     arm["MOVE_JUDGE"] >> MOVE_JUDGE;
+    arm["WAIT_TIME"] >> WAIT_TIME;
+    arm["SPEED"] >> SPEED;
+    arm["A"] >> A;
 };
 struct Param param("../param.yml");

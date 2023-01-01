@@ -22,6 +22,7 @@ LensParam::LensParam(const string &param)
 
     lens["INIT_PULSE_1"] >> INIT_PULSE_1;
     lens["INFINIT_PULSE_1"] >> INFINIT_PULSE_1;
+    lens["COMPENSATE"] >> COMPENSATE;
     lens["A_1"] >> A_1;
     lens["B_1"] >> B_1;
     lens["C_1"] >> C_1;
@@ -37,6 +38,7 @@ void LensParam::write()
     assert(lens.isOpened());
     lens.write("INIT_PULSE_1", INIT_PULSE_1);
     lens.write("INFINIT_PULSE_1", INFINIT_PULSE_1);
+    lens.write("COMPENSATE", COMPENSATE);
     lens.write("A_1", A_1);
     lens.write("B_1", B_1);
     lens.write("C_1", C_1);

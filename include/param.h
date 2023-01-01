@@ -20,6 +20,9 @@ struct Param
     int DIS_DEQUE;
     int FACE_DEQUE;
     int MOVE_JUDGE;
+    int WAIT_TIME;
+    int SPEED;
+    int A;
 
     string param_path;
 
