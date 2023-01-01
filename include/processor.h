@@ -13,6 +13,7 @@
 
 // #include "face_process.h"
 #include "data.h"
+#include "KalmanFilterX.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/objdetect.hpp>
@@ -35,8 +36,14 @@ public:
 
 class Dis
 {
+    KalmanFilter22 dis_filter;
+    deque<int64> t;
+    bool __is_filter_init;
+
 public:
+    Dis();
     deque<int> target_dis;
+    void updateFilter();
     int disCalculate(int, cv::Mat &, deque<cv::Point2f> &);
     bool movDecider(int64 &, deque<cv::Point2f> &);
 };

@@ -184,14 +184,6 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                 this->detect_count = this->detect_count - 1;
                 // continue;
             }
-            // TransferData move_test;
-            // move_test.direction_and_speed1 = 0x04;
-            // move_test.direction_and_speed2 = 0xFF;
-            // move_test.pulse_h = 0x00;
-            // move_test.pulse_m = 0x00;
-            // move_test.pulse_l = 0x64;
-            // data.write(4, move_test);
-            // cout << "dis = " << DIS << endl;
             int current_pulse = motor.readPulse(data);
             int target_pulse = (lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1);
             cout << "current_pulse = " << current_pulse << endl;
