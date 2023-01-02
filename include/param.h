@@ -23,6 +23,8 @@ struct Param
     int WAIT_TIME;
     int SPEED;
     int A;
+    int MAX_DROP_FRAME;
+    int DROP_PROCESS_MODE;
 
     string param_path;
 

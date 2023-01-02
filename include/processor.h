@@ -66,10 +66,12 @@ class Frame
 {
 public:
     double timestamp;
-    int drop_count;
-    int detect_count;     // 检测计数器（减少至0时进行一次检测）
-    bool detect_init = 1; // 初始化标志位（重置计数器）
+    int drop_count; // 面部识别调帧数
+    bool drop_init;
+    int detect_count;        // 检测计数器（减少至0时进行一次检测）
+    bool detect_init = true; // 初始化标志位（重置计数器）
     cv::Mat frame;
     list<Frame> depth_frames, color_frames;
     void processFrame(cv::VideoCapture &, cv::VideoCapture &, Face &, Dis &, int64 &, Data &);
+    void dropProcess(int, Dis &, cv::Mat &);
 };

@@ -121,7 +121,10 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             int DIS = 0;
             this->depth_frames = depthFrames;
             this->color_frames = colorFrames;
-            this->drop_count = 0;
+            if (drop_init)
+            {
+                drop_count = 0;
+            }
 
             // convert to dcolor frame(d8) and high resolution depth frame(d16)
             depthFrame.frame.convertTo(d8, CV_8U, 255.0 / 8000);
@@ -131,13 +134,13 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             // FPS control
             int fps = param.FPS; // support 1,2,3,5,6,10,15,30
             int detect_rate = 30 / fps;
-            if (this->detect_init)
+            if (detect_init)
             {
-                this->detect_count = detect_rate - 1;
+                detect_count = detect_rate - 1;
             }
             // cout << this->detect_count << endl;
 
-            if (this->detect_count == 0)
+            if (detect_count == 0)
             {
                 bool detected = face.faceDetect(colorFrame.frame, face.detected_faces, this->drop_count);
                 if (detected)
@@ -153,12 +156,28 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                         // {
                         //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                         // }
-                        DIS = dis.target_dis.back();
                         cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
                         cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                     }
+                    drop_init = 1; // 重新初始化掉帧计算器
                 }
-                this->detect_init = 1;
+                else
+                {
+                    if (!dis.target_dis.empty())
+                    {
+                        drop_count++;
+                        if (drop_count >= param.MAX_DROP_FRAME)
+                        {
+                            this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+                        }
+                    }
+                    else
+                    {
+                        this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+                    }
+                    drop_init = 0;
+                }
+                detect_init = 1; // 重新初始化面部识别帧率计数器
             }
             else
             {
@@ -175,15 +194,28 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
                         // {
                         //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                         // }
-                        DIS = dis.target_dis.back();
                         cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
                         cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                     }
+                    else
+                    {
+                    }
                 }
-                this->detect_init = 0;
-                this->detect_count = this->detect_count - 1;
-                // continue;
+                detect_init = 0;
+                detect_count = detect_count - 1; // 计数器递减至0
             }
+
+            if (!dis.target_dis.empty())
+            {
+                DIS = dis.target_dis.back();
+            }
+            else
+            {
+                DIS = 1000;
+                cout << "ERROR!-距离队列异常" << endl;
+            }
+
+            // 计算差值，写入串口，同时进行异常处理
             int current_pulse = motor.readPulse(data);
             int target_pulse = (lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1);
             cout << "current_pulse = " << current_pulse << endl;
@@ -225,5 +257,27 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             }
             // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
         }
+    }
+}
+
+void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
+{
+    switch (mode)
+    {
+    case 1:
+    {
+        // 选取中心点
+        deque<cv::Point2f> points;
+        cv::Point2f center(320, 240);
+        points.push_back(center);
+        int center_dis = dis.disCalculate(0, d16, points);
+    }
+    default:
+        // 选取中心点
+        deque<cv::Point2f> points;
+        cv::Point2f center(320, 240);
+        points.push_back(center);
+        int center_dis = dis.disCalculate(0, d16, points);
+        break;
     }
 }

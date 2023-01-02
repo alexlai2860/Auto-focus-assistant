@@ -27,5 +27,7 @@ Param::Param(const string &param)
     arm["WAIT_TIME"] >> WAIT_TIME;
     arm["SPEED"] >> SPEED;
     arm["A"] >> A;
+    arm["MAX_DROP_FRAME"] >> MAX_DROP_FRAME;
+    arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
 };
 struct Param param("../param.yml");
