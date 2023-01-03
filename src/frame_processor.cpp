@@ -217,20 +217,24 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
 
             // 计算差值，写入串口，同时进行异常处理
             int current_pulse = motor.readPulse(data);
-            int target_pulse = (lens_param.A_1 * pow(DIS, 3) + lens_param.B_1 * pow(DIS, 2) + lens_param.C_1 * DIS + lens_param.D_1);
+            int target_pulse = (lens_param.A * pow(DIS, 3) + lens_param.B * pow(DIS, 2) + lens_param.C * DIS + lens_param.D);
             cout << "current_pulse = " << current_pulse << endl;
             cout << "target_pulse = " << target_pulse << endl;
-            if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE_1 - lens_param.INIT_PULSE_1))
+            if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
             {
-                if (target_pulse < lens_param.INFINIT_PULSE_1 && target_pulse > lens_param.INIT_PULSE_1)
+                int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+                int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+                if (target_pulse < max_pulse && target_pulse > min_pulse)
                 {
-                    motor.writePulse((target_pulse - current_pulse), data);
-                    cout << "写入中-1" << endl;
-                }
-                else if (target_pulse > lens_param.INFINIT_PULSE_1 && target_pulse < lens_param.INIT_PULSE_1)
-                {
-                    motor.writePulse((target_pulse - current_pulse), data);
-                    cout << "写入中-2" << endl;
+                    if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
+                    {
+                        motor.writePulse((target_pulse - current_pulse), data);
+                        cout << "写入中" << endl;
+                    }
+                    else
+                    {
+                        cout << "ERROR!-当前值异常" << endl;
+                    }
                 }
                 else
                 {

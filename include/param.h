@@ -26,6 +26,10 @@ struct Param
     int MAX_DROP_FRAME;
     int DROP_PROCESS_MODE;
 
+    int cam_module;
+    int center_x;
+    int center_y;
+
     string param_path;
 
     Param(const std::string &param);

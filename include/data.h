@@ -12,6 +12,7 @@
 #pragma once
 
 #include "protocol.h"
+#include "param.h"
 
 #pragma pack(1)
 
@@ -51,8 +52,8 @@ struct SendData4
     uint8_t byte1 = 0xFD;                // 位置模式控制
     uint8_t direction_and_speed1 = 0x14; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）
     uint8_t direction_and_speed2 = 0xFF;
-    uint8_t accelerated_speed = 0xFF; // 关闭曲线加减速
-    uint8_t pulse_h = 0x00;           // 脉冲数，共三个字节
+    uint8_t accelerated_speed = (uint8_t)param.A; // 关闭曲线加减速
+    uint8_t pulse_h = 0x00;                       // 脉冲数，共三个字节
     uint8_t pulse_m = 0x00;
     uint8_t pulse_l = 0x80;
     uint8_t ver = 0x6B;
@@ -68,7 +69,7 @@ struct SendData4
 // 视觉接收协议
 struct ReceivePulse
 {
-    uint8_t read_pulse[4];  // 注意这里不能用int8_t
+    uint8_t read_pulse[4]; // 注意这里不能用int8_t
 };
 #pragma pack()
 // __attribute__((packed));

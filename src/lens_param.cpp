@@ -20,13 +20,19 @@ LensParam::LensParam(const string &param)
     cv::FileStorage lens(param, cv::FileStorage::READ);
     assert(lens.isOpened());
 
-    lens["INIT_PULSE_1"] >> INIT_PULSE_1;
-    lens["INFINIT_PULSE_1"] >> INFINIT_PULSE_1;
+    lens["INIT_PULSE"] >> INIT_PULSE;
+    lens["INFINIT_PULSE"] >> INFINIT_PULSE;
     lens["COMPENSATE"] >> COMPENSATE;
-    lens["A_1"] >> A_1;
-    lens["B_1"] >> B_1;
-    lens["C_1"] >> C_1;
-    lens["D_1"] >> D_1;
+    lens["A"] >> A;
+    lens["B"] >> B;
+    lens["C"] >> C;
+    lens["D"] >> D;
+
+    lens["LENS_1"] >> LENS_1;
+    lens["LENS_2"] >> LENS_2;
+    lens["LENS_3"] >> LENS_3;
+    lens["LENS_4"] >> LENS_4;
+    lens["LENS_5"] >> LENS_5;
 };
 
 /**
@@ -36,13 +42,19 @@ void LensParam::write()
 {
     cv::FileStorage lens(param_path, cv::FileStorage::WRITE);
     assert(lens.isOpened());
-    lens.write("INIT_PULSE_1", INIT_PULSE_1);
-    lens.write("INFINIT_PULSE_1", INFINIT_PULSE_1);
+    lens.write("INIT_PULSE", INIT_PULSE);
+    lens.write("INFINIT_PULSE", INFINIT_PULSE);
     lens.write("COMPENSATE", COMPENSATE);
-    lens.write("A_1", A_1);
-    lens.write("B_1", B_1);
-    lens.write("C_1", C_1);
-    lens.write("D_1", D_1);
+    lens.write("A", A);
+    lens.write("B", B);
+    lens.write("C", C);
+    lens.write("D", D);
+
+    lens.write("LENS_1", LENS_1);
+    lens.write("LENS_2", LENS_2);
+    lens.write("LENS_3", LENS_3);
+    lens.write("LENS_4", LENS_4);
+    lens.write("LENS_5", LENS_5);
 }
 
 struct LensParam lens_param("../lens_param.yml");

@@ -11,21 +11,25 @@
 
 #pragma once
 #include <iostream>
+#include <opencv2/core.hpp>
 
 using namespace std;
 
 struct LensParam
 {
     // 起点（最近对焦位置）和终点（最远对焦位置）坐标
-    int INIT_PULSE_1;
-    int INFINIT_PULSE_1;
+    int INIT_PULSE;
+    int INFINIT_PULSE;
     // 起点脉冲补偿值
     int COMPENSATE;
     // 拟合函数: Y（脉冲差） = AX^3 + BX^2 + CX + D
-    double A_1;
-    double B_1;
-    double C_1;
-    double D_1;
+    double A;
+    double B;
+    double C;
+    double D;
+
+    // 镜头数据矩阵（6*1），依次为 [A，B，C，D，DELTA, INIT_PULSE]
+    cv::Mat LENS_1, LENS_2, LENS_3, LENS_4, LENS_5;
 
     string param_path;
 

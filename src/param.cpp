@@ -29,5 +29,9 @@ Param::Param(const string &param)
     arm["A"] >> A;
     arm["MAX_DROP_FRAME"] >> MAX_DROP_FRAME;
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
+
+    arm["cam_module"] >> cam_module;
+    arm["center_x"] >> center_x; 
+    arm["center_y"] >> center_y;
 };
 struct Param param("../param.yml");

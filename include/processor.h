@@ -58,8 +58,8 @@ public:
     int init(Data &, TransferData &, TransferData &);
     int readPulse(Data &);
     void writePulse(int, Data &);
-    cv::Mat polyFit(vector<cv::Point2f> &, int n);
-    void calibration(cv::VideoCapture &, cv::VideoCapture &, Face &, Dis &, int64 &, Data &);
+    cv::Mat polyFit(vector<cv::Point2f> &, int, int);
+    void calibration(cv::VideoCapture &, cv::VideoCapture &, int, Dis &, int64 &, Data &);
 };
 
 class Frame
