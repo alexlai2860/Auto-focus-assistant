@@ -46,48 +46,54 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         switch (lens_num)
         {
         case 1:
-            compensate = init_pulse - lens_param.LENS_1.at<double>(0, 5);
+            compensate = init_pulse - lens_param.LENS_1.at<double>(0, 7);
             lens_param.A = lens_param.LENS_1.at<double>(0, 0);
             lens_param.B = lens_param.LENS_1.at<double>(0, 1);
             lens_param.C = lens_param.LENS_1.at<double>(0, 2);
-            lens_param.D = lens_param.LENS_1.at<double>(0, 3) + compensate;
-            lens_param.INFINIT_PULSE = init_pulse + lens_param.LENS_1.at<double>(0, 4);
+            lens_param.D = lens_param.LENS_1.at<double>(0, 3);
+            lens_param.E = lens_param.LENS_1.at<double>(0, 4);
+            lens_param.F = lens_param.LENS_1.at<double>(0, 5) + compensate;
+            lens_param.INFINIT_PULSE = init_pulse + lens_param.LENS_1.at<double>(0, 6);
             break;
         case 2:
-            compensate = init_pulse - lens_param.LENS_2.at<double>(0, 5);
+            compensate = init_pulse - lens_param.LENS_2.at<double>(0, 7);
             lens_param.A = lens_param.LENS_2.at<double>(0, 0);
             lens_param.B = lens_param.LENS_2.at<double>(0, 1);
             lens_param.C = lens_param.LENS_2.at<double>(0, 2);
             lens_param.D = lens_param.LENS_2.at<double>(0, 3);
-            lens_param.D = lens_param.LENS_2.at<double>(0, 3) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_2.at<double>(0, 4);
+            lens_param.E = lens_param.LENS_2.at<double>(0, 4);
+            lens_param.F = lens_param.LENS_2.at<double>(0, 5) + compensate;
+            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_2.at<double>(0, 6);
             break;
         case 3:
-            compensate = init_pulse - lens_param.LENS_3.at<double>(0, 5);
+            compensate = init_pulse - lens_param.LENS_3.at<double>(0, 7);
             lens_param.A = lens_param.LENS_3.at<double>(0, 0);
             lens_param.B = lens_param.LENS_3.at<double>(0, 1);
             lens_param.C = lens_param.LENS_3.at<double>(0, 2);
             lens_param.D = lens_param.LENS_3.at<double>(0, 3);
-            lens_param.D = lens_param.LENS_3.at<double>(0, 3) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_3.at<double>(0, 4);
+            lens_param.E = lens_param.LENS_3.at<double>(0, 4);
+            lens_param.F = lens_param.LENS_3.at<double>(0, 5) + compensate;
+            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_3.at<double>(0, 6);
             break;
         case 4:
-            compensate = init_pulse - lens_param.LENS_4.at<double>(0, 5);
+            compensate = init_pulse - lens_param.LENS_4.at<double>(0, 7);
             lens_param.A = lens_param.LENS_4.at<double>(0, 0);
             lens_param.B = lens_param.LENS_4.at<double>(0, 1);
             lens_param.C = lens_param.LENS_4.at<double>(0, 2);
             lens_param.D = lens_param.LENS_4.at<double>(0, 3);
-            lens_param.D = lens_param.LENS_4.at<double>(0, 3) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_4.at<double>(0, 4);
+            lens_param.E = lens_param.LENS_4.at<double>(0, 4);
+            lens_param.F = lens_param.LENS_4.at<double>(0, 5) + compensate;
+            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_4.at<double>(0, 6);
             break;
         case 5:
-            compensate = init_pulse - lens_param.LENS_5.at<double>(0, 5);
+            compensate = init_pulse - lens_param.LENS_5.at<double>(0, 7);
             lens_param.A = lens_param.LENS_5.at<double>(0, 0);
             lens_param.B = lens_param.LENS_5.at<double>(0, 1);
             lens_param.C = lens_param.LENS_5.at<double>(0, 2);
             lens_param.D = lens_param.LENS_5.at<double>(0, 3);
-            lens_param.D = lens_param.LENS_5.at<double>(0, 3) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_5.at<double>(0, 4);
+            lens_param.E = lens_param.LENS_5.at<double>(0, 4);
+            lens_param.F = lens_param.LENS_5.at<double>(0, 5) + compensate;
+            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_5.at<double>(0, 6);
             break;
         default:
             break;
@@ -112,24 +118,24 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         switch (lens_num)
         {
         case 1:
-            lens_param.LENS_1.at<double>(0, 4) = delta;
-            lens_param.LENS_1.at<double>(0, 5) = init_pulse;
+            lens_param.LENS_1.at<double>(0, 6) = delta;
+            lens_param.LENS_1.at<double>(0, 7) = init_pulse;
             break;
         case 2:
-            lens_param.LENS_2.at<double>(0, 4) = delta;
-            lens_param.LENS_2.at<double>(0, 5) = init_pulse;
+            lens_param.LENS_2.at<double>(0, 6) = delta;
+            lens_param.LENS_2.at<double>(0, 7) = init_pulse;
             break;
         case 3:
-            lens_param.LENS_3.at<double>(0, 4) = delta;
-            lens_param.LENS_3.at<double>(0, 5) = init_pulse;
+            lens_param.LENS_3.at<double>(0, 6) = delta;
+            lens_param.LENS_3.at<double>(0, 7) = init_pulse;
             break;
         case 4:
-            lens_param.LENS_4.at<double>(0, 4) = delta;
-            lens_param.LENS_4.at<double>(0, 5) = init_pulse;
+            lens_param.LENS_4.at<double>(0, 6) = delta;
+            lens_param.LENS_4.at<double>(0, 7) = init_pulse;
             break;
         case 5:
-            lens_param.LENS_5.at<double>(0, 4) = delta;
-            lens_param.LENS_5.at<double>(0, 5) = init_pulse;
+            lens_param.LENS_5.at<double>(0, 6) = delta;
+            lens_param.LENS_5.at<double>(0, 7) = init_pulse;
             break;
         default:
             break;
@@ -252,34 +258,34 @@ cv::Mat Motor::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     switch (lens_num)
     {
     case 1:
-        lens_param.LENS_1.at<double>(0, 0) = curve.at<double>(0, 3);
-        lens_param.LENS_1.at<double>(0, 1) = curve.at<double>(0, 2);
-        lens_param.LENS_1.at<double>(0, 2) = curve.at<double>(0, 1);
-        lens_param.LENS_1.at<double>(0, 3) = curve.at<double>(0, 0);
+        for (int i = 0; i <= n; i++)
+        {
+            lens_param.LENS_1.at<double>(0, i) = curve.at<double>(0, n - i);
+        }
         break;
     case 2:
-        lens_param.LENS_2.at<double>(0, 0) = curve.at<double>(0, 3);
-        lens_param.LENS_2.at<double>(0, 1) = curve.at<double>(0, 2);
-        lens_param.LENS_2.at<double>(0, 2) = curve.at<double>(0, 1);
-        lens_param.LENS_2.at<double>(0, 3) = curve.at<double>(0, 0);
+        for (int i = 0; i <= n; i++)
+        {
+            lens_param.LENS_2.at<double>(0, i) = curve.at<double>(0, n - i);
+        }
         break;
     case 3:
-        lens_param.LENS_3.at<double>(0, 0) = curve.at<double>(0, 3);
-        lens_param.LENS_3.at<double>(0, 1) = curve.at<double>(0, 2);
-        lens_param.LENS_3.at<double>(0, 2) = curve.at<double>(0, 1);
-        lens_param.LENS_3.at<double>(0, 3) = curve.at<double>(0, 0);
+        for (int i = 0; i <= n; i++)
+        {
+            lens_param.LENS_3.at<double>(0, i) = curve.at<double>(0, n - i);
+        }
         break;
     case 4:
-        lens_param.LENS_4.at<double>(0, 0) = curve.at<double>(0, 3);
-        lens_param.LENS_4.at<double>(0, 1) = curve.at<double>(0, 2);
-        lens_param.LENS_4.at<double>(0, 2) = curve.at<double>(0, 1);
-        lens_param.LENS_4.at<double>(0, 3) = curve.at<double>(0, 0);
+        for (int i = 0; i <= n; i++)
+        {
+            lens_param.LENS_4.at<double>(0, i) = curve.at<double>(0, n - i);
+        }
         break;
     case 5:
-        lens_param.LENS_5.at<double>(0, 0) = curve.at<double>(0, 3);
-        lens_param.LENS_5.at<double>(0, 1) = curve.at<double>(0, 2);
-        lens_param.LENS_5.at<double>(0, 2) = curve.at<double>(0, 1);
-        lens_param.LENS_5.at<double>(0, 3) = curve.at<double>(0, 0);
+        for (int i = 0; i <= n; i++)
+        {
+            lens_param.LENS_5.at<double>(0, i) = curve.at<double>(0, n - i);
+        }
         break;
     default:
         break;
@@ -438,7 +444,7 @@ void Motor::calibration(cv::VideoCapture &colorStream, cv::VideoCapture &depthSt
                     if (cal_points.size() >= 5)
                     {
                         float current_A = lens_param.A;
-                        this->polyFit(cal_points, 3, -lens_num); // 输入的lens_num为负值
+                        this->polyFit(cal_points, 5, -lens_num); // 输入的lens_num为负值
                         if (current_A != lens_param.A)
                         {
                             cout << "校准完毕" << endl;

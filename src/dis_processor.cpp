@@ -40,7 +40,7 @@ int Dis::disCalculate(int mode, cv::Mat &d16, deque<cv::Point2f> &points)
     {
         target_dis.push_back(current_dis);
         this->updateFilter();
-        cout << "dis : " << target_dis.back() << endl;
+        // cout << "dis : " << target_dis.back() << endl;
         if (target_dis.size() >= param.DIS_DEQUE)
         {
             target_dis.pop_front();
@@ -55,7 +55,7 @@ int Dis::disCalculate(int mode, cv::Mat &d16, deque<cv::Point2f> &points)
         {
             target_dis.pop_front();
         }
-        cout << "dis : " << this->target_dis.back() << " (currection) " << endl;
+        // cout << "dis : " << this->target_dis.back() << " (currection) " << endl;
         return target_dis.back();
     }
     else

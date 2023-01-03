@@ -217,7 +217,7 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
 
             // 计算差值，写入串口，同时进行异常处理
             int current_pulse = motor.readPulse(data);
-            int target_pulse = (lens_param.A * pow(DIS, 3) + lens_param.B * pow(DIS, 2) + lens_param.C * DIS + lens_param.D);
+            int target_pulse = (lens_param.A * pow(DIS, 5) + lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
             cout << "current_pulse = " << current_pulse << endl;
             cout << "target_pulse = " << target_pulse << endl;
             if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
@@ -247,10 +247,10 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             }
 
             // show dcolor frame
-            imshow("Depth (colored)", dColor);
+            // imshow("Depth (colored)", dColor);
 
             // Show color frame
-            imshow("Color", colorFrame.frame);
+            // imshow("Color", colorFrame.frame);
 
             // Exit on Esc key press
             int key = cv::waitKey(1);
