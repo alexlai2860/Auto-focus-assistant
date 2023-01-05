@@ -10,13 +10,21 @@
  */
 
 #include "processor.h"
+#include "realsense_reader.h"
 #include <iostream>
 #include <string>
+
+#define width 1280
+#define height 720
+#define fps 30
 
 using namespace std;
 
 int main()
 {
+    RealsenseReader d415;
+    d415.rs_read();
+
     cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
     cv::VideoCapture colorStream(4, cv::CAP_V4L2);
     int64 t0 = cv::getTickCount();

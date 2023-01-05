@@ -23,6 +23,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <list>
+#include <librealsense2/rs.hpp>
 
 using namespace std;
 

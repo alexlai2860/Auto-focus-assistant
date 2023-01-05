@@ -247,10 +247,10 @@ void Frame::processFrame(cv::VideoCapture &colorStream, cv::VideoCapture &depthS
             }
 
             // show dcolor frame
-            // imshow("Depth (colored)", dColor);
+            imshow("Depth (colored)", dColor);
 
             // Show color frame
-            // imshow("Color", colorFrame.frame);
+            imshow("Color", colorFrame.frame);
 
             // Exit on Esc key press
             int key = cv::waitKey(1);
