@@ -27,8 +27,11 @@ struct Param
     int DROP_PROCESS_MODE;
 
     int cam_module;
-    int center_x;
-    int center_y;
+    int ASTRA_width;
+    int ASTRA_height;
+    int RS_width;
+    int RS_height;
+    int RS_fps;
 
     string param_path;
 

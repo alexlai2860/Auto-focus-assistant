@@ -25,9 +25,13 @@ SPEED: 60
 A: 255
 
 # ****************深度相机相关*************
-# 相机型号
-cam_module: 1
-# 相机中心点x
-center_x: 320
-# 相机中心点y
-center_y: 240
+# 相机型号(0:astra/1:realsense)
+cam_module: 0
+# astra 分辨率
+ASTRA_width: 640
+ASTRA_height: 480
+# realsense 分辨率
+RS_width: 1280
+RS_height: 720
+# realsense 帧率
+RS_fps: 30

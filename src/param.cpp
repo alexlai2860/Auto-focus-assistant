@@ -31,7 +31,10 @@ Param::Param(const string &param)
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
 
     arm["cam_module"] >> cam_module;
-    arm["center_x"] >> center_x; 
-    arm["center_y"] >> center_y;
+    arm["ASTRA_width"] >> ASTRA_width;
+    arm["ASTRA_height"] >> ASTRA_height;
+    arm["RS_width"] >> RS_width;
+    arm["RS_height"] >> RS_height;
+    arm["RS_fps"] >> RS_fps;
 };
 struct Param param("../param.yml");

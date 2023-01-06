@@ -51,16 +51,10 @@ public:
 
 class Motor
 {
-protected:
-    vector<cv::Mat> function;
-    vector<cv::Point2f> cal_points;
-
 public:
     int init(Data &, TransferData &, TransferData &);
     int readPulse(Data &);
     void writePulse(int, Data &);
-    cv::Mat polyFit(vector<cv::Point2f> &, int, int);
-    void calibration(cv::VideoCapture &, cv::VideoCapture &, int, Dis &, int64 &, Data &);
 };
 
 class Frame
@@ -73,6 +67,8 @@ public:
     bool detect_init = true; // 初始化标志位（重置计数器）
     cv::Mat frame;
     list<Frame> depth_frames, color_frames;
-    void processFrame(cv::VideoCapture &, cv::VideoCapture &, Face &, Dis &, int64 &, Data &);
+    void rs_read(rs2::pipeline &, rs2::frameset &);
+    void astraProcessFrame(Face &, Dis &, int64 &, Data &);
+    void rsProcessFrame(Face &, Dis &, int64 &, Data &);
     void dropProcess(int, Dis &, cv::Mat &);
 };
