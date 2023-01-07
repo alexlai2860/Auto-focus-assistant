@@ -25,6 +25,9 @@
 #include <list>
 #include <librealsense2/rs.hpp>
 
+#define ASTRA 0
+#define REALSENSE 1
+
 using namespace std;
 
 class Face
@@ -57,16 +60,22 @@ public:
     void writePulse(int, Data &);
 };
 
+struct AstraFrame
+{
+    double timestamp;
+    cv::Mat frame;
+};
+
 class Frame
 {
 public:
-    double timestamp;
     int drop_count; // 面部识别调帧数
     bool drop_init;
     int detect_count;        // 检测计数器（减少至0时进行一次检测）
     bool detect_init = true; // 初始化标志位（重置计数器）
-    cv::Mat frame;
-    list<Frame> depth_frames, color_frames;
+    list<rs2::frame> rsColorFrames;
+    list<rs2::depth_frame> rsDepthFrames;
+    list<AstraFrame> astraDepthFrames, astraColorFrames;
     void rs_read(rs2::pipeline &, rs2::frameset &);
     void astraProcessFrame(Face &, Dis &, int64 &, Data &);
     void rsProcessFrame(Face &, Dis &, int64 &, Data &);

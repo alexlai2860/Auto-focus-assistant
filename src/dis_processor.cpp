@@ -21,14 +21,22 @@ Dis::Dis()
     dis_filter.setH(cv::Matx22f::eye());
 }
 
-int Dis::disCalculate(int mode, cv::Mat &d16, deque<cv::Point2f> &points)
+int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
 {
     // select the point
-    uint16_t dis = d16.at<uint16_t>(int(points.back().y), int(points.back().x));
-    // uint16_t dis = d16.at<uint16_t>(393,232);
-    // cout << "selected_point: " << points.back() << endl;
-    // output and store the distance
-    int current_dis = int(dis) * 8000 / 65535;
+    int current_dis;
+    if (param.cam_module == ASTRA)
+    {
+        uint16_t dis = d16.at<uint16_t>(int(points.back().y), int(points.back().x));
+        // uint16_t dis = d16.at<uint16_t>(393,232);
+        // cout << "selected_point: " << points.back() << endl;
+        // output and store the distance
+        current_dis = int(dis) * 8000 / 65535;
+    }
+    if (param.cam_module == REALSENSE)
+    {
+        current_dis = rs_dis;
+    }
 
     this->t.push_front(cv::getTickCount());
     if (t.size() > 10)

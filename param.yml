@@ -31,7 +31,7 @@ cam_module: 0
 ASTRA_width: 640
 ASTRA_height: 480
 # realsense 分辨率
-RS_width: 1280
-RS_height: 720
+RS_width: 848
+RS_height: 480
 # realsense 帧率
 RS_fps: 30

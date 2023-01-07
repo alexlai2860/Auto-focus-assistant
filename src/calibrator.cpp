@@ -100,7 +100,7 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     depthStream.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
     depthStream.set(cv::CAP_PROP_OPENNI2_MIRROR, 0);
 
-    std::list<Frame> depthFrames, colorFrames;
+    Frame frame;
     const std::size_t maxFrames = 32;
     // Synchronization objects
     std::mutex mtx;
@@ -125,7 +125,6 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     isFinish = false;
     while (!isFinish)
     {
-        // Start depth reading thread
         std::thread depthReader([&]
                                 {
          while (!isFinish)
@@ -133,7 +132,7 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
              // Grab and decode new frame
              if (depthStream.grab())
              {
-                 Frame f;
+                 AstraFrame f;
                  f.timestamp = cv::getTickCount();
                  depthStream.retrieve(f.frame, cv::CAP_OPENNI_DEPTH_MAP);
                  if (f.frame.empty())
@@ -144,9 +143,9 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
 
                  {
                      std::lock_guard<std::mutex> lk(mtx);
-                     if (depthFrames.size() >= maxFrames)
-                         depthFrames.pop_front();
-                     depthFrames.push_back(f);
+                     if (frame.astraDepthFrames.size() >= maxFrames)
+                         frame.astraDepthFrames.pop_front();
+                     frame.astraDepthFrames.push_back(f);
                  }
                  dataReady.notify_one();
              }
@@ -160,7 +159,7 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
              // Grab and decode new frame
              if (colorStream.grab())
              {
-                 Frame f;
+                 AstraFrame f;
                  f.timestamp = cv::getTickCount();
                  colorStream.retrieve(f.frame);
                  if (f.frame.empty())
@@ -171,9 +170,9 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
                  
                  {
                      std::lock_guard<std::mutex> lk(mtx);
-                     if (colorFrames.size() >= maxFrames)
-                         colorFrames.pop_front();
-                     colorFrames.push_back(f);
+                     if (frame.astraColorFrames.size() >= maxFrames)
+                         frame.astraColorFrames.pop_front();
+                     frame.astraColorFrames.push_back(f);
                  }
                  dataReady.notify_one();
              }
@@ -181,38 +180,38 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         while (!isFinish)
         {
             std::unique_lock<std::mutex> lk(mtx);
-            while (!isFinish && (depthFrames.empty() || colorFrames.empty()))
+            while (!isFinish && (frame.astraDepthFrames.empty() || frame.astraColorFrames.empty()))
             {
                 dataReady.wait(lk);
             }
-            while (!depthFrames.empty() && !colorFrames.empty())
+            while (!frame.astraDepthFrames.empty() && !frame.astraColorFrames.empty())
             {
                 if (!lk.owns_lock())
                     lk.lock();
 
                 int64 t1 = cv::getTickCount();
                 // Get a frame from the list
-                Frame depthFrame = depthFrames.front();
+                AstraFrame depthFrame = frame.astraDepthFrames.front();
                 int64 depthT = depthFrame.timestamp;
 
                 // Get a frame from the list
-                Frame colorFrame = colorFrames.front();
+                AstraFrame colorFrame = frame.astraColorFrames.front();
                 int64 colorT = colorFrame.timestamp;
 
                 // Half of frame period is a maximum time diff between frames
                 const int64 maxTdiff = int64(1000000000 / (2 * colorStream.get(cv::CAP_PROP_FPS)));
                 if (depthT + maxTdiff < colorT)
                 {
-                    depthFrames.pop_front();
+                    frame.astraDepthFrames.pop_front();
                     continue;
                 }
                 else if (colorT + maxTdiff < depthT)
                 {
-                    colorFrames.pop_front();
+                    frame.astraColorFrames.pop_front();
                     continue;
                 }
-                depthFrames.pop_front();
-                colorFrames.pop_front();
+                frame.astraDepthFrames.pop_front();
+                frame.astraColorFrames.pop_front();
                 lk.unlock();
 
                 cv::Mat d8, d16, dColor;

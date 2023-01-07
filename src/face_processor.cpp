@@ -13,13 +13,24 @@
 #include "param.h"
 #include <iostream>
 
+#define ASTRA 0
+#define REALSENSE 1
+
 using namespace std;
 
 bool Face::faceDetect(cv::Mat &color_frame, cv::Mat &faces, int &count)
 {
     // detect faces from the colorframe
     string onnx_path = "../onnx/yunet.onnx";
-    cv::Ptr<cv::FaceDetectorYN> faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(640, 480));
+    cv::Ptr<cv::FaceDetectorYN> faceDetector;
+    if (param.cam_module == ASTRA)
+    {
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.ASTRA_width, param.ASTRA_height));
+    }
+    if (param.cam_module == REALSENSE)
+    {
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height));
+    }
     faceDetector->detect(color_frame, faces);
     if (faces.cols > 0)
     {
