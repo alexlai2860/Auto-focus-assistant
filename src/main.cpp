@@ -14,9 +14,6 @@
 #include <iostream>
 #include <string>
 
-#define ASTRA 0
-#define REALSENSE 1
-
 using namespace std;
 
 int main()

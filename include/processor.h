@@ -68,6 +68,10 @@ struct AstraFrame
 
 class Frame
 {
+protected:
+    double last_color_timestamp;
+    double last_depth_timestamp;
+
 public:
     int drop_count; // 面部识别调帧数
     bool drop_init;

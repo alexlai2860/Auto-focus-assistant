@@ -13,9 +13,6 @@
 #include "param.h"
 #include <iostream>
 
-#define ASTRA 0
-#define REALSENSE 1
-
 using namespace std;
 
 bool Face::faceDetect(cv::Mat &color_frame, cv::Mat &faces, int &count)

@@ -27,6 +27,8 @@ struct Param
     int DROP_PROCESS_MODE;
 
     int cam_module;
+    bool INVERT_ON;
+    bool ROI_ON;
     int ASTRA_width;
     int ASTRA_height;
     int RS_width;

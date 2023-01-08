@@ -31,6 +31,8 @@ Param::Param(const string &param)
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
 
     arm["cam_module"] >> cam_module;
+    arm["INVERT_ON"] >> INVERT_ON;
+    arm["ROI_ON"] >> ROI_ON;
     arm["ASTRA_width"] >> ASTRA_width;
     arm["ASTRA_height"] >> ASTRA_height;
     arm["RS_width"] >> RS_width;

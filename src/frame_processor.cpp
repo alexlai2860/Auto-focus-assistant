@@ -13,9 +13,6 @@
 #include "lens_param.h"
 #include "param.h"
 
-#define ASTRA 0
-#define REALSENSE 1
-
 void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 {
     cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
@@ -61,7 +58,13 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                  {
                      std::lock_guard<std::mutex> lk(mtx);
                      if (astraDepthFrames.size() >= maxFrames)
-                         astraDepthFrames.pop_front();
+                     {
+                        astraDepthFrames.pop_front();
+                     }
+                     if(param.INVERT_ON)
+                     {
+                        cv::flip(f.frame,f.frame,0);
+                     }
                      astraDepthFrames.push_back(f);
                  }
                  dataReady.notify_one();
@@ -88,7 +91,13 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                  {
                      std::lock_guard<std::mutex> lk(mtx);
                      if (astraColorFrames.size() >= maxFrames)
+                     {
                          astraColorFrames.pop_front();
+                     }
+                     if(param.INVERT_ON)
+                     {
+                        cv::flip(f.frame,f.frame,0);
+                     }
                      astraColorFrames.push_back(f);
                  }
                  dataReady.notify_one();
@@ -267,10 +276,10 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             }
 
             // show dcolor frame
-            // imshow("Depth (colored)", dColor);
+            imshow("Depth (colored)", dColor);
 
             // Show color frame
-            // imshow("Color", colorFrame.frame);
+            imshow("Color", colorFrame.frame);
 
             // Exit on Esc key press
             int key = cv::waitKey(1);
@@ -279,7 +288,7 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                 isFinish = true;
                 // break;
             }
-            // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
+            cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
         }
     }
 }
@@ -302,6 +311,7 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg; // 创建一个以非默认配置的配置用来配置管道
+    rs2::sensor sen;
     // Add desired streams to configuration
     cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
     cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
@@ -310,6 +320,9 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     // float depth_scale = get_depth_scale(profile.get_device());
     // start stream
     pipe.start(cfg); // 指示管道使用所请求的配置启动流
+    sen = pipe.get_active_profile().get_device().query_sensors()[1];
+    // sen.set_option(RS2_OPTION_AUTO_EXPOSURE_PRIORITY, true);
+
     while (key != 27)
     {
         int64 t1 = cv::getTickCount();
@@ -335,9 +348,28 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         rs2::frame color_frame = rsColorFrames.back();
         rs2::frame depth_frame = rsDepthFrames.back();
 
+        double current_color_timestamp = color_frame.get_timestamp();
+        double current_depth_timestamp = depth_frame.get_timestamp();
+        if (current_color_timestamp == last_color_timestamp)
+        {
+            continue;
+        }
+        if (current_depth_timestamp == last_depth_timestamp)
+        {
+            continue;
+        }
+        last_color_timestamp = current_color_timestamp;
+        last_depth_timestamp = current_depth_timestamp;
+
         cv::Mat color(cv::Size(param.RS_width, param.RS_height), CV_8UC3, (void *)color_frame.get_data(), cv::Mat::AUTO_STEP);
         cv::Mat depth(cv::Size(param.RS_width, param.RS_height), CV_16U, (void *)depth_frame.get_data(), cv::Mat::AUTO_STEP);
 
+        if (param.INVERT_ON)
+        {
+            cv::waitKey(1);
+            cv::flip(color, color, 0);
+            cv::flip(depth, depth, 0);
+        }
         cv::Mat d8, d16, dColor;
         int DIS = 0;
         // this->depth_frames = depthFrames;
@@ -361,7 +393,12 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
             if (detected)
             {
-                int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, face.face_center.back().y));
+                float center_y = face.face_center.back().y;
+                if (param.INVERT_ON)
+                {
+                    center_y = param.RS_height - face.face_center.back().y;
+                }
+                int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
                 dis.disCalculate(face_dis, d16, face.face_center);
                 if (!dis.target_dis.empty())
                 {
@@ -373,8 +410,8 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                     // {
                     //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                     // }
-                    cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                    cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+                    cv::circle(depth, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
+                    cv::putText(depth, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                 }
                 drop_init = 1; // 重新初始化掉帧计算器
             }
@@ -400,7 +437,12 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         {
             if (!face.face_center.empty())
             {
-                int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, face.face_center.back().y));
+                float center_y = face.face_center.back().y;
+                if (param.INVERT_ON)
+                {
+                    center_y = param.RS_height - face.face_center.back().y;
+                }
+                int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
                 dis.disCalculate(face_dis, d16, face.face_center);
                 if (!dis.target_dis.empty())
                 {
@@ -412,8 +454,8 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                     // {
                     //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                     // }
-                    cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                    cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+                    cv::circle(depth, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
+                    cv::putText(depth, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                 }
                 else
                 {
@@ -439,52 +481,52 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             cout << "ERROR!-距离队列异常" << endl;
         }
 
-        // // 计算差值，写入串口，同时进行异常处理
-        // int current_pulse = motor.readPulse(data);
-        // int target_pulse = (lens_param.A * pow(DIS, 5) + lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
-        // // cout << "current_pulse = " << current_pulse << endl;
-        // // cout << "target_pulse = " << target_pulse << endl;
-        // if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
-        // {
-        //     int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-        //     int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-        //     if (target_pulse < max_pulse && target_pulse > min_pulse)
-        //     {
-        //         if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
-        //         {
-        //             motor.writePulse((target_pulse - current_pulse), data);
-        //             cout << "写入中" << endl;
-        //         }
-        //         else
-        //         {
-        //             cout << "ERROR!-当前值异常" << endl;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         cout << "ERROR!-目标值异常" << endl;
-        //     }
-        // }
-        // else
-        // {
-        //     cout << "ERROR!-差值过大" << endl;
-        // }
+        // 计算差值，写入串口，同时进行异常处理
+        int current_pulse = motor.readPulse(data);
+        int target_pulse = (lens_param.A * pow(DIS, 5) + lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
+        // cout << "current_pulse = " << current_pulse << endl;
+        // cout << "target_pulse = " << target_pulse << endl;
+        if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
+        {
+            int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+            int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+            if (target_pulse < max_pulse && target_pulse > min_pulse)
+            {
+                if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
+                {
+                    motor.writePulse((target_pulse - current_pulse), data);
+                    cout << "写入中" << endl;
+                }
+                else
+                {
+                    cout << "ERROR!-当前值异常" << endl;
+                }
+            }
+            else
+            {
+                cout << "ERROR!-目标值异常" << endl;
+            }
+        }
+        else
+        {
+            cout << "ERROR!-差值过大" << endl;
+        }
 
         // show dcolor frame
-        imshow("Depth", depth);
+        imshow("Depth", depth * 15);
 
         // Show color frame
         imshow("Color", color);
 
         // Exit on Esc key press
         int key = cv::waitKey(1);
-        // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
+        cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
     }
 }
 
 void Frame::rs_read(rs2::pipeline &pipe, rs2::frameset &frames)
 {
-    int64 t1 = cv::getTickCount();
+    // int64 t1 = cv::getTickCount();
 
     frames = pipe.wait_for_frames();
     // Get each frame
@@ -503,16 +545,7 @@ void Frame::rs_read(rs2::pipeline &pipe, rs2::frameset &frames)
     {
         rsDepthFrames.pop_front();
     }
-    // float dis_to_center = depth_frame.get_distance(param.RS_width / 2, param.RS_height / 2);
-    // cout << "distance : " << dis_to_center << endl;
-
-    // Display in a GUI
-    // cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
-    // cv::imshow("Display Image", color);
-    // cv::waitKey(1);
-    // cv::imshow("Display depth", pic_depth * 15);
-    // cv::waitKey(1);
-    cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
+    // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
 }
 
 void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
@@ -534,6 +567,9 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
             int center_dis = int(1000 * rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
             dis.disCalculate(center_dis, d16, points);
         }
+    }
+    case 2:
+    {
     }
     default:
         deque<cv::Point2f> points;

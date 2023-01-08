@@ -13,7 +13,7 @@ MOVE_JUDGE: 25
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值
 MAX_DROP_FRAME: 5
-# 掉帧后的处理模式
+# 掉帧后的处理模式(1:中心点对焦)
 DROP_PROCESS_MODE: 1
 
 # ****************电机控制相关*************
@@ -27,6 +27,10 @@ A: 255
 # ****************深度相机相关*************
 # 相机型号(0:astra/1:realsense)
 cam_module: 0
+# 是否倒置(0:否/1:是)
+INVERT_ON: 1
+# 是否开启ROI区域(0:否/1:是)
+ROI_ON: 0
 # astra 分辨率
 ASTRA_width: 640
 ASTRA_height: 480
@@ -34,4 +38,4 @@ ASTRA_height: 480
 RS_width: 848
 RS_height: 480
 # realsense 帧率
-RS_fps: 30
+RS_fps: 60
