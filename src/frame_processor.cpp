@@ -12,6 +12,9 @@
 #include "processor.h"
 #include "lens_param.h"
 #include "param.h"
+#include <iostream>
+#include <fstream>
+#include <string>
 
 void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 {
@@ -168,7 +171,7 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                 bool detected = face.faceDetect(colorFrame.frame, face.detected_faces, this->drop_count);
                 if (detected)
                 {
-                    dis.disCalculate(1, d16, face.face_center);
+                    DIS = dis.disCalculate(1, d16, face.face_center);
                     if (!dis.target_dis.empty())
                     {
                         // if (dis.movDecider(t0, face.face_center))
@@ -206,7 +209,7 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             {
                 if (!face.face_center.empty())
                 {
-                    dis.disCalculate(1, d16, face.face_center);
+                    DIS = dis.disCalculate(1, d16, face.face_center);
                     if (!dis.target_dis.empty())
                     {
                         // if (dis.movDecider(t0, face.face_center))
@@ -316,6 +319,18 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
     cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
 
+    // std::ifstream file("../test1.json");
+    // if (file.good())
+    // {
+    //     std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    //     auto prof = cfg.resolve(pipe);
+    //     if (auto advanced = prof.get_device().as<>())
+    //     {
+    //         advanced.load_json(str);
+    //     }
+    // }
+
     // get depth scale
     // float depth_scale = get_depth_scale(profile.get_device());
     // start stream
@@ -390,28 +405,24 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 
         if (detect_count == 0)
         {
+            // 进行检测的帧
             bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
             if (detected)
             {
+                // 若检测到人脸：锁定人脸（todo：多人脸策略）
                 float center_y = face.face_center.back().y;
                 if (param.INVERT_ON)
                 {
                     center_y = param.RS_height - face.face_center.back().y;
                 }
                 int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
-                dis.disCalculate(face_dis, d16, face.face_center);
+                // 对realsense相机来说，discalculate并不承担计算距离的功能
+                // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+                DIS = dis.disCalculate(face_dis, d16, face.face_center);
                 if (!dis.target_dis.empty())
                 {
-                    // if (dis.movDecider(t0, face.face_center))
-                    // {
-                    //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                    // }
-                    // else
-                    // {
-                    //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                    // }
-                    cv::circle(depth, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                    cv::putText(depth, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+                    // cv::circle(color, face.face_center.back(), 2, cv::Scalar(0, 0, 0), 5);
+                    // cv::putText(color, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                 }
                 drop_init = 1; // 重新初始化掉帧计算器
             }
@@ -422,13 +433,34 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                     drop_count++;
                     if (drop_count >= param.MAX_DROP_FRAME)
                     {
+                        // 掉帧数超过阈值，则进入掉帧处理
                         this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+                    }
+                    else
+                    {
+                        if (!face.face_center.empty())
+                        {
+                            // 掉帧数低于阈值,且面部队列不为空，则锁定面部队列末尾的点
+                            float center_y = face.face_center.back().y;
+                            if (param.INVERT_ON)
+                            {
+                                center_y = param.RS_height - face.face_center.back().y;
+                            }
+                            int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
+                            DIS = dis.disCalculate(face_dis, d16, face.face_center);
+                        }
+                        else
+                        {
+                            this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+                        }
                     }
                 }
                 else
                 {
+                    // 面部队列为空，之间进入掉帧处理
                     this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
                 }
+                // 未检测到，标志位置0
                 drop_init = 0;
             }
             detect_init = 1; // 重新初始化面部识别帧率计数器
@@ -437,33 +469,23 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         {
             if (!face.face_center.empty())
             {
+                // 不检测的帧：锁定人脸队列末尾的点
                 float center_y = face.face_center.back().y;
                 if (param.INVERT_ON)
                 {
                     center_y = param.RS_height - face.face_center.back().y;
                 }
                 int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
-                dis.disCalculate(face_dis, d16, face.face_center);
+                DIS = dis.disCalculate(face_dis, d16, face.face_center);
                 if (!dis.target_dis.empty())
                 {
-                    // if (dis.movDecider(t0, face.face_center))
-                    // {
-                    //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                    // }
-                    // else
-                    // {
-                    //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                    // }
-                    cv::circle(depth, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                    cv::putText(depth, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-                }
-                else
-                {
-                    this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+                    // cv::circle(depth, face.face_center.back(), 2, cv::Scalar(0, 0, 0), 5);
+                    // cv::putText(color, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                 }
             }
             else
             {
+                // 面部队列为空，进入掉帧处理
                 this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
             }
             detect_init = 0;
@@ -474,6 +496,7 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         {
             DIS = dis.target_dis.back();
             cout << "DIS" << DIS << endl;
+            cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
         else
         {
@@ -550,8 +573,10 @@ void Frame::rs_read(rs2::pipeline &pipe, rs2::frameset &frames)
 
 void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
 {
+    cout << "mode : " << mode << endl;
     switch (mode)
     {
+    // 中心点对焦
     case 1:
     {
         deque<cv::Point2f> points;
@@ -564,14 +589,16 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
         }
         if (param.cam_module == REALSENSE)
         {
-            int center_dis = int(1000 * rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
+            int img_width = param.RS_width;
+            int img_height = param.RS_height;
+            int center_dis = int(1000 * rsDepthFrames.back().get_distance(img_width / 2, img_height / 2));
+            cout << "CENTER_DIS:" << center_dis << endl;
             dis.disCalculate(center_dis, d16, points);
         }
     }
+    // 中心区域对焦
     case 2:
     {
-    }
-    default:
         deque<cv::Point2f> points;
         if (param.cam_module == ASTRA)
         {
@@ -582,9 +609,44 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
         }
         if (param.cam_module == REALSENSE)
         {
-            int center_dis = int(1000 * rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
-            dis.disCalculate(center_dis, d16, points);
+            int img_width = param.RS_width;
+            int img_height = param.RS_height;
+            int current_dis = 0;
+            int min_dis = int(1000 * rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
+            for (int i = 0.25 * img_width; i <= 0.75 * img_width && i >= 0.25 * img_width; i++)
+            {
+                for (int j = 0.25 * img_height; j <= 0.75 * img_height && j >= 0.25 * img_height; j++)
+                {
+                    // cout << "i:" << i << " j:" << j << endl;
+                    current_dis = int(1000 * rsDepthFrames.back().get_distance(i, j));
+                    // cout << "current-dis:" << current_dis << endl;
+                    if (current_dis < min_dis && current_dis != 0)
+                    {
+                        min_dis = current_dis;
+                    }
+                }
+            }
+            cout << "MIN-DIS: " << min_dis << endl;
+            dis.disCalculate(min_dis, d16, points);
         }
+    }
+    default:
+        // deque<cv::Point2f> points;
+        // if (param.cam_module == ASTRA)
+        // {
+        //     // 选取中心点
+        //     cv::Point2f center(param.ASTRA_width / 2, param.ASTRA_height / 2);
+        //     points.push_back(center);
+        //     int center_dis = dis.disCalculate(0, d16, points);
+        // }
+        // if (param.cam_module == REALSENSE)
+        // {
+        //     int img_width = param.RS_width;
+        //     int img_height = param.RS_height;
+        //     int center_dis = int(1000 * rsDepthFrames.back().get_distance(img_width / 2, img_height / 2));
+        //     cout << "CENTER_DIS2:" << center_dis << endl;
+        //     dis.disCalculate(center_dis, d16, points);
+        // }
         break;
     }
 }

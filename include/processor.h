@@ -48,6 +48,7 @@ public:
     Dis();
     deque<int> target_dis;
     void updateFilter();
+    void disProcessor();
     int disCalculate(int, cv::Mat &, deque<cv::Point2f> &);
     bool movDecider(int64 &, deque<cv::Point2f> &);
 };
@@ -69,14 +70,14 @@ struct AstraFrame
 class Frame
 {
 protected:
-    double last_color_timestamp;
-    double last_depth_timestamp;
 
 public:
     int drop_count; // 面部识别调帧数
     bool drop_init;
     int detect_count;        // 检测计数器（减少至0时进行一次检测）
     bool detect_init = true; // 初始化标志位（重置计数器）
+    double last_color_timestamp;
+    double last_depth_timestamp;
     list<rs2::frame> rsColorFrames;
     list<rs2::depth_frame> rsDepthFrames;
     list<AstraFrame> astraDepthFrames, astraColorFrames;

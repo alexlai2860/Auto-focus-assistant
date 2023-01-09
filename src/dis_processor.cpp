@@ -17,7 +17,7 @@ using namespace std;
 Dis::Dis()
 {
     __is_filter_init = false;
-    dis_filter = KalmanFilter22(0.01, 0.04);
+    dis_filter = KalmanFilter22(0.01, 0.06);
     dis_filter.setH(cv::Matx22f::eye());
 }
 
@@ -68,6 +68,7 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
     }
     else
     {
+        target_dis.push_back(1000);
         cout << "OUT OF DETECT LIMIT" << endl;
         return -1;
     }
