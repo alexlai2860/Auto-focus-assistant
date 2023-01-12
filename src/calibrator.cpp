@@ -54,31 +54,31 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     case 1:
         for (int i = 0; i <= n; i++)
         {
-            lens_param.LENS_1.at<double>(0, i) = curve.at<double>(0, n - i);
+            lens_param.LENS_1.at<double>(0, i + 1) = curve.at<double>(0, n - i);
         }
         break;
     case 2:
         for (int i = 0; i <= n; i++)
         {
-            lens_param.LENS_2.at<double>(0, i) = curve.at<double>(0, n - i);
+            lens_param.LENS_2.at<double>(0, i + 1) = curve.at<double>(0, n - i);
         }
         break;
     case 3:
         for (int i = 0; i <= n; i++)
         {
-            lens_param.LENS_3.at<double>(0, i) = curve.at<double>(0, n - i);
+            lens_param.LENS_3.at<double>(0, i + 1) = curve.at<double>(0, n - i); // 4次（测试）
         }
         break;
     case 4:
         for (int i = 0; i <= n; i++)
         {
-            lens_param.LENS_4.at<double>(0, i) = curve.at<double>(0, n - i);
+            lens_param.LENS_4.at<double>(0, i + 1) = curve.at<double>(0, n - i);
         }
         break;
     case 5:
         for (int i = 0; i <= n; i++)
         {
-            lens_param.LENS_5.at<double>(0, i) = curve.at<double>(0, n - i);
+            lens_param.LENS_5.at<double>(0, i + 1) = curve.at<double>(0, n - i);
         }
         break;
     default:
@@ -431,10 +431,11 @@ void Calibrator::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         }
         if (key1 == 'c')
         {
+            cal_points.push_back(cv::Point2f(15000, lens_param.INFINIT_PULSE));
             if (cal_points.size() >= 5)
             {
                 float current_A = lens_param.A;
-                this->polyFit(cal_points, 5, -lens_num); // 输入的lens_num为负值
+                this->polyFit(cal_points, 4, -lens_num); // 输入的lens_num为负值
                 if (current_A != lens_param.A)
                 {
                     cout << "校准完毕" << endl;

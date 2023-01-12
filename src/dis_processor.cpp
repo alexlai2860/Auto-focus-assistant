@@ -17,7 +17,7 @@ using namespace std;
 Dis::Dis()
 {
     __is_filter_init = false;
-    dis_filter = KalmanFilter22(0.01, 0.06);
+    dis_filter = KalmanFilter22(0.01, 0.01);
     dis_filter.setH(cv::Matx22f::eye());
 }
 
@@ -38,31 +38,40 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
         current_dis = rs_dis;
     }
 
+    // 卡尔曼滤波需要使用t
     this->t.push_front(cv::getTickCount());
     if (t.size() > 10)
     {
         t.pop_back();
     }
+
+    if (target_dis.size() >= param.DIS_DEQUE)
+    {
+        target_dis.pop_front();
+    }
     // ERROR process
     if (current_dis != 0)
     {
-        target_dis.push_back(current_dis);
-        this->updateFilter();
-        // cout << "dis : " << target_dis.back() << endl;
-        if (target_dis.size() >= param.DIS_DEQUE)
+        if (errorJudge(current_dis))
         {
-            target_dis.pop_front();
+            target_dis.push_back(current_dis);
+            cout << "error_dis_dize : " << error_dis.size() << endl;
+            this->updateFilter();
+            cout << "newest_dis : " << target_dis.back() << endl;
+
+            return target_dis.back();
         }
-        return target_dis.back();
+        else if (!target_dis.empty())
+        {
+            target_dis.push_back(target_dis.back());
+            this->updateFilter();
+            return target_dis.back();
+        }
     }
     else if (!target_dis.empty())
     {
         target_dis.push_back(target_dis.back());
         this->updateFilter();
-        if (target_dis.size() >= param.DIS_DEQUE)
-        {
-            target_dis.pop_front();
-        }
         // cout << "dis : " << this->target_dis.back() << " (currection) " << endl;
         return target_dis.back();
     }
@@ -72,6 +81,54 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
         cout << "OUT OF DETECT LIMIT" << endl;
         return -1;
     }
+    return 0;
+}
+
+/**
+ * @brief 判断距离数据是否属于错误数据
+ *
+ * @return true
+ * @return false
+ */
+bool Dis::errorJudge(int current_dis)
+{
+    // error队列长度大于2，认为进入新平面
+    if (error_dis.size() > 2)
+    {
+        error_dis.clear();
+        return 1;
+    }
+    if (!error_dis.empty())
+    {
+        // 比较队尾值和当前值，若偏差小于阈值加入error队列
+        if (abs(current_dis - error_dis.back()) < error_dis.back() * 0.06)
+        {
+            error_dis.push_back(current_dis);
+            if (error_dis.size() <= 2)
+            {
+                return 0;
+            }
+        }
+    }
+    int avg_dis = 0;
+    if (target_dis.size() > 11)
+    {
+        for (int i = target_dis.size() - 11; i < target_dis.size() - 1; i++)
+        {
+            avg_dis = avg_dis + target_dis.at(i);
+        }
+        avg_dis = avg_dis / 10;
+        cout << "avg_dis : " << avg_dis << endl;
+        // 比较平均值和当前值，若偏差过大认为出现错误
+        if (abs(avg_dis - current_dis) > avg_dis * 0.15)
+        {
+            cout << abs(avg_dis - current_dis) << endl;
+            cout << error_dis.size() << endl;
+            error_dis.push_back(current_dis);
+            return 0;
+        }
+    }
+    return 1;
 }
 /**
  * @brief

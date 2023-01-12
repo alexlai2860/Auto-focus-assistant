@@ -24,6 +24,8 @@
 #include <atomic>
 #include <list>
 #include <librealsense2/rs.hpp>
+#include <librealsense2/rsutil.h>
+#include <librealsense2/rs_advanced_mode.hpp>
 
 #define ASTRA 0
 #define REALSENSE 1
@@ -43,12 +45,14 @@ class Dis
     KalmanFilter22 dis_filter;
     deque<int64> t;
     bool __is_filter_init;
+    vector<int> error_dis;
 
 public:
     Dis();
     deque<int> target_dis;
     void updateFilter();
     void disProcessor();
+    bool errorJudge(int);
     int disCalculate(int, cv::Mat &, deque<cv::Point2f> &);
     bool movDecider(int64 &, deque<cv::Point2f> &);
 };
@@ -70,7 +74,6 @@ struct AstraFrame
 class Frame
 {
 protected:
-
 public:
     int drop_count; // 面部识别调帧数
     bool drop_init;
