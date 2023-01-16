@@ -49,7 +49,7 @@ void SerialPort::open()
     {
         while ((dire = readdir(dir)) != nullptr)
         {
-            if (strstr(dire->d_name, "tty") != nullptr)
+            if (strstr(dire->d_name, "ttyUSB") != nullptr)
             {
                 file_name = dire->d_name;
                 break;

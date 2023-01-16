@@ -22,11 +22,11 @@ bool Face::faceDetect(cv::Mat &color_frame, cv::Mat &faces, int &count)
     cv::Ptr<cv::FaceDetectorYN> faceDetector;
     if (param.cam_module == ASTRA)
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.ASTRA_width, param.ASTRA_height), 0.95);
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.ASTRA_width, param.ASTRA_height), 0.98);
     }
     if (param.cam_module == REALSENSE)
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.95);
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.99);
     }
     faceDetector->detect(color_frame, faces);
     if (faces.cols > 0)
