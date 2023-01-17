@@ -42,6 +42,12 @@ int main()
             cal.rsCalibration(lens_num, dis1, t0, data);
         }
         // 最后对lens_num取反，传入processor
+        cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
+        int key;
+        while (key != 1)
+        {
+            cin >> key;
+        }
         lens_num = -lens_num;
     }
     // 每次循环：先读取当前电机位置

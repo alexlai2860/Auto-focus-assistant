@@ -38,5 +38,7 @@ Param::Param(const string &param)
     arm["RS_width"] >> RS_width;
     arm["RS_height"] >> RS_height;
     arm["RS_fps"] >> RS_fps;
+    arm["width_compensate"] >> width_compensate;
+    arm["height_compensate"] >> height_compensate;
 };
 struct Param param("../param.yml");

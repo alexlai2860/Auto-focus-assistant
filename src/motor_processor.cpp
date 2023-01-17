@@ -25,6 +25,17 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
     {
         cin >> key;
     }
+    // while (1)
+    // {
+    //     cv::Mat test = cv::imread("../SRVL.png", 0);
+    //     cv::imshow("test", test);
+    //     char key1 = (char)cv::waitKey(1);
+    //     if (key1 == '1')
+    //     {
+    //         break;
+    //     }
+    //     continue;
+    // }
     int init_pulse = this->readPulse(data);
     // int compensate = init_pulse - lens_param.INIT_PULSE; // 补偿脉冲，用于矫正拟合函数的常数项
     lens_param.INIT_PULSE = init_pulse;

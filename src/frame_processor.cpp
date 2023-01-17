@@ -296,14 +296,13 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     }
 }
 
-
 /**
  * @brief Realsense相机 帧处理函数
- * 
- * @param face 
- * @param dis 
- * @param t0 
- * @param data 
+ *
+ * @param face
+ * @param dis
+ * @param t0
+ * @param data
  */
 void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 {
@@ -572,12 +571,11 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     }
 }
 
-
 /**
  * @brief Realsense 相机读取函数
- * 
- * @param pipe 
- * @param frames 
+ *
+ * @param pipe
+ * @param frames
  */
 void Frame::rs_read(rs2::pipeline &pipe, rs2::frameset &frames)
 {
@@ -603,13 +601,12 @@ void Frame::rs_read(rs2::pipeline &pipe, rs2::frameset &frames)
     // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
 }
 
-
 /**
  * @brief 掉帧（未检测到人脸）处理函数
- * 
- * @param mode 
- * @param dis 
- * @param d16 
+ *
+ * @param mode
+ * @param dis
+ * @param d16
  */
 void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
 {
@@ -623,7 +620,7 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
         if (param.cam_module == ASTRA)
         {
             // 选取中心点
-            cv::Point2f center(param.ASTRA_width / 2, param.ASTRA_height / 2);
+            cv::Point2f center(param.ASTRA_width + param.width_compensate / 2, param.ASTRA_height + param.height_compensate / 2);
             points.push_back(center);
             int center_dis = dis.disCalculate(0, d16, points);
         }
@@ -631,13 +628,13 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
         {
             int img_width = param.RS_width;
             int img_height = param.RS_height;
-            int center_dis = int(1000 * rsDepthFrames.back().get_distance(img_width / 2, img_height / 2));
+            int center_dis = int(1000 * rsDepthFrames.back().get_distance((img_width + param.width_compensate) / 2, (img_height + param.height_compensate) / 2));
             cout << "CENTER_DIS:" << center_dis << endl;
             dis.disCalculate(center_dis, d16, points);
         }
         break;
     }
-    // 中心区域对焦
+    // 中心重点区域对焦
     case 2:
     {
         deque<cv::Point2f> points;
@@ -650,13 +647,14 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
         }
         if (param.cam_module == REALSENSE)
         {
+            // 选取1/5 * 1/5中心区域
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
             int min_dis = int(1000 * rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
-            for (int i = 0.25 * img_width; i <= 0.75 * img_width && i >= 0.25 * img_width; i++)
+            for (int i = 0.4 * img_width + param.width_compensate; i <= 0.6 * img_width + param.width_compensate && i >= 0.4 * img_width + param.width_compensate; i++)
             {
-                for (int j = 0.25 * img_height; j <= 0.75 * img_height && j >= 0.25 * img_height; j++)
+                for (int j = 0.4 * img_height + param.height_compensate; j <= 0.6 * img_height + param.height_compensate && j >= 0.4 * img_height + param.height_compensate; j++)
                 {
                     // cout << "i:" << i << " j:" << j << endl;
                     current_dis = int(1000 * rsDepthFrames.back().get_distance(i, j));

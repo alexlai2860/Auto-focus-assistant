@@ -34,6 +34,8 @@ struct Param
     int RS_width;
     int RS_height;
     int RS_fps;
+    int width_compensate;
+    int height_compensate;
 
     string param_path;
 

@@ -55,9 +55,9 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
         if (errorJudge(current_dis))
         {
             target_dis.push_back(current_dis);
-            cout << "error_dis_dize : " << error_dis.size() << endl;
+            // cout << "error_dis_dize : " << error_dis.size() << endl;
             this->updateFilter();
-            cout << "newest_dis : " << target_dis.back() << endl;
+            // cout << "newest_dis : " << target_dis.back() << endl;
 
             return target_dis.back();
         }
@@ -100,8 +100,8 @@ bool Dis::errorJudge(int current_dis)
     }
     if (!error_dis.empty())
     {
-        // 比较队尾值和当前值，若偏差小于阈值加入error队列
-        if (abs(current_dis - error_dis.back()) < error_dis.back() * 0.06)
+        // 比较队尾值和当前值，若偏差小于阈值（默认为0.1倍的队尾值）加入error队列(新平面)
+        if (abs(current_dis - error_dis.back()) < error_dis.back() * 0.1)
         {
             error_dis.push_back(current_dis);
             if (error_dis.size() <= 2)
@@ -110,20 +110,34 @@ bool Dis::errorJudge(int current_dis)
             }
         }
     }
-    int avg_dis = 0;
-    if (target_dis.size() > 11)
+    // 基于均值
+    // int avg_dis = 0;
+    // if (target_dis.size() > 11)
+    // {
+    //     for (int i = target_dis.size() - 11; i < target_dis.size() - 1; i++)
+    //     {
+    //         avg_dis = avg_dis + target_dis.at(i);
+    //     }
+    //     avg_dis = avg_dis / 10;
+    //     // cout << "avg_dis : " << avg_dis << endl;
+    //     // 比较平均值和当前值，若偏差过大（默认为0.25倍的平均值）认为出现错误
+    //     if (abs(avg_dis - current_dis) > avg_dis * 0.25)
+    //     {
+    //         // cout << abs(avg_dis - current_dis) << endl;
+    //         // cout << error_dis.size() << endl;
+    //         error_dis.push_back(current_dis);
+    //         return 0;
+    //     }
+    // }
+    // 基于前一帧的值
+    if (target_dis.size() > 1)
     {
-        for (int i = target_dis.size() - 11; i < target_dis.size() - 1; i++)
+        // cout << "avg_dis : " << avg_dis << endl;
+        // 比较平均值和当前值，若偏差过大（默认为0.25倍的平均值）认为出现错误
+        if (abs(target_dis.at(target_dis.size() - 1) - current_dis) > target_dis.at(target_dis.size() - 1) * 0.25)
         {
-            avg_dis = avg_dis + target_dis.at(i);
-        }
-        avg_dis = avg_dis / 10;
-        cout << "avg_dis : " << avg_dis << endl;
-        // 比较平均值和当前值，若偏差过大认为出现错误
-        if (abs(avg_dis - current_dis) > avg_dis * 0.15)
-        {
-            cout << abs(avg_dis - current_dis) << endl;
-            cout << error_dis.size() << endl;
+            // cout << abs(avg_dis - current_dis) << endl;
+            // cout << error_dis.size() << endl;
             error_dis.push_back(current_dis);
             return 0;
         }
