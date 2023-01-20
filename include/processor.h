@@ -38,6 +38,7 @@ public:
     deque<cv::Point2f> face_center;
     cv::Mat detected_faces;
     bool faceDetect(cv::Mat &, cv::Mat &, int &);
+    bool isValidFace(cv::Mat &, int);
 };
 
 class Dis

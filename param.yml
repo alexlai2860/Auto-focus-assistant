@@ -12,7 +12,7 @@ MOVE_JUDGE: 25
 
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值
-MAX_DROP_FRAME: 5
+MAX_DROP_FRAME: 20
 # 掉帧后的处理模式(1:中心点对焦/2:中心区域对焦)
 DROP_PROCESS_MODE: 1
 
@@ -20,7 +20,7 @@ DROP_PROCESS_MODE: 1
 # 读取指令waitkey时间(ms)
 WAIT_TIME: 4
 # 电机速度(0-255)
-SPEED: 60
+SPEED: 20
 # 电机加速度(0-255)
 A: 250
 
