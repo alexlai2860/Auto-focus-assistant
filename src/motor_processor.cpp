@@ -36,9 +36,9 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
     //     }
     //     continue;
     // }
-    int init_pulse = this->readPulse(data);
+    this->setZero(data);
     // int compensate = init_pulse - lens_param.INIT_PULSE; // 补偿脉冲，用于矫正拟合函数的常数项
-    lens_param.INIT_PULSE = init_pulse;
+    lens_param.INIT_PULSE = 0;
     // lens_param.INFINIT_PULSE = lens_param.INFINIT_PULSE + compensate;
     // lens_param.D_1 = lens_param.D_1 + compensate;
     // lens_param.COMPENSATE = compensate;
@@ -58,17 +58,17 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         switch (lens_num)
         {
         case 1:
-            compensate = init_pulse - lens_param.LENS_1.at<double>(0, 7);
+            compensate = lens_param.INIT_PULSE - lens_param.LENS_1.at<double>(0, 7);
             lens_param.A = lens_param.LENS_1.at<double>(0, 0);
             lens_param.B = lens_param.LENS_1.at<double>(0, 1);
             lens_param.C = lens_param.LENS_1.at<double>(0, 2);
             lens_param.D = lens_param.LENS_1.at<double>(0, 3);
             lens_param.E = lens_param.LENS_1.at<double>(0, 4);
             lens_param.F = lens_param.LENS_1.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = init_pulse + lens_param.LENS_1.at<double>(0, 6);
+            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_1.at<double>(0, 6);
             break;
         case 2:
-            compensate = init_pulse - lens_param.LENS_2.at<double>(0, 7);
+            compensate = lens_param.INIT_PULSE - lens_param.LENS_2.at<double>(0, 7);
             lens_param.A = lens_param.LENS_2.at<double>(0, 0);
             lens_param.B = lens_param.LENS_2.at<double>(0, 1);
             lens_param.C = lens_param.LENS_2.at<double>(0, 2);
@@ -78,7 +78,7 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
             lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_2.at<double>(0, 6);
             break;
         case 3:
-            compensate = init_pulse - lens_param.LENS_3.at<double>(0, 7);
+            compensate = lens_param.INIT_PULSE - lens_param.LENS_3.at<double>(0, 7);
             lens_param.A = lens_param.LENS_3.at<double>(0, 0);
             lens_param.B = lens_param.LENS_3.at<double>(0, 1);
             lens_param.C = lens_param.LENS_3.at<double>(0, 2);
@@ -88,7 +88,7 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
             lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_3.at<double>(0, 6);
             break;
         case 4:
-            compensate = init_pulse - lens_param.LENS_4.at<double>(0, 7);
+            compensate = lens_param.INIT_PULSE - lens_param.LENS_4.at<double>(0, 7);
             lens_param.A = lens_param.LENS_4.at<double>(0, 0);
             lens_param.B = lens_param.LENS_4.at<double>(0, 1);
             lens_param.C = lens_param.LENS_4.at<double>(0, 2);
@@ -98,7 +98,7 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
             lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_4.at<double>(0, 6);
             break;
         case 5:
-            compensate = init_pulse - lens_param.LENS_5.at<double>(0, 7);
+            compensate = lens_param.INIT_PULSE - lens_param.LENS_5.at<double>(0, 7);
             lens_param.A = lens_param.LENS_5.at<double>(0, 0);
             lens_param.B = lens_param.LENS_5.at<double>(0, 1);
             lens_param.C = lens_param.LENS_5.at<double>(0, 2);
@@ -126,28 +126,28 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         }
         int infinit_pulse = this->readPulse(data);
         lens_param.INFINIT_PULSE = infinit_pulse;
-        int delta = infinit_pulse - init_pulse;
+        int delta = infinit_pulse - lens_param.INIT_PULSE;
         switch (lens_num)
         {
         case 1:
             lens_param.LENS_1.at<double>(0, 6) = delta;
-            lens_param.LENS_1.at<double>(0, 7) = init_pulse;
+            lens_param.LENS_1.at<double>(0, 7) = 0;
             break;
         case 2:
             lens_param.LENS_2.at<double>(0, 6) = delta;
-            lens_param.LENS_2.at<double>(0, 7) = init_pulse;
+            lens_param.LENS_2.at<double>(0, 7) = 0;
             break;
         case 3:
             lens_param.LENS_3.at<double>(0, 6) = delta;
-            lens_param.LENS_3.at<double>(0, 7) = init_pulse;
+            lens_param.LENS_3.at<double>(0, 7) = 0;
             break;
         case 4:
             lens_param.LENS_4.at<double>(0, 6) = delta;
-            lens_param.LENS_4.at<double>(0, 7) = init_pulse;
+            lens_param.LENS_4.at<double>(0, 7) = 0;
             break;
         case 5:
             lens_param.LENS_5.at<double>(0, 6) = delta;
-            lens_param.LENS_5.at<double>(0, 7) = init_pulse;
+            lens_param.LENS_5.at<double>(0, 7) = 0;
             break;
         default:
             break;
@@ -229,4 +229,12 @@ void Motor::writePulse(int pulse_num, Data &data)
     writeData.pulse_l = pulse[0];
 
     data.write(4, writeData);
+}
+
+void Motor::setZero(Data &data)
+{
+    // set zero
+    TransferData writeData;
+    data.write(1, writeData);
+    cv::waitKey(5);
 }

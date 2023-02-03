@@ -166,90 +166,10 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             }
             // cout << this->detect_count << endl;
 
-            if (detect_count == 0)
-            {
-                bool detected = face.faceDetect(colorFrame.frame, face.detected_faces, this->drop_count);
-                if (detected)
-                {
-                    DIS = dis.disCalculate(1, d16, face.face_center);
-                    if (!dis.target_dis.empty())
-                    {
-                        // if (dis.movDecider(t0, face.face_center))
-                        // {
-                        //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        // }
-                        // else
-                        // {
-                        //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        // }
-                        cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                        cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-                    }
-                    drop_init = 1; // 重新初始化掉帧计算器
-                }
-                else
-                {
-                    if (!dis.target_dis.empty())
-                    {
-                        drop_count++;
-                        if (drop_count >= param.MAX_DROP_FRAME)
-                        {
-                            this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-                        }
-                    }
-                    else
-                    {
-                        this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-                    }
-                    drop_init = 0;
-                }
-                detect_init = 1; // 重新初始化面部识别帧率计数器
-            }
-            else
-            {
-                if (!face.face_center.empty())
-                {
-                    DIS = dis.disCalculate(1, d16, face.face_center);
-                    if (!dis.target_dis.empty())
-                    {
-                        // if (dis.movDecider(t0, face.face_center))
-                        // {
-                        //     cv::putText(dColor, "move", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        // }
-                        // else
-                        // {
-                        //     cv::putText(dColor, "static", cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) + 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                        // }
-                        cv::circle(dColor, face.face_center.back(), 2, cv::Scalar(0, 200, 200), 5);
-                        cv::putText(dColor, cv::format("%d", DIS), cv::Point2i(int(face.face_center.back().x), int(face.face_center.back().y) - 15), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
-                    }
-                    else
-                    {
-                        this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-                    }
-                }
-                else
-                {
-                    this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-                }
-                detect_init = 0;
-                detect_count = detect_count - 1; // 计数器递减至0
-            }
-
-            if (!dis.target_dis.empty())
-            {
-                DIS = dis.target_dis.back();
-                cout << "DIS" << DIS << endl;
-            }
-            else
-            {
-                DIS = 1000;
-                cout << "ERROR!-距离队列异常" << endl;
-            }
-
+            DIS = Decider(face, dis, colorFrame.frame, d16, detect_count);
             // 计算差值，写入串口，同时进行异常处理
             int current_pulse = motor.readPulse(data);
-            int target_pulse = (lens_param.A * pow(DIS, 5) + lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
+            int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
             // cout << "current_pulse = " << current_pulse << endl;
             // cout << "target_pulse = " << target_pulse << endl;
             if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
@@ -260,8 +180,8 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
                 {
                     if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
                     {
-                        // motor.writePulse((target_pulse - current_pulse), data);
-                        // cout << "写入中" << endl;
+                        motor.writePulse((target_pulse - current_pulse), data);
+                        cout << "写入中" << endl;
                     }
                     else
                     {
@@ -409,137 +329,26 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         }
         // cout << this->detect_count << endl;
 
-        // 复杂的判断过程(待简化)
-        int situation = 0;
-        if (detect_count == 0)
-        {
-            // 进行检测的帧
-            bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
-            if (detected)
-            {
-                // 若检测到人脸：锁定人脸（todo：多人脸策略）
-                situation = 1;
-                cout << "----1----" << endl;
-                drop_init = 1; // 重新初始化掉帧计算器
-            }
-            else
-            {
-                if (!dis.target_dis.empty())
-                {
-                    drop_count++;
-                    if (drop_count >= param.MAX_DROP_FRAME)
-                    {
-                        // 掉帧数超过阈值，则进入掉帧处理
-                        situation = 0;
-                        cout << "----2----" << endl;
-                    }
-                    else
-                    {
-                        if (!face.face_center.empty())
-                        {
-                            // 掉帧数低于阈值,且面部队列不为空，则锁定面部队列末尾的点
-                            situation = 1;
-                            cout << "----3----" << endl;
-                        }
-                        else
-                        {
-                            // 掉帧数低于阈值，但面部队列为空，则进入掉帧处理
-                            situation = 0;
-                            cout << "----4----" << endl;
-                        }
-                    }
-                }
-                else
-                {
-                    // 距离队列为空，进入掉帧处理
-                    situation = 0;
-                    cout << "----5----" << endl;
-                }
-                // 未检测到，标志位置0
-                drop_init = 0;
-            }
-            detect_init = 1; // 重新初始化面部识别帧率计数器
-        }
-        else
-        {
-            if (!face.face_center.empty())
-            {
-                if (drop_count < param.MAX_DROP_FRAME)
-                {
-                    // 不检测的帧：锁定人脸队列末尾的点
-                    situation = 1;
-                    cout << "----6----" << endl;
-                }
-                else
-                {
-                    // 掉帧过多，进入掉帧处理
-                    situation = 0;
-                    cout << "----7----" << endl;
-                }
-            }
-            else
-            {
-                // 面部队列为空，进入掉帧处理
-                situation = 0;
-                cout << "----8----" << endl;
-            }
-            detect_init = 0;
-            detect_count = detect_count - 1; // 计数器递减至0
-        }
-
-        // 对判断得到的状态进行决策
-        switch (situation)
-        {
-        case 0:
-        {
-            // situation=1:进入掉帧处理
-            this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-            break;
-        }
-        case 1:
-        {
-            // situation=1:锁定队列末尾的面部
-            float center_y = face.face_center.back().y;
-            if (param.INVERT_ON)
-            {
-                center_y = param.RS_height - face.face_center.back().y;
-            }
-            int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
-            // 对realsense相机来说，discalculate并不承担计算距离的功能
-            // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-            DIS = dis.disCalculate(face_dis, d16, face.face_center);
-            break;
-        }
-        default:
-            this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
-            break;
-        }
-
-        if (!dis.target_dis.empty())
-        {
-            DIS = dis.target_dis.back();
-            cout << "DIS" << DIS << endl;
-            cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        }
-        else
-        {
-            DIS = 1000;
-            cout << "ERROR!-距离队列异常" << endl;
-        }
+        DIS = Decider(face, dis, color, d16, detect_count);
 
         // 计算差值，写入串口，同时进行异常处理
         int current_pulse = motor.readPulse(data);
-        // 使用四次函数拟合，五次函数不稳定，A暂时废弃
+        // 方案一:使用四次函数拟合，五次函数不稳定，A暂时废弃
         int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
+        // 方案二:使用插值法
+        int target_pulse = disInterPolater(DIS);
+        cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         // cout << "current_pulse = " << current_pulse << endl;
         // cout << "target_pulse = " << target_pulse << endl;
         if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
         {
             int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
             int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-            if (target_pulse < max_pulse && target_pulse > min_pulse)
+            cv::putText(color, cv::format("%d", min_pulse), cv::Point2i(15, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            cv::putText(color, cv::format("%d", max_pulse), cv::Point2i(200, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            if (target_pulse < max_pulse + 50 && target_pulse > min_pulse - 50)
             {
-                if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
+                if (current_pulse <= max_pulse + 100 && current_pulse >= min_pulse - 100)
                 {
                     motor.writePulse((target_pulse - current_pulse), data);
                     cout << "写入中" << endl;
@@ -673,4 +482,167 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
     default:
         break;
     }
+}
+
+int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &detect_count)
+{
+    // 复杂的判断过程(待简化)
+    int DIS;
+    int situation = 0;
+    if (detect_count == 0)
+    {
+        // 进行检测的帧
+        bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
+        if (detected)
+        {
+            // 若检测到人脸：锁定人脸（todo：多人脸策略）
+            situation = 1;
+            cout << "----1----" << endl;
+            drop_init = 1; // 重新初始化掉帧计算器
+        }
+        else
+        {
+            if (!dis.target_dis.empty())
+            {
+                drop_count++;
+                if (drop_count >= param.MAX_DROP_FRAME)
+                {
+                    // 掉帧数超过阈值，则进入掉帧处理
+                    situation = 0;
+                    cout << "----2----" << endl;
+                }
+                else
+                {
+                    if (!face.face_center.empty())
+                    {
+                        // 掉帧数低于阈值,且面部队列不为空，则锁定面部队列末尾的点
+                        situation = 1;
+                        cout << "----3----" << endl;
+                    }
+                    else
+                    {
+                        // 掉帧数低于阈值，但面部队列为空，则进入掉帧处理
+                        situation = 0;
+                        cout << "----4----" << endl;
+                    }
+                }
+            }
+            else
+            {
+                // 距离队列为空，进入掉帧处理
+                situation = 0;
+                cout << "----5----" << endl;
+            }
+            // 未检测到，标志位置0
+            drop_init = 0;
+        }
+        detect_init = 1; // 重新初始化面部识别帧率计数器
+    }
+    else
+    {
+        if (!face.face_center.empty())
+        {
+            if (drop_count < param.MAX_DROP_FRAME)
+            {
+                // 不检测的帧：锁定人脸队列末尾的点
+                situation = 1;
+                cout << "----6----" << endl;
+            }
+            else
+            {
+                // 掉帧过多，进入掉帧处理
+                situation = 0;
+                cout << "----7----" << endl;
+            }
+        }
+        else
+        {
+            // 面部队列为空，进入掉帧处理
+            situation = 0;
+            cout << "----8----" << endl;
+        }
+        detect_init = 0;
+        detect_count = detect_count - 1; // 计数器递减至0
+    }
+
+    // 对判断得到的状态进行决策
+    switch (situation)
+    {
+    case 0:
+    {
+        // situation=1:进入掉帧处理
+        this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+        break;
+    }
+    case 1:
+    {
+        if (param.cam_module == REALSENSE)
+        {
+            // situation=1:锁定队列末尾的面部
+            float center_y = face.face_center.back().y;
+            if (param.INVERT_ON)
+            {
+                center_y = param.RS_height - face.face_center.back().y;
+            }
+            int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
+            // 对realsense相机来说，discalculate并不承担计算距离的功能
+            // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+            DIS = dis.disCalculate(face_dis, d16, face.face_center);
+            break;
+        }
+        else
+        {
+            DIS = dis.disCalculate(1, d16, face.face_center);
+            break;
+        }
+    }
+    default:
+        this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+        break;
+    }
+
+    if (!dis.target_dis.empty())
+    {
+        DIS = dis.target_dis.back();
+        cout << "DIS" << DIS << endl;
+        cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+    }
+    else
+    {
+        DIS = 1000;
+        cout << "ERROR!-距离队列异常" << endl;
+    }
+    return DIS;
+}
+
+int Frame::disInterPolater(int &dis)
+{
+    int target_pulse = 0;
+
+    if (dis < lens_param.A)
+    {
+        target_pulse = 0;
+    }
+    else if (dis < lens_param.B && dis >= lens_param.A)
+    {
+        target_pulse = lens_param.A + (lens_param.B - lens_param.A) * (dis - 500) / 1000;
+    }
+    else if (dis < lens_param.C && dis >= lens_param.B)
+    {
+        target_pulse = lens_param.B + (lens_param.C - lens_param.B) * (dis - 1500) / 1000;
+    }
+    else if (dis < lens_param.D && dis >= lens_param.C)
+    {
+        target_pulse = lens_param.C + (lens_param.D - lens_param.C) * (dis - 2500) / 1500;
+    }
+    else if (dis < lens_param.E && dis >= lens_param.D)
+    {
+        target_pulse = lens_param.D + (lens_param.E - lens_param.D) * (dis - 4000) / 2000;
+    }
+    else if (dis < lens_param.F && dis >= lens_param.E)
+    {
+        target_pulse = lens_param.E + (lens_param.F - lens_param.E) * (dis - 6000) / 2000;
+    }
+
+    return target_pulse;
 }

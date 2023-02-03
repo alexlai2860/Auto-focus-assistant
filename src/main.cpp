@@ -60,6 +60,7 @@ int main()
         writeData.command2 = 0x01;
         data.write(3, writeData); // 打开使能
         cv::waitKey(3);
+        motor.setZero(data); // 电机置零
         if (param.cam_module == ASTRA)
         {
             cam1.astraProcessFrame(face1, dis1, t0, data);

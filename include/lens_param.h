@@ -22,7 +22,7 @@ struct LensParam
     int INFINIT_PULSE;
     // 起点脉冲补偿值
     int COMPENSATE;
-    // 拟合函数: Y（脉冲差） = AX^5 + BX^4 + CX^3 + DX^2 + EX +F
+    // 拟合函数: Y（脉冲差） = AX^5 + BX^4 + CX^3 + DX^2 + EX +F (目前A不启用)
     double A;
     double B;
     double C;
@@ -30,7 +30,7 @@ struct LensParam
     double E;
     double F;
 
-    // 镜头数据矩阵（8*1），依次为 [A，B，C，D，E,F,DELTA, INIT_PULSE]
+    // 镜头数据矩阵（8*1），依次为 [A，B，C，D，E, F, DELTA, INIT_PULSE]
     cv::Mat LENS_1, LENS_2, LENS_3, LENS_4, LENS_5;
 
     string param_path;

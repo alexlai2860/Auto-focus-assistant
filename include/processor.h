@@ -43,6 +43,7 @@ public:
 
 class Dis
 {
+protected:
     KalmanFilter22 dis_filter;
     deque<int64> t;
     bool __is_filter_init;
@@ -64,6 +65,7 @@ public:
     int init(Data &, TransferData &, TransferData &);
     int readPulse(Data &);
     void writePulse(int, Data &);
+    void setZero(Data &);
 };
 
 struct AstraFrame
@@ -75,11 +77,15 @@ struct AstraFrame
 class Frame
 {
 protected:
-public:
-    int drop_count; // 面部识别调帧数
+    int drop_count; // 面部识别掉帧数
     bool drop_init;
     int detect_count;        // 检测计数器（减少至0时进行一次检测）
     bool detect_init = true; // 初始化标志位（重置计数器）
+    int Decider(Face &, Dis &, cv::Mat &, cv::Mat &, int &);
+    int disInterPolater(int &);
+    void dropProcess(int, Dis &, cv::Mat &);
+
+public:
     double last_color_timestamp;
     double last_depth_timestamp;
     list<rs2::frame> rsColorFrames;
@@ -88,5 +94,4 @@ public:
     void rs_read(rs2::pipeline &, rs2::frameset &);
     void astraProcessFrame(Face &, Dis &, int64 &, Data &);
     void rsProcessFrame(Face &, Dis &, int64 &, Data &);
-    void dropProcess(int, Dis &, cv::Mat &);
 };

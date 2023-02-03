@@ -89,6 +89,8 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     return curve;
 }
 
+
+
 void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
 {
     cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
@@ -384,18 +386,18 @@ void Calibrator::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         int DIS = 0;
         // this->depth_frames = depthFrames;
         // this->color_frames = colorFrames;
-        if (frame.drop_init)
-        {
-            frame.drop_count = 0;
-        }
+        // if (frame.drop_init)
+        // {
+        //     frame.drop_count = 0;
+        // }
 
         // FPS control
-        int fps = param.FPS; // support 1,2,3,5,6,10,15,30
-        int detect_rate = 30 / fps;
-        if (frame.detect_init)
-        {
-            frame.detect_count = detect_rate - 1;
-        }
+        // int fps = param.FPS; // support 1,2,3,5,6,10,15,30
+        // int detect_rate = 30 / fps;
+        // if (frame.detect_init)
+        // {
+        //     frame.detect_count = detect_rate - 1;
+        // }
         // cout << this->detect_count << endl;
 
         // 选取中心点

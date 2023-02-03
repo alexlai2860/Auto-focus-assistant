@@ -22,20 +22,6 @@ using namespace std;
  */
 TransferData Data::read(uint8_t head, uint8_t tail)
 {
-    // init
-    // if (!__is_init)
-    // {
-    //     // 初始化接收数据
-    //     TransferData transfer_data;
-    //     for (int i = 0; i < 4; i++)
-    //     {
-    //         transfer_data.read1[i] = {0x00};
-    //     }
-    //     __last_data = transfer_data;
-
-    //     __is_init = true;
-    //     return __last_data;
-    // }
     // 接收数据
     vector<ReceivePulse> data = __port.readStruct<ReceivePulse>(head, tail);
     // 判空
@@ -65,8 +51,9 @@ void Data::write(int mode, const TransferData &transfer_data)
     {
     case 1:
     {
-        __send_data1.activate_command_h = transfer_data.command1;
-        __send_data1.activate_command_l = transfer_data.command2;
+        // 目前仅用于 set zero
+        // __send_data1.activate_command_h = transfer_data.command1;
+        // __send_data1.activate_command_l = transfer_data.command2;
         __port.writeStruct<SendData1>(__send_data1);
         break;
     }
