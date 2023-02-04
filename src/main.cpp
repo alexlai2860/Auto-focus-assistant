@@ -39,7 +39,8 @@ int main()
         }
         if (param.cam_module == REALSENSE)
         {
-            cal.rsCalibration(lens_num, dis1, t0, data);
+            // cal.rsCalibration(lens_num, dis1, t0, data);
+            cal.rsCalibrationNew(lens_num, dis1, t0, data);
         }
         // 最后对lens_num取反，传入processor
         cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
@@ -60,7 +61,7 @@ int main()
         writeData.command2 = 0x01;
         data.write(3, writeData); // 打开使能
         cv::waitKey(3);
-        motor.setZero(data); // 电机置零
+        // motor.setZero(data); // 电机置零
         if (param.cam_module == ASTRA)
         {
             cam1.astraProcessFrame(face1, dis1, t0, data);

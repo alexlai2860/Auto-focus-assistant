@@ -89,8 +89,6 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     return curve;
 }
 
-
-
 void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
 {
     cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
@@ -339,23 +337,6 @@ void Calibrator::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     {
         int64 t1 = cv::getTickCount();
         frame.rs_read(pipe, frames);
-        // frames = pipe.wait_for_frames();
-        // // Get each frame
-        // rs2::frame c = frames.get_color_frame();
-        // rs2::depth_frame d = frames.get_depth_frame();
-        // // rs2::video_frame ir_frame_left = frames.get_infrared_frame(1);
-        // // rs2::video_frame ir_frame_right = frames.get_infrared_frame(2);
-
-        // rsDepthFrames.push_back(d);
-        // rsColorFrames.push_back(c);
-        // if (rsColorFrames.size() > 5)
-        // {
-        //     rsColorFrames.pop_front();
-        // }
-        // if (rsDepthFrames.size() > 5)
-        // {
-        //     rsDepthFrames.pop_front();
-        // }
         // Creating OpenCV Matrix from a color image
         rs2::frame color_frame = frame.rsColorFrames.back();
         rs2::frame depth_frame = frame.rsDepthFrames.back();
@@ -384,21 +365,6 @@ void Calibrator::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         }
         cv::Mat d8, d16, dColor;
         int DIS = 0;
-        // this->depth_frames = depthFrames;
-        // this->color_frames = colorFrames;
-        // if (frame.drop_init)
-        // {
-        //     frame.drop_count = 0;
-        // }
-
-        // FPS control
-        // int fps = param.FPS; // support 1,2,3,5,6,10,15,30
-        // int detect_rate = 30 / fps;
-        // if (frame.detect_init)
-        // {
-        //     frame.detect_count = detect_rate - 1;
-        // }
-        // cout << this->detect_count << endl;
 
         // 选取中心点
         deque<cv::Point2f> points;
@@ -460,6 +426,217 @@ void Calibrator::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         //     DIS = 1000;
         //     cout << "ERROR!-距离队列异常" << endl;
         // }
+
+        // show dcolor frame
+        imshow("Depth", depth * 15);
+
+        // Show color frame
+        imshow("Color", color);
+
+        // Exit on Esc key press
+        if (key1 == 27) // ESC
+        {
+            break;
+        }
+        // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
+    }
+}
+
+void Calibrator::rsCalibrationNew(int lens_num, Dis &dis, int64 &t0, Data &data)
+{
+    int key;
+    TransferData readData, writeData;
+    Motor motor;
+    Frame frame;
+    int round = 0;
+    // judge whether devices is exist or not
+    rs2::context ctx;
+    auto list = ctx.query_devices(); // Get a snapshot of currently connected devices
+    if (list.size() == 0)
+        throw std::runtime_error("No device detected. Is it plugged in?");
+    rs2::device dev = list.front();
+
+    rs2::frameset frames;
+    // Contruct a pipeline which abstracts the device
+    rs2::pipeline pipe;
+    // Create a configuration for configuring the pipeline with a non default profile
+    rs2::config cfg; // 创建一个以非默认配置的配置用来配置管道
+    rs2::sensor sen;
+    // Add desired streams to configuration
+    cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
+    cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
+
+    cout << "************** calibration initalized *****************" << endl;
+    cout << "现在进入校准程序,请旋转对焦环并带动电机齿轮，将相机对焦在彩色图像中 蓝色中心点 所瞄准的目标上,随后长按 g 采集" << endl;
+    cout << "至少采集5组数据校准(如0.6m、1m、2m、4m、6m),便于拟合函数,数据越多则拟合精度越高" << endl;
+    cout << "采集完毕后,长按 c 进行拟合" << endl;
+    cout << "按输入1并回车,开始校准" << endl;
+    cout << "ps1: 请关注图片上的距离值,单位为mm,若与实际情况偏差过大请重新校准" << endl;
+    cout << "ps2: 校准完毕后会自动退出,请重新启动程序;校准过程中按esc退出" << endl;
+    int key0;
+    while (key0 != 1)
+    {
+        cin >> key0;
+    }
+
+    pipe.start(cfg); // 指示管道使用所请求的配置启动流
+    sen = pipe.get_active_profile().get_device().query_sensors()[1];
+    // sen.set_option(RS2_OPTION_AUTO_EXPOSURE_PRIORITY, true);
+
+    while (key != 27)
+    {
+        int64 t1 = cv::getTickCount();
+        frame.rs_read(pipe, frames);
+        // Creating OpenCV Matrix from a color image
+        rs2::frame color_frame = frame.rsColorFrames.back();
+        rs2::frame depth_frame = frame.rsDepthFrames.back();
+
+        // 避免出现重复帧
+        double current_color_timestamp = color_frame.get_timestamp();
+        double current_depth_timestamp = depth_frame.get_timestamp();
+        if (current_color_timestamp == frame.last_color_timestamp)
+        {
+            continue;
+        }
+        if (current_depth_timestamp == frame.last_depth_timestamp)
+        {
+            continue;
+        }
+        frame.last_color_timestamp = current_color_timestamp;
+        frame.last_depth_timestamp = current_depth_timestamp;
+
+        cv::Mat color(cv::Size(param.RS_width, param.RS_height), CV_8UC3, (void *)color_frame.get_data(), cv::Mat::AUTO_STEP);
+        cv::Mat depth(cv::Size(param.RS_width, param.RS_height), CV_16U, (void *)depth_frame.get_data(), cv::Mat::AUTO_STEP);
+
+        if (param.INVERT_ON)
+        {
+            cv::waitKey(1);
+            cv::flip(color, color, 0);
+            cv::flip(depth, depth, 0);
+        }
+        cv::Mat d8, d16, dColor;
+        int DIS = 0;
+
+        // 选取中心点
+        deque<cv::Point2f> points;
+        cv::Point2f center(param.RS_width / 2, param.RS_height / 2);
+        points.push_back(center);
+
+        int center_dis = int(1000 * frame.rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
+        dis.disCalculate(center_dis, d16, points);
+        int current_pulse = motor.readPulse(data);
+
+        cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
+        cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);
+        switch (cal_points.size())
+        {
+        case 0:
+            cv::putText(color, "cal at 0.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 1:
+            cv::putText(color, "cal at 1.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 2:
+            cv::putText(color, "cal at 2.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 3:
+            cv::putText(color, "cal at 4.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 4:
+            cv::putText(color, "cal at 6.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 5:
+            cv::putText(color, "cal at 8.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 6:
+            cv::putText(color, "cal at nearest position", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+        case 7:
+            cv::putText(color, "press C to load param", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+            break;
+
+        default:
+            break;
+        }
+
+        char key1 = (char)cv::waitKey(1);
+        // cout << int(key1) << endl;
+        int x;
+        if (key1 == 'g')
+        {
+            cv::waitKey(1);
+            if (!cal_points.empty())
+            {
+                if (current_pulse != cal_points.back().y)
+                {
+                    cal_points.push_back(cv::Point2f(center_dis, current_pulse));
+                    cout << cal_points.back() << endl;
+                }
+            }
+            else
+            {
+                cal_points.push_back(cv::Point2f(center_dis, current_pulse));
+                cout << cal_points.back() << endl;
+            }
+        }
+        if (key1 == 'c')
+        {
+            int n = 5;
+            switch (-lens_num)
+            {
+            case 1:
+                for (int i = 0; i <= n; i++)
+                {
+                    lens_param.LENS_1.at<double>(0, i) = cal_points[i].y;
+                }
+                lens_param.LENS_1.at<double>(0, 6) = cal_points[6].x;
+                cout << "load-success" << endl;
+                break;
+            case 2:
+                for (int i = 0; i <= n; i++)
+                {
+                    lens_param.LENS_2.at<double>(0, i) = cal_points[i].y;
+                }
+                break;
+            case 3:
+                for (int i = 0; i <= n; i++)
+                {
+                    lens_param.LENS_3.at<double>(0, i) = cal_points[i].y;
+                }
+                break;
+            case 4:
+                for (int i = 0; i <= n; i++)
+                {
+                    lens_param.LENS_4.at<double>(0, i) = cal_points[i].y;
+                }
+                break;
+            case 5:
+                for (int i = 0; i <= n; i++)
+                {
+                    lens_param.LENS_5.at<double>(0, i) = cal_points[i].y;
+                }
+                break;
+            default:
+                break;
+            }
+            lens_param.write();
+            break;
+            // cal_points.push_back(cv::Point2f(15000, lens_param.INFINIT_PULSE));
+            // if (cal_points.size() >= 5)
+            // {
+            //     float current_A = lens_param.A;
+            //     this->polyFit(cal_points, 4, -lens_num); // 输入的lens_num为负值
+            //     if (current_A != lens_param.A)
+            //     {
+            //         cout << "校准完毕" << endl;
+            //         break;
+            //     }
+            // }
+            // else
+            // {
+            //     cout << "样本点过少，请继续添加" << endl;
+            // }
+        }
 
         // show dcolor frame
         imshow("Depth", depth * 15);

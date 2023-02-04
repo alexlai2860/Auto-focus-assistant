@@ -57,15 +57,16 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         int compensate;
         switch (lens_num)
         {
+        // 1:试验新的插值算法
         case 1:
-            compensate = lens_param.INIT_PULSE - lens_param.LENS_1.at<double>(0, 7);
+            // compensate = lens_param.INIT_PULSE - lens_param.LENS_1.at<double>(0, 7);
             lens_param.A = lens_param.LENS_1.at<double>(0, 0);
             lens_param.B = lens_param.LENS_1.at<double>(0, 1);
             lens_param.C = lens_param.LENS_1.at<double>(0, 2);
             lens_param.D = lens_param.LENS_1.at<double>(0, 3);
             lens_param.E = lens_param.LENS_1.at<double>(0, 4);
-            lens_param.F = lens_param.LENS_1.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_1.at<double>(0, 6);
+            lens_param.F = lens_param.LENS_1.at<double>(0, 5);
+            lens_param.INIT_PULSE = lens_param.LENS_1.at<double>(0,6);
             break;
         case 2:
             compensate = lens_param.INIT_PULSE - lens_param.LENS_2.at<double>(0, 7);

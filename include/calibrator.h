@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include"processor.h"
+#include "processor.h"
 
 using namespace std;
 
@@ -25,4 +25,5 @@ public:
     cv::Mat polyFit(vector<cv::Point2f> &, int, int);
     void astraCalibration(int, Dis &, int64 &, Data &);
     void rsCalibration(int, Dis &, int64 &, Data &);
+    void rsCalibrationNew(int, Dis &, int64 &, Data &);
 };
