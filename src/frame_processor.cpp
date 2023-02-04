@@ -169,34 +169,39 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
             DIS = Decider(face, dis, colorFrame.frame, d16, detect_count);
             // 计算差值，写入串口，同时进行异常处理
             int current_pulse = motor.readPulse(data);
-            int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
-            // cout << "current_pulse = " << current_pulse << endl;
-            // cout << "target_pulse = " << target_pulse << endl;
-            if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
-            {
-                int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-                int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-                if (target_pulse < max_pulse && target_pulse > min_pulse)
-                {
-                    if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
-                    {
-                        motor.writePulse((target_pulse - current_pulse), data);
-                        cout << "写入中" << endl;
-                    }
-                    else
-                    {
-                        cout << "ERROR!-当前值异常" << endl;
-                    }
-                }
-                else
-                {
-                    cout << "ERROR!-目标值异常" << endl;
-                }
-            }
-            else
-            {
-                cout << "ERROR!-差值过大" << endl;
-            }
+            // 方案二:使用插值法
+            int target_pulse = disInterPolater(DIS);
+            cv::putText(colorFrame.frame, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+
+            motor.writePulse((target_pulse - current_pulse), data);
+            // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
+            // // cout << "current_pulse = " << current_pulse << endl;
+            // // cout << "target_pulse = " << target_pulse << endl;
+            // if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
+            // {
+            //     int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+            //     int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
+            //     if (target_pulse < max_pulse && target_pulse > min_pulse)
+            //     {
+            //         if (current_pulse <= max_pulse + 50 && current_pulse >= min_pulse - 50)
+            //         {
+            //             motor.writePulse((target_pulse - current_pulse), data);
+            //             cout << "写入中" << endl;
+            //         }
+            //         else
+            //         {
+            //             cout << "ERROR!-当前值异常" << endl;
+            //         }
+            //     }
+            //     else
+            //     {
+            //         cout << "ERROR!-目标值异常" << endl;
+            //     }
+            // }
+            // else
+            // {
+            //     cout << "ERROR!-差值过大" << endl;
+            // }
 
             // show dcolor frame
             imshow("Depth (colored)", dColor);
@@ -626,9 +631,9 @@ int Frame::disInterPolater(int &dis)
         // 最近对焦0.5m
         target_pulse = 0;
     }
-    else if (dis < lens_param.INIT_PULSE)
+    else if (dis < lens_param.INIT_DIS)
     {
-        // 其实是init dis,先用着
+        // 小于最近对焦距离，设为0
         target_pulse = 0;
     }
     else if (dis < 1500 && dis >= 500)
@@ -651,9 +656,13 @@ int Frame::disInterPolater(int &dis)
     {
         target_pulse = lens_param.E + (lens_param.F - lens_param.E) * (dis - 6000) / 2000;
     }
+    else if (dis < 12000 && dis >= 8000)
+    {
+        target_pulse = lens_param.F + (lens_param.G - lens_param.F) * (dis - 8000) / 4000;
+    }
     else
     {
-        target_pulse = lens_param.F;
+        target_pulse = lens_param.G;
     }
 
     return target_pulse;

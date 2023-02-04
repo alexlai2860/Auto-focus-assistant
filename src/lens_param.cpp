@@ -20,15 +20,14 @@ LensParam::LensParam(const string &param)
     cv::FileStorage lens(param, cv::FileStorage::READ);
     assert(lens.isOpened());
 
-    lens["INIT_PULSE"] >> INIT_PULSE;
-    lens["INFINIT_PULSE"] >> INFINIT_PULSE;
-    lens["COMPENSATE"] >> COMPENSATE;
+    lens["INIT_DIS"] >> INIT_DIS;
     lens["A"] >> A;
     lens["B"] >> B;
     lens["C"] >> C;
     lens["D"] >> D;
     lens["E"] >> E;
     lens["F"] >> F;
+    lens["G"] >> G;
 
     lens["LENS_1"] >> LENS_1;
     lens["LENS_2"] >> LENS_2;
@@ -44,15 +43,14 @@ void LensParam::write()
 {
     cv::FileStorage lens(param_path, cv::FileStorage::WRITE);
     assert(lens.isOpened());
-    lens.write("INIT_PULSE", INIT_PULSE);
-    lens.write("INFINIT_PULSE", INFINIT_PULSE);
-    lens.write("COMPENSATE", COMPENSATE);
+    lens.write("INIT_DIS", INIT_DIS);
     lens.write("A", A);
     lens.write("B", B);
     lens.write("C", C);
     lens.write("D", D);
     lens.write("E", E);
     lens.write("F", F);
+    lens.write("G", G);
 
     lens.write("LENS_1", LENS_1);
     lens.write("LENS_2", LENS_2);

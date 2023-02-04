@@ -17,11 +17,8 @@ using namespace std;
 
 struct LensParam
 {
-    // 起点（最近对焦位置）和终点（最远对焦位置）坐标
-    int INIT_PULSE;
-    int INFINIT_PULSE;
-    // 起点脉冲补偿值
-    int COMPENSATE;
+    // 最近对焦距离
+    int INIT_DIS;
     // 拟合函数: Y（脉冲差） = AX^5 + BX^4 + CX^3 + DX^2 + EX +F (目前A不启用)
     double A;
     double B;
@@ -29,8 +26,9 @@ struct LensParam
     double D;
     double E;
     double F;
+    double G;
 
-    // 镜头数据矩阵（8*1），依次为 [A，B，C，D，E, F, DELTA, INIT_PULSE]
+    // 镜头数据矩阵（8*1），依次为 [A，B，C，D，E, F, G, INIT_DIS]
     cv::Mat LENS_1, LENS_2, LENS_3, LENS_4, LENS_5;
 
     string param_path;

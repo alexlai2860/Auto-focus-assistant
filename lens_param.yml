@@ -1,19 +1,18 @@
 %YAML:1.0
 ---
-INIT_PULSE: 1534
-INFINIT_PULSE: -3457
-COMPENSATE: 5241
+INIT_DIS: 1534
 A: -3.
 B: 16.
 C: -1667.
 D: -2301.
 E: -2874.
 F: -3361.
+G: -3450.
 LENS_1: !!opencv-matrix
    rows: 8
    cols: 1
    dt: d
-   data: [ -3., 16., -1667., -2301., -2874., -3361., 1534., 0. ]
+   data: [ -3., 16., -1667., -2301., -2874., -3361., -3450., 1534. ]
 LENS_2: !!opencv-matrix
    rows: 8
    cols: 1

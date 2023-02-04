@@ -37,16 +37,6 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
     //     continue;
     // }
     this->setZero(data);
-    // int compensate = init_pulse - lens_param.INIT_PULSE; // 补偿脉冲，用于矫正拟合函数的常数项
-    lens_param.INIT_PULSE = 0;
-    // lens_param.INFINIT_PULSE = lens_param.INFINIT_PULSE + compensate;
-    // lens_param.D_1 = lens_param.D_1 + compensate;
-    // lens_param.COMPENSATE = compensate;
-    // lens_param.write();
-
-    // cv::waitKey(3); 2, param.RS_height / 2);
-    // cout << "distance : " << dis_to_center << endl;
-    // this->writePulse(3000, data);
 
     key = -1;
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
@@ -57,56 +47,56 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         int compensate;
         switch (lens_num)
         {
-        // 1:试验新的插值算法
+        // 2023.3.4：改用新的插值算法
         case 1:
-            // compensate = lens_param.INIT_PULSE - lens_param.LENS_1.at<double>(0, 7);
             lens_param.A = lens_param.LENS_1.at<double>(0, 0);
             lens_param.B = lens_param.LENS_1.at<double>(0, 1);
             lens_param.C = lens_param.LENS_1.at<double>(0, 2);
             lens_param.D = lens_param.LENS_1.at<double>(0, 3);
             lens_param.E = lens_param.LENS_1.at<double>(0, 4);
             lens_param.F = lens_param.LENS_1.at<double>(0, 5);
-            lens_param.INIT_PULSE = lens_param.LENS_1.at<double>(0,6);
+            lens_param.G = lens_param.LENS_1.at<double>(0, 6);
+            lens_param.INIT_DIS = lens_param.LENS_1.at<double>(0, 7);
             break;
         case 2:
-            compensate = lens_param.INIT_PULSE - lens_param.LENS_2.at<double>(0, 7);
             lens_param.A = lens_param.LENS_2.at<double>(0, 0);
             lens_param.B = lens_param.LENS_2.at<double>(0, 1);
             lens_param.C = lens_param.LENS_2.at<double>(0, 2);
             lens_param.D = lens_param.LENS_2.at<double>(0, 3);
             lens_param.E = lens_param.LENS_2.at<double>(0, 4);
-            lens_param.F = lens_param.LENS_2.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_2.at<double>(0, 6);
+            lens_param.F = lens_param.LENS_2.at<double>(0, 5);
+            lens_param.G = lens_param.LENS_2.at<double>(0, 6);
+            lens_param.INIT_DIS = lens_param.LENS_2.at<double>(0, 7);
             break;
         case 3:
-            compensate = lens_param.INIT_PULSE - lens_param.LENS_3.at<double>(0, 7);
             lens_param.A = lens_param.LENS_3.at<double>(0, 0);
             lens_param.B = lens_param.LENS_3.at<double>(0, 1);
             lens_param.C = lens_param.LENS_3.at<double>(0, 2);
             lens_param.D = lens_param.LENS_3.at<double>(0, 3);
             lens_param.E = lens_param.LENS_3.at<double>(0, 4);
-            lens_param.F = lens_param.LENS_3.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_3.at<double>(0, 6);
+            lens_param.F = lens_param.LENS_3.at<double>(0, 5);
+            lens_param.G = lens_param.LENS_3.at<double>(0, 6);
+            lens_param.INIT_DIS = lens_param.LENS_3.at<double>(0, 7);
             break;
         case 4:
-            compensate = lens_param.INIT_PULSE - lens_param.LENS_4.at<double>(0, 7);
             lens_param.A = lens_param.LENS_4.at<double>(0, 0);
             lens_param.B = lens_param.LENS_4.at<double>(0, 1);
             lens_param.C = lens_param.LENS_4.at<double>(0, 2);
             lens_param.D = lens_param.LENS_4.at<double>(0, 3);
             lens_param.E = lens_param.LENS_4.at<double>(0, 4);
-            lens_param.F = lens_param.LENS_4.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_4.at<double>(0, 6);
+            lens_param.F = lens_param.LENS_4.at<double>(0, 5);
+            lens_param.G = lens_param.LENS_4.at<double>(0, 6);
+            lens_param.INIT_DIS = lens_param.LENS_4.at<double>(0, 7);
             break;
         case 5:
-            compensate = lens_param.INIT_PULSE - lens_param.LENS_5.at<double>(0, 7);
             lens_param.A = lens_param.LENS_5.at<double>(0, 0);
             lens_param.B = lens_param.LENS_5.at<double>(0, 1);
             lens_param.C = lens_param.LENS_5.at<double>(0, 2);
             lens_param.D = lens_param.LENS_5.at<double>(0, 3);
             lens_param.E = lens_param.LENS_5.at<double>(0, 4);
-            lens_param.F = lens_param.LENS_5.at<double>(0, 5) + compensate;
-            lens_param.INFINIT_PULSE = lens_param.INIT_PULSE + lens_param.LENS_5.at<double>(0, 6);
+            lens_param.F = lens_param.LENS_5.at<double>(0, 5);
+            lens_param.G = lens_param.LENS_5.at<double>(0, 6);
+            lens_param.INIT_DIS = lens_param.LENS_5.at<double>(0, 7);
             break;
         default:
             break;
@@ -120,39 +110,6 @@ int Motor::init(Data &data, TransferData &readData, TransferData &writeData)
         cin >> key;
         lens_num = key;
         key = -1;
-        cout << "请将对焦环旋转至最远距离处 随后输入1并回车" << endl;
-        while (key != 1)
-        {
-            cin >> key;
-        }
-        int infinit_pulse = this->readPulse(data);
-        lens_param.INFINIT_PULSE = infinit_pulse;
-        int delta = infinit_pulse - lens_param.INIT_PULSE;
-        switch (lens_num)
-        {
-        case 1:
-            lens_param.LENS_1.at<double>(0, 6) = delta;
-            lens_param.LENS_1.at<double>(0, 7) = 0;
-            break;
-        case 2:
-            lens_param.LENS_2.at<double>(0, 6) = delta;
-            lens_param.LENS_2.at<double>(0, 7) = 0;
-            break;
-        case 3:
-            lens_param.LENS_3.at<double>(0, 6) = delta;
-            lens_param.LENS_3.at<double>(0, 7) = 0;
-            break;
-        case 4:
-            lens_param.LENS_4.at<double>(0, 6) = delta;
-            lens_param.LENS_4.at<double>(0, 7) = 0;
-            break;
-        case 5:
-            lens_param.LENS_5.at<double>(0, 6) = delta;
-            lens_param.LENS_5.at<double>(0, 7) = 0;
-            break;
-        default:
-            break;
-        }
         lens_param.write();
         return -lens_num; // 此时进入拟合函数
     }
@@ -193,7 +150,7 @@ void Motor::writePulse(int pulse_num, Data &data)
     // data.write(3, writeData); // 打开使能
     // cv::waitKey(3);
     // step1 确定正方向和旋转方向(待观察)
-    bool positive_direction = (lens_param.INFINIT_PULSE - lens_param.INIT_PULSE > 0);
+    bool positive_direction = (lens_param.G - lens_param.A > 0);
     bool direction = 0;
     if (pulse_num < 0)
     {
