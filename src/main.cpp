@@ -19,6 +19,9 @@ using namespace std;
 int main()
 {
     int64 t0 = cv::getTickCount();
+    rs2::region_of_interest roi;
+    roi.max_x = 1;
+    
 
     Face face1;
     Dis dis1;

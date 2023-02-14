@@ -115,8 +115,21 @@ bool Face::faceDetect(cv::Mat &color_frame, cv::Mat &faces, int &count)
 
 bool Face::isValidFace(cv::Mat &faces, int i)
 {
+    // 筛除面积过大/处于ROI区域外的faces
     int frame_area = param.RS_height * param.RS_width;
-    if(int(faces.at<float>(i, 2)) * int(faces.at<float>(i, 3)) > 0.25 * frame_area)
+    cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
+    cv::Point2i ROI(param.RS_width / 2, param.RS_height / 2);
+    int border_x = (param.RS_width - ROI.x) / 2;
+    int border_y = (param.RS_height - ROI.y) / 2;
+    if (int(faces.at<float>(i, 2)) * int(faces.at<float>(i, 3)) > 0.25 * frame_area)
+    {
+        return 0;
+    }
+    else if (center.x < param.RS_width - border_x - ROI.x || center.x > param.RS_width - border_x)
+    {
+        return 0;
+    }
+    else if (center.y < param.RS_height - border_y - ROI.y || center.y > param.RS_height - border_y)
     {
         return 0;
     }

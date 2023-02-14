@@ -29,6 +29,7 @@ struct LensParam
     double G;
 
     // 镜头数据矩阵（8*1），依次为 [A，B，C，D，E, F, G, INIT_DIS]
+    // 依次为 0.5m 1.5m 2.5m 4m 6m 8m 无限远 处的脉冲值 和最近对焦距离
     cv::Mat LENS_1, LENS_2, LENS_3, LENS_4, LENS_5;
 
     string param_path;

@@ -502,10 +502,13 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
         bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
         if (detected)
         {
-            // 若检测到人脸：锁定人脸（todo：多人脸策略）
-            situation = 1;
-            cout << "----1----" << endl;
-            drop_init = 1; // 重新初始化掉帧计算器
+            if (!face.face_center.empty())
+            {
+                // 若检测到人脸：锁定人脸（todo：多人脸策略）
+                situation = 1;
+                cout << "----1----" << endl;
+                drop_init = 1; // 重新初始化掉帧计算器
+            }
         }
         else
         {
@@ -586,7 +589,9 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
         if (param.cam_module == REALSENSE)
         {
             // situation=1:锁定队列末尾的面部
+            cout << "s1-1" << endl;
             float center_y = face.face_center.back().y;
+            cout << "s1-2" << endl;
             if (param.INVERT_ON)
             {
                 center_y = param.RS_height - face.face_center.back().y;
@@ -595,6 +600,7 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
             // 对realsense相机来说，discalculate并不承担计算距离的功能
             // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
             DIS = dis.disCalculate(face_dis, d16, face.face_center);
+            cout << "s1-3" << endl;
             break;
         }
         else
