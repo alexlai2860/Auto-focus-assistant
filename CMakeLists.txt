@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.1)
 
-project (Auto Focus Assistant)
+project (AutoFocusAssistant)
 
 set (EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 

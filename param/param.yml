@@ -1,0 +1,45 @@
+%YAML:1.0
+---
+# ****************面部识别相关*************
+# 每秒钟更新面部位置的帧数，当处理器性能较低或目标移动较慢时，可以调低（范围：1-30）（60帧时实际值需要*2，以此类推）
+FPS: 15
+# 距离队列(帧)
+DIS_DEQUE: 150
+# 最大面部数量
+FACE_DEQUE: 25
+# 移动判别(mm)
+MOVE_JUDGE: 25
+
+# ****************对焦逻辑相关*************
+# 掉帧切换目标阈值
+MAX_DROP_FRAME: 10
+# 掉帧后的处理模式(1:中心点对焦/2:中心区域对焦)
+DROP_PROCESS_MODE: 1
+
+# ****************电机控制相关*************
+# 读取指令waitkey时间(ms)
+WAIT_TIME: 4
+# 电机速度(0-255)
+SPEED: 20
+# 电机加速度(0-255)
+A: 255
+
+# ****************深度相机相关*************
+# 相机型号(0:astra/1:realsense)
+cam_module: 1
+# 是否倒置(0:否/1:是)
+INVERT_ON: 0
+# 是否开启ROI区域(0:否/1:是)
+ROI_ON: 0
+# astra 分辨率
+ASTRA_width: 640
+ASTRA_height: 480
+# realsense 分辨率
+RS_width: 848
+RS_height: 480
+# realsense 帧率(建议在低光照环境下降低帧率，否则面部识别容易受到噪点干扰)
+RS_fps: 30
+# width补偿量
+width_compensate: 40
+# height补偿量
+height_compensate: 20

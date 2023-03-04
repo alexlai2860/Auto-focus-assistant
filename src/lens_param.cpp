@@ -59,4 +59,4 @@ void LensParam::write()
     lens.write("LENS_5", LENS_5);
 }
 
-struct LensParam lens_param("../lens_param.yml");
+struct LensParam lens_param("../param/lens_param.yml");

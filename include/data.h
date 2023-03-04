@@ -11,7 +11,12 @@
 
 #pragma once
 
-#include "protocol.h"
+// #include "protocol.h"
+
+#include <iomanip>
+#include <vector>
+#include "TransferData.h"
+#include "SerialPort.h"
 #include "param.h"
 
 #pragma pack(1)
@@ -74,8 +79,43 @@ struct ReceivePulse
 #pragma pack()
 // __attribute__((packed));
 
+// // stepping motor data
+// class Data : public protocol
+// {
+// private:
+//     SendData1 __send_data1; // 视觉发送数据
+//     SendData2 __send_data2;
+//     SendData3 __send_data3;
+//     SendData4 __send_data4;
+//     ReceivePulse __receive_data; // 视觉接收数据
+
+//     TransferData __last_data; // 上一帧的传递数据
+
+// public:
+//     /**
+//      * @brief 构造函数
+//      */
+//     Data() : protocol() {}
+
+//     /**
+//      * @brief 读取串口
+//      *
+//      * @param head 头帧
+//      * @param tail 尾帧
+//      */
+//     TransferData read(uint8_t head, uint8_t tail) override;
+
+//     /**
+//      * @brief 写入串口
+//      *
+//      * @param transfer_data 传递数据
+//      */
+//     void write(int mode, const TransferData &transfer_data) override;
+// };
+
+
 // stepping motor data
-class Data : public protocol
+class Data
 {
 private:
     SendData1 __send_data1; // 视觉发送数据
@@ -83,14 +123,16 @@ private:
     SendData3 __send_data3;
     SendData4 __send_data4;
     ReceivePulse __receive_data; // 视觉接收数据
-
     TransferData __last_data; // 上一帧的传递数据
+
+    bool __is_init;    // 串口初始化情况
+    SerialPort __port; // 串口对象
 
 public:
     /**
      * @brief 构造函数
      */
-    Data() : protocol() {}
+    Data() : __is_init(false) {}
 
     /**
      * @brief 读取串口
@@ -98,12 +140,12 @@ public:
      * @param head 头帧
      * @param tail 尾帧
      */
-    TransferData read(uint8_t head, uint8_t tail) override;
+    TransferData read(uint8_t head, uint8_t tail);
 
     /**
      * @brief 写入串口
      *
      * @param transfer_data 传递数据
      */
-    void write(int mode, const TransferData &transfer_data) override;
+    void write(int mode, const TransferData &transfer_data);
 };

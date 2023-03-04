@@ -41,4 +41,4 @@ Param::Param(const string &param)
     arm["width_compensate"] >> width_compensate;
     arm["height_compensate"] >> height_compensate;
 };
-struct Param param("../param.yml");
+struct Param param("../param/param.yml");
