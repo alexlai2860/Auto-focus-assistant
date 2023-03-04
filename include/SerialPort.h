@@ -27,9 +27,6 @@ public:
   void close(); // 关闭串口
   inline bool isOpen() { return is_open; };
 
-  // TODO 使用头尾校验无法实现透明传输
-  // 需要改进串口协议
-
   /**
    * @brief 从串口读取结构体
    * 
