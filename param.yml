@@ -5,14 +5,14 @@
 FPS: 15
 # 距离队列(帧)
 DIS_DEQUE: 150
-# 面部队列(帧)
-FACE_DEQUE: 15
+# 最大面部数量
+FACE_DEQUE: 25
 # 移动判别(mm)
 MOVE_JUDGE: 25
 
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值
-MAX_DROP_FRAME: 20
+MAX_DROP_FRAME: 10
 # 掉帧后的处理模式(1:中心点对焦/2:中心区域对焦)
 DROP_PROCESS_MODE: 1
 

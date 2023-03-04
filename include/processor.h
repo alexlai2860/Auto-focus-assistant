@@ -35,6 +35,7 @@ using namespace std;
 class Face
 {
 public:
+    int target_face_label;
     deque<cv::Point2f> face_center;
     cv::Mat detected_faces;
     bool faceDetect(cv::Mat &, cv::Mat &, int &);

@@ -580,8 +580,14 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
     {
     case 0:
     {
-        // situation=1:进入掉帧处理
+        // situation=0:进入掉帧处理
         this->dropProcess(param.DROP_PROCESS_MODE, dis, d16);
+        if (param.DROP_PROCESS_MODE == 1 && param.cam_module == REALSENSE)
+        {
+            cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+        }
+        DIS = dis.target_dis.back();
+        face.face_center.clear();
         break;
     }
     case 1:
@@ -589,18 +595,25 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
         if (param.cam_module == REALSENSE)
         {
             // situation=1:锁定队列末尾的面部
-            cout << "s1-1" << endl;
-            float center_y = face.face_center.back().y;
-            cout << "s1-2" << endl;
-            if (param.INVERT_ON)
+            for (int i = 0; i < face.face_center.size(); i++)
             {
-                center_y = param.RS_height - face.face_center.back().y;
+                DIS = 20000;
+                float center_y = face.face_center.at(i).y;
+                float center_x = face.face_center.at(i).x;
+                if (param.INVERT_ON)
+                {
+                    center_y = param.RS_height - face.face_center.at(i).y;
+                }
+                int face_dis = int(1000 * rsDepthFrames.back().get_distance(center_x, center_y));
+                // 对realsense相机来说，discalculate并不承担计算距离的功能
+                // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+                int current_dis = dis.disCalculate(face_dis, d16, face.face_center);
+                if (current_dis < DIS)
+                {
+                    DIS = current_dis;
+                    face.target_face_label = i;
+                }
             }
-            int face_dis = int(1000 * rsDepthFrames.back().get_distance(face.face_center.back().x, center_y));
-            // 对realsense相机来说，discalculate并不承担计算距离的功能
-            // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-            DIS = dis.disCalculate(face_dis, d16, face.face_center);
-            cout << "s1-3" << endl;
             break;
         }
         else
@@ -614,11 +627,23 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
         break;
     }
 
-    if (!dis.target_dis.empty())
+    if (DIS != 0)
     {
-        DIS = dis.target_dis.back();
-        cout << "DIS" << DIS << endl;
-        cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        if (DIS < 30000)
+        {
+            // DIS = dis.target_dis.back();
+            // cout << "DIS" << DIS << endl;
+            if (!face.face_center.empty())
+            {
+                cv::circle(color, face.face_center.at(face.target_face_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+            }
+            cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        }
+        else
+        {
+            DIS = 30000;
+            cout << "ERROR!-距离过远" << endl;
+        }
     }
     else
     {
