@@ -13,6 +13,7 @@
 
 // #include "face_process.h"
 #include "data.h"
+#include "stepping_motor.h"
 #include "KalmanFilterX.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
@@ -35,12 +36,16 @@ using namespace std;
 class Face
 {
 public:
+    Face() { cout << "face-constructor" << endl; }
+    ~Face() { cout << "face-destructor" << endl; }
     int target_face_label;
     deque<cv::Point2f> face_center;
     cv::Mat detected_faces;
     bool faceDetect(cv::Mat &, cv::Mat &, int &);
     bool isValidFace(cv::Mat &, int);
 };
+
+using detect_ptr = shared_ptr<Face>;
 
 class Dis
 {
@@ -60,14 +65,14 @@ public:
     bool movDecider(int64 &, deque<cv::Point2f> &);
 };
 
-class Motor
-{
-public:
-    int init(Data &, TransferData &, TransferData &);
-    int readPulse(Data &);
-    void writePulse(int, Data &);
-    void setZero(Data &);
-};
+// class Motor
+// {
+// public:
+//     int init(Data &, TransferData &, TransferData &);
+//     int readPulse(Data &);
+//     void writePulse(int, Data &);
+//     void setZero(Data &);
+// };
 
 struct AstraFrame
 {
@@ -85,6 +90,9 @@ protected:
     int Decider(Face &, Dis &, cv::Mat &, cv::Mat &, int &);
     int disInterPolater(int &);
     void dropProcess(int, Dis &, cv::Mat &);
+
+    detect_ptr __detector;  // test
+    motor_ptr __motor;
 
 public:
     double last_color_timestamp;

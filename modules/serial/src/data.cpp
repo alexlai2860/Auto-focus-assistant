@@ -51,7 +51,7 @@ void Data::write(int mode, const TransferData &transfer_data)
     {
     case 1:
     {
-        // 目前仅用于 set zero
+        // 目前仅用于 set zero, 保持默认值即可
         // __send_data1.activate_command_h = transfer_data.command1;
         // __send_data1.activate_command_l = transfer_data.command2;
         __port.writeStruct<SendData1>(__send_data1);

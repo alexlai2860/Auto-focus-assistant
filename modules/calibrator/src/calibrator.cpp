@@ -13,6 +13,46 @@
 #include "lens_param.h"
 #include "param.h"
 
+int Calibrator::calibratorInit(int64 &t0)
+{
+    Data data;
+    TransferData readData, writeData;
+    Dis dis1;
+    int lens_num = __motor->init(data, readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
+    if (lens_num < 0)
+    {
+        // 创建新镜头函数
+        // todo:读取多点电机数据与距离数据，拟合曲线，储存为图片格式
+        if (param.cam_module == ASTRA)
+        {
+            astraCalibration(lens_num, dis1, t0, data);
+        }
+        if (param.cam_module == REALSENSE)
+        {
+            // cal.rsCalibration(lens_num, dis1, t0, data);
+            rsCalibrationNew(lens_num, dis1, t0, data);
+        }
+        // 最后对lens_num取反，传入processor
+        cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
+        int key;
+        while (key != 1)
+        {
+            cin >> key;
+        }
+        lens_num = -lens_num;
+        return lens_num;
+    }
+    return lens_num;
+}
+
+/**
+ * @brief 曲线拟合函数，已弃用
+ * 
+ * @param points 
+ * @param n 
+ * @param lens_num 
+ * @return cv::Mat 
+ */
 cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
 {
     // test - 输入拟合点
@@ -107,7 +147,7 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     std::condition_variable dataReady;
     std::atomic<bool> isFinish;
     TransferData readData, writeData;
-    Motor motor;
+    // Motor motor;
     int round = 0;
     cout << "************** calibration initalized *****************" << endl;
     cout << "现在进入校准程序,请旋转对焦环并带动电机齿轮，将相机对焦在彩色图像中 蓝色中心点 所瞄准的目标上,随后长按 g 采集" << endl;
@@ -227,7 +267,7 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
                 points.push_back(center);
 
                 int center_dis = dis.disCalculate(0, d16, points);
-                int current_pulse = motor.readPulse(data);
+                int current_pulse = __motor->readPulse(data);
 
                 cv::putText(colorFrame.frame, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
                 // cout << "center_dis : " << center_dis << endl;
@@ -446,7 +486,7 @@ void Calibrator::rsCalibrationNew(int lens_num, Dis &dis, int64 &t0, Data &data)
 {
     int key;
     TransferData readData, writeData;
-    Motor motor;
+    // Motor motor;
     Frame frame;
     int round = 0;
     // judge whether devices is exist or not
@@ -524,7 +564,7 @@ void Calibrator::rsCalibrationNew(int lens_num, Dis &dis, int64 &t0, Data &data)
 
         int center_dis = int(1000 * frame.rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
         dis.disCalculate(center_dis, d16, points);
-        int current_pulse = motor.readPulse(data);
+        int current_pulse = __motor->readPulse(data);
 
         cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
         cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);

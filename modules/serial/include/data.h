@@ -45,7 +45,7 @@ struct SendData3
 {
     uint8_t add = 0x01;
     uint8_t change_command = 0xF3;
-    uint8_t change_content = 0x00; // 0为不使能，1为使能
+    uint8_t change_content; // 0为不使能，1为使能
     uint8_t ver = 0x6B;
 };
 #pragma pack()
@@ -55,12 +55,12 @@ struct SendData4
 {
     uint8_t add = 0x01;
     uint8_t byte1 = 0xFD;                // 位置模式控制
-    uint8_t direction_and_speed1 = 0x14; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）
-    uint8_t direction_and_speed2 = 0xFF;
+    uint8_t direction_and_speed1; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）
+    uint8_t direction_and_speed2;
     uint8_t accelerated_speed = (uint8_t)param.A; // 关闭曲线加减速
-    uint8_t pulse_h = 0x00;                       // 脉冲数，共三个字节
-    uint8_t pulse_m = 0x00;
-    uint8_t pulse_l = 0x80;
+    uint8_t pulse_h;                       // 脉冲数，共三个字节
+    uint8_t pulse_m;
+    uint8_t pulse_l;
     uint8_t ver = 0x6B;
 };
 #pragma pack()

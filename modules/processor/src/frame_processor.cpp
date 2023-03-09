@@ -36,7 +36,7 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     std::condition_variable dataReady;
     std::atomic<bool> isFinish;
     TransferData readData, writeData;
-    Motor motor;
+    // Motor motor;
     int round = 0;
 
     isFinish = false;
@@ -168,12 +168,13 @@ void Frame::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 
             DIS = Decider(face, dis, colorFrame.frame, d16, detect_count);
             // 计算差值，写入串口，同时进行异常处理
-            int current_pulse = motor.readPulse(data);
+            __motor = make_shared<SteppingMotor>();
+            int current_pulse = __motor->readPulse(data);
             // 方案二:使用插值法
             int target_pulse = disInterPolater(DIS);
             cv::putText(colorFrame.frame, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
-            motor.writePulse((target_pulse - current_pulse), data);
+            __motor->writePulse((target_pulse - current_pulse), data);
             // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
             // // cout << "current_pulse = " << current_pulse << endl;
             // // cout << "target_pulse = " << target_pulse << endl;
@@ -233,7 +234,7 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
 {
     int key;
     TransferData readData, writeData;
-    Motor motor;
+    // Motor motor;
     int round = 0;
     // judge whether devices is exist or not
     rs2::context ctx;
@@ -252,7 +253,7 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
     cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
     cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
 
-    std::ifstream file("../test2.json");
+    std::ifstream file("../../../param/test2.json");
     if (file.good())
     {
         std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -337,43 +338,16 @@ void Frame::rsProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
         DIS = Decider(face, dis, color, d16, detect_count);
 
         // 计算差值，写入串口，同时进行异常处理
-        int current_pulse = motor.readPulse(data);
+        // int current_pulse = motor.readPulse(data);
+        __motor = make_shared<SteppingMotor>();
+        int current_pulse = __motor->readPulse(data);
         // 方案一:使用四次函数拟合，五次函数不稳定，A暂时废弃
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
         // 方案二:使用插值法
         int target_pulse = disInterPolater(DIS);
         cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
-        motor.writePulse((target_pulse - current_pulse), data);
-        // cout << "current_pulse = " << current_pulse << endl;
-        // cout << "target_pulse = " << target_pulse << endl;
-        // if (abs(target_pulse - current_pulse) < abs(lens_param.INFINIT_PULSE - lens_param.INIT_PULSE))
-        // {
-        //     int min_pulse = (lens_param.INFINIT_PULSE < lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-        //     int max_pulse = (lens_param.INFINIT_PULSE > lens_param.INIT_PULSE ? lens_param.INFINIT_PULSE : lens_param.INIT_PULSE);
-        //     cv::putText(color, cv::format("%d", min_pulse), cv::Point2i(15, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        //     cv::putText(color, cv::format("%d", max_pulse), cv::Point2i(200, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        //     if (target_pulse < max_pulse + 50 && target_pulse > min_pulse - 50)
-        //     {
-        //         if (current_pulse <= max_pulse + 100 && current_pulse >= min_pulse - 100)
-        //         {
-        //             motor.writePulse((target_pulse - current_pulse), data);
-        //             cout << "写入中" << endl;
-        //         }
-        //         else
-        //         {
-        //             cout << "ERROR!-当前值异常" << endl;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         cout << "ERROR!-目标值异常" << endl;
-        //     }
-        // }
-        // else
-        // {
-        //     cout << "ERROR!-差值过大" << endl;
-        // }
+        __motor->writePulse((target_pulse - current_pulse), data);
 
         // show dcolor frame
         imshow("Depth", depth * 15);
@@ -491,6 +465,16 @@ void Frame::dropProcess(int mode, Dis &dis, cv::Mat &d16)
     }
 }
 
+/**
+ * @brief 判断进入掉帧模式(即中心或区域对焦模式)/物体追踪模式
+ * 
+ * @param face 
+ * @param dis 
+ * @param color 
+ * @param d16 
+ * @param detect_count 
+ * @return int 
+ */
 int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &detect_count)
 {
     // 复杂的判断过程(待简化)
@@ -653,6 +637,12 @@ int Frame::Decider(Face &face, Dis &dis, cv::Mat &color, cv::Mat &d16, int &dete
     return DIS;
 }
 
+/**
+ * @brief 内插法计算目标脉冲
+ * 
+ * @param dis 
+ * @return int 
+ */
 int Frame::disInterPolater(int &dis)
 {
     int target_pulse = 0;
