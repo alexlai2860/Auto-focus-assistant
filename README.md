@@ -32,21 +32,25 @@
 #### main<br>
 + main函数：程序入口
 #### controller/控制器<br>
-+ 控制程序运行,负责切换校准模式和工作模式
++ 控制程序运行,负责切换校准模式和对焦模式
+#### CalController/校准模式控制器<br>
++ 在校准模式下，控制各个modules
+#### FocusController/对焦模式控制器<br>
++ 在对焦模式下，控制各个modules
 
 ### 核心层<br>
-#### modules/核心模块<br>
-+ 分为以下子模块
-##### sub_controller/子控制器<br>
-+ 原帧处理器，负责控制各个子模块的调用
-##### calibrator/校准器<br>
-+ 负责对镜头进行校准，建立查找表并写入lens_param
-##### processor/处理器<br>
-+ 负责处理读取到的信息流，包括以下几个部分
-    + face_processor/面部处理器：用于面部识别
-    + dis_processor/距离处理器：用于距离测算
-    + motor_processor/马达处理器：封装了和电机驱动通信的相关操作
-##### reader/读取器<br>
+#### modules/核心模块:分为以下子模块<br>
+#### calibrator/校准器<br>
++ 负责对镜头进行校准，建立查找表并写入lens_param.yml
+#### detector/识别器<br>
++ 负责识别目标
+    + FaceDetector:基于卷积神经网络的面部识别
+    + 后续计划添加BodyDetector等目标检测算法
+#### dis/距离获取器<br>
++ 负责距离的解算
+#### motor/电机驱动器<br>
++ 负责与电机间通信
+#### reader/读取器<br>
 + 负责从深度相机读取彩色视频流和深度信息流
 + 奥比中光相机和Realsense相机分别拥有不同的Reader
 
@@ -80,6 +84,7 @@ make
 
 待完善<br>
 
-### 更新记录
-<br>
-
+### 重要更新<br>
++ 2023.3.12
+取消processor,将原有的processor模块分散至dis、motor、detector、reader、tools等模块<br>
+将原FrameProcessor改为FocusController,从原Calibrator分出CalController,加入顶层结构<br>

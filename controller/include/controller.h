@@ -9,14 +9,16 @@
  *
  */
 
-#include "processor.h"
-#include "calibrator.h"
+#include "CalController.h"
+#include "FocusController.h"
+// #include "calibrator.h"
 
 class Controller
 {
 private:
-    motor_ptr __motor;
-    cal_ptr __calibrator;
+    // focus_ptr __focus = make_shared<Frame>();
+    // cal_ptr __calibrator = make_shared<Calibrator>();
+    subcontrol_ptr __controller;
 
 public:
     void control(int64 &);

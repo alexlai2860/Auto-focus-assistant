@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "processor.h"
+#include "dis.h"
 
 using namespace std;
 

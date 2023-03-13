@@ -7,5 +7,7 @@ project (AutoFocusAssistant)
 # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 # set (CMAKE_BUILD_TYPE Debug)
 
+add_subdirectory(param)
+add_subdirectory(serial)
 add_subdirectory(modules)
 add_subdirectory(controller)

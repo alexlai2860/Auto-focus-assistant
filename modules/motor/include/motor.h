@@ -10,7 +10,7 @@
  */
 #pragma once
 
-#include "data.h"
+#include "MotorData.h"
 
 class Motor
 {
