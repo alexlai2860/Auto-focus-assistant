@@ -22,14 +22,11 @@ bool RsReader::camInit()
         throw std::runtime_error("No device detected. Is it plugged in?");
     rs2::device dev = list.front();
 
-    // Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg; // 创建一个以非默认配置的配置用来配置管道
-    rs2::sensor sen;
     // Add desired streams to configuration
     cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
     cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
 
-    std::ifstream file("../../../param/test2.json");
+    std::ifstream file("../param/test2.json");
     if (file.good())
     {
         std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -44,7 +41,6 @@ bool RsReader::camInit()
     }
     else
     {
-
         cout << "json load fail " << endl;
     }
     spat_filter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);

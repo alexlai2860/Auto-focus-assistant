@@ -33,10 +33,12 @@
 + main函数：程序入口
 #### controller/控制器<br>
 + 控制程序运行,负责切换校准模式和对焦模式
+#### SubController/子控制器<br>
++ 以下两个控制器的基类
 #### CalController/校准模式控制器<br>
-+ 在校准模式下，控制各个modules
++ 在校准模式下，调用控制各个modules
 #### FocusController/对焦模式控制器<br>
-+ 在对焦模式下，控制各个modules
++ 在对焦模式下，调用控制各个modules
 
 ### 核心层<br>
 #### modules/核心模块:分为以下子模块<br>

@@ -18,6 +18,8 @@ private:
     rs2::frame depth_frame;
     rs2::frameset frames;
     rs2::pipeline pipe;
+    rs2::config cfg; // 创建一个以非默认配置的配置用来配置管道
+    rs2::sensor sen;
 
     // double last_color_timestamp;
     // double last_depth_timestamp;

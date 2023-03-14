@@ -21,14 +21,17 @@ protected:
     vector<cv::Mat> function;
     vector<cv::Point2f> cal_points;
 
-    motor_ptr __motor = make_shared<SteppingMotor>();
+    // motor_ptr __motor = make_shared<SteppingMotor>();
 
 public:
-    int calibratorInit(int64 &);
+    int calibratorInit(int64 &, motor_ptr &);
+    bool calibrate(int, Dis &, motor_ptr &, Data &, rs2::depth_frame &, cv::Mat &);
+
     cv::Mat polyFit(vector<cv::Point2f> &, int, int);
     void astraCalibration(int, Dis &, int64 &, Data &);
     void rsCalibration(int, Dis &, int64 &, Data &);
     void rsCalibrationNew(int, Dis &, int64 &, Data &);
+
 };
 
 using cal_ptr = shared_ptr<Calibrator>;
