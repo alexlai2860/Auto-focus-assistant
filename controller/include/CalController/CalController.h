@@ -22,8 +22,8 @@ protected:
 public:
     int CalInit(int64 &) override;
     bool FocusInit(int64 &, int &) override;
-    void astraCalibration(int, Dis &, int64 &, Data &);
-    void rsCalibration(int, Dis &, int64 &, Data &);
+    void astraCalibration(int, int64 &);
+    void rsCalibration(int, int64 &);
 };
 
 // using cal_ptr = shared_ptr<Calibrator>;

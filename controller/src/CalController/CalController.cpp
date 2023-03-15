@@ -19,22 +19,22 @@ bool CalController::FocusInit(int64 &t0, int &lens_num) { return 0; }
 
 int CalController::CalInit(int64 &t0)
 {
-    Data data;
     TransferData readData, writeData;
-    Dis dis1;
     __motor = make_shared<SteppingMotor>();
-    int lens_num = __motor->init(data, readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
+
+    // 区分当前镜头，并初始化电机位置
+    int lens_num = __motor->init(readData, writeData);
+
     if (lens_num < 0)
     {
         // 创建新镜头函数
         if (param.cam_module == ASTRA)
         {
-            astraCalibration(lens_num, dis1, t0, data);
+            astraCalibration(lens_num, t0);
         }
         if (param.cam_module == REALSENSE)
         {
-            // cal.rsCalibration(lens_num, dis1, t0, data);
-            rsCalibration(lens_num, dis1, t0, data);
+            rsCalibration(lens_num, t0);
         }
         // 最后对lens_num取反，传入processor
         cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
@@ -49,7 +49,7 @@ int CalController::CalInit(int64 &t0)
     return lens_num;
 }
 
-void CalController::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
+void CalController::rsCalibration(int lens_num, int64 &t0)
 {
     cout << "************** calibration initalized *****************" << endl;
     cout << "现在进入校准程序,请旋转对焦环并带动电机齿轮，将相机对焦在彩色图像中 蓝色中心点 所瞄准的目标上,随后长按 g 采集" << endl;
@@ -67,6 +67,7 @@ void CalController::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
 
     __reader = make_shared<RsReader>();
     __cal = make_shared<Calibrator>();
+    __dis = make_shared<Dis>();
     __reader->camInit();
     cv::waitKey(1000);
 
@@ -75,7 +76,7 @@ void CalController::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
         __reader->read();
         rs2::depth_frame depth = __reader->rsDepthFrames.back();
         cv::Mat color = __reader->color;
-        bool cal_status = __cal->calibrate(lens_num, dis, __motor, data, depth, color);
+        bool cal_status = __cal->calibrate(lens_num, __dis, __motor, depth, color);
         if (cal_status == 1)
         {
             break;
@@ -86,7 +87,7 @@ void CalController::rsCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     }
 }
 
-void CalController::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
+void CalController::astraCalibration(int lens_num, int64 &t0)
 {
     // cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
     // cv::VideoCapture colorStream(4, cv::CAP_V4L2);

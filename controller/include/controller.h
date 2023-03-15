@@ -16,8 +16,6 @@
 class Controller
 {
 private:
-    // focus_ptr __focus = make_shared<Frame>();
-    // cal_ptr __calibrator = make_shared<Calibrator>();
     subcontrol_ptr __controller;
 
 public:

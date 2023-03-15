@@ -16,17 +16,16 @@
 
 int Calibrator::calibratorInit(int64 &t0, motor_ptr &__motor)
 {
-    Data data;
     TransferData readData, writeData;
     Dis dis1;
-    int lens_num = __motor->init(data, readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
+    int lens_num = __motor->init(readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
     if (lens_num < 0)
     {
         // 创建新镜头函数
         // todo:读取多点电机数据与距离数据，拟合曲线，储存为图片格式
         if (param.cam_module == ASTRA)
         {
-            astraCalibration(lens_num, dis1, t0, data);
+            astraCalibration(lens_num, dis1, t0);
         }
         if (param.cam_module == REALSENSE)
         {
@@ -44,6 +43,127 @@ int Calibrator::calibratorInit(int64 &t0, motor_ptr &__motor)
         return lens_num;
     }
     return lens_num;
+}
+
+
+bool Calibrator::calibrate(int lens_num, dis_ptr &__dis, motor_ptr &__motor, rs2::depth_frame &depth, cv::Mat &color)
+{
+    // 选取中心点
+    cv::Mat d8, d16, dColor;
+    int DIS = 0;
+
+    deque<cv::Point2f> points;
+    cv::Point2f center(param.RS_width / 2, param.RS_height / 2);
+    points.push_back(center);
+
+    int center_dis = int(1000 * depth.get_distance(param.RS_width / 2, param.RS_height / 2));
+    __dis->disCalculate(center_dis, d16, points);
+    int current_pulse = __motor->readPulse();
+
+    cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
+    cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);
+    switch (cal_points.size())
+    {
+    case 0:
+        cv::putText(color, "cal at 0.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 1:
+        cv::putText(color, "cal at 1.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 2:
+        cv::putText(color, "cal at 2.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 3:
+        cv::putText(color, "cal at 4.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 4:
+        cv::putText(color, "cal at 6.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 5:
+        cv::putText(color, "cal at 8.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 6:
+        cv::putText(color, "cal at infinity position", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 7:
+        cv::putText(color, "cal at nearest position", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+    case 8:
+        cv::putText(color, "press C to load param", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
+        break;
+
+    default:
+        break;
+    }
+
+    char key1 = (char)cv::waitKey(1);
+    int x;
+    if (key1 == 'g')
+    {
+        // cv::waitKey(1);
+        if (!cal_points.empty())
+        {
+            if (current_pulse != cal_points.back().y)
+            {
+                cal_points.push_back(cv::Point2f(center_dis, current_pulse));
+                cout << cal_points.back() << endl;
+            }
+        }
+        else
+        {
+            cal_points.push_back(cv::Point2f(center_dis, current_pulse));
+            cout << cal_points.back() << endl;
+        }
+    }
+    if (key1 == 'c')
+    {
+        int n = 6;
+        switch (-lens_num)
+        {
+        case 1:
+            for (int i = 0; i <= n; i++)
+            {
+                lens_param.LENS_1.at<double>(0, i) = cal_points[i].y;
+            }
+            lens_param.LENS_1.at<double>(0, 7) = cal_points[7].x;
+            break;
+        case 2:
+            for (int i = 0; i <= n; i++)
+            {
+                lens_param.LENS_2.at<double>(0, i) = cal_points[i].y;
+            }
+            lens_param.LENS_2.at<double>(0, 7) = cal_points[7].x;
+            break;
+        case 3:
+            for (int i = 0; i <= n; i++)
+            {
+                lens_param.LENS_3.at<double>(0, i) = cal_points[i].y;
+            }
+            lens_param.LENS_3.at<double>(0, 7) = cal_points[7].x;
+            break;
+        case 4:
+            for (int i = 0; i <= n; i++)
+            {
+                lens_param.LENS_4.at<double>(0, i) = cal_points[i].y;
+            }
+            lens_param.LENS_4.at<double>(0, 7) = cal_points[7].x;
+            break;
+        case 5:
+            for (int i = 0; i <= n; i++)
+            {
+                lens_param.LENS_5.at<double>(0, i) = cal_points[i].y;
+            }
+            lens_param.LENS_5.at<double>(0, 7) = cal_points[7].x;
+            break;
+        default:
+            break;
+        }
+        lens_param.write();
+        cout << "param load success" << endl;
+        return 1;
+        // break;
+    }
+    return 0;
 }
 
 /**
@@ -130,7 +250,7 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     return curve;
 }
 
-void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
+void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0)
 {
     // cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
     // cv::VideoCapture colorStream(4, cv::CAP_V4L2);
@@ -327,139 +447,5 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0, Data &data)
     //             // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
     //         }
     //     }
-    // }
-}
-
-bool Calibrator::calibrate(int lens_num, Dis &dis, motor_ptr &__motor, Data &data, rs2::depth_frame &depth, cv::Mat &color)
-{
-    // 选取中心点
-    cv::Mat d8, d16, dColor;
-    int DIS = 0;
-
-    deque<cv::Point2f> points;
-    cv::Point2f center(param.RS_width / 2, param.RS_height / 2);
-    points.push_back(center);
-
-    int center_dis = int(1000 * depth.get_distance(param.RS_width / 2, param.RS_height / 2));
-    dis.disCalculate(center_dis, d16, points);
-    int current_pulse = __motor->readPulse(data);
-
-    cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
-    cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);
-    switch (cal_points.size())
-    {
-    case 0:
-        cv::putText(color, "cal at 0.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 1:
-        cv::putText(color, "cal at 1.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 2:
-        cv::putText(color, "cal at 2.5m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 3:
-        cv::putText(color, "cal at 4.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 4:
-        cv::putText(color, "cal at 6.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 5:
-        cv::putText(color, "cal at 8.0m", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 6:
-        cv::putText(color, "cal at infinity position", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 7:
-        cv::putText(color, "cal at nearest position", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-    case 8:
-        cv::putText(color, "press C to load param", cv::Point2i(param.RS_width / 2, param.RS_height - 50), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(200, 200, 255), 2);
-        break;
-
-    default:
-        break;
-    }
-
-    char key1 = (char)cv::waitKey(1);
-    int x;
-    if (key1 == 'g')
-    {
-        // cv::waitKey(1);
-        if (!cal_points.empty())
-        {
-            if (current_pulse != cal_points.back().y)
-            {
-                cal_points.push_back(cv::Point2f(center_dis, current_pulse));
-                cout << cal_points.back() << endl;
-            }
-        }
-        else
-        {
-            cal_points.push_back(cv::Point2f(center_dis, current_pulse));
-            cout << cal_points.back() << endl;
-        }
-    }
-    if (key1 == 'c')
-    {
-        int n = 6;
-        switch (-lens_num)
-        {
-        case 1:
-            for (int i = 0; i <= n; i++)
-            {
-                lens_param.LENS_1.at<double>(0, i) = cal_points[i].y;
-            }
-            lens_param.LENS_1.at<double>(0, 7) = cal_points[7].x;
-            break;
-        case 2:
-            for (int i = 0; i <= n; i++)
-            {
-                lens_param.LENS_2.at<double>(0, i) = cal_points[i].y;
-            }
-            lens_param.LENS_2.at<double>(0, 7) = cal_points[7].x;
-            break;
-        case 3:
-            for (int i = 0; i <= n; i++)
-            {
-                lens_param.LENS_3.at<double>(0, i) = cal_points[i].y;
-            }
-            lens_param.LENS_3.at<double>(0, 7) = cal_points[7].x;
-            break;
-        case 4:
-            for (int i = 0; i <= n; i++)
-            {
-                lens_param.LENS_4.at<double>(0, i) = cal_points[i].y;
-            }
-            lens_param.LENS_4.at<double>(0, 7) = cal_points[7].x;
-            break;
-        case 5:
-            for (int i = 0; i <= n; i++)
-            {
-                lens_param.LENS_5.at<double>(0, i) = cal_points[i].y;
-            }
-            lens_param.LENS_5.at<double>(0, 7) = cal_points[7].x;
-            break;
-        default:
-            break;
-        }
-        lens_param.write();
-        cout << "param load success" << endl;
-        return 1;
-        // break;
-    }
-    return 0;
-
-    // // show dcolor frame
-    // cv::imshow("Depth", depth * 15);
-
-    // // Show color frame
-    // cv::imshow("Color", color);
-
-    // Exit on Esc key press
-    // if (key1 == 27) // ESC
-    // {
-    //     break;
-    // }
-    // cout << "run time = " << 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency()) << " ms" << endl;
     // }
 }

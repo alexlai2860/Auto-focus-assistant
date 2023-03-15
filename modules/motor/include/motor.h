@@ -16,10 +16,10 @@ class Motor
 {
 public:
     Motor() = default;
-    virtual int readPulse(Data &) = 0;
-    virtual void writePulse(int, Data &) = 0;
-    virtual void setZero(Data &) = 0;
-    virtual int init(Data &, TransferData &, TransferData &) = 0;
+    virtual int readPulse() = 0;
+    virtual void writePulse(int) = 0;
+    virtual void setZero() = 0;
+    virtual int init(TransferData &, TransferData &) = 0;
 };
 
 using motor_ptr = shared_ptr<Motor>;

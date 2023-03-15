@@ -112,3 +112,5 @@ public:
      */
     void write(int mode, const TransferData &transfer_data);
 };
+
+using data_ptr = shared_ptr<Data>;

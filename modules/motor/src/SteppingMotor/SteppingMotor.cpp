@@ -16,10 +16,10 @@
 
 using namespace std;
 
-int SteppingMotor::init(Data &data, TransferData &readData, TransferData &writeData)
+int SteppingMotor::init(TransferData &readData, TransferData &writeData)
 {
     writeData.command2 = 0x00;
-    data.write(3, writeData); // 关闭使能
+    __data->write(3, writeData); // 关闭使能
     int key = 0, lens_num = 0;
     cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
     while (key != 1)
@@ -37,7 +37,7 @@ int SteppingMotor::init(Data &data, TransferData &readData, TransferData &writeD
     //     }
     //     continue;
     // }
-    this->setZero(data);
+    this->setZero();
 
     key = -1;
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
@@ -117,7 +117,7 @@ int SteppingMotor::init(Data &data, TransferData &readData, TransferData &writeD
     return 0;
 }
 
-int SteppingMotor::readPulse(Data &data)
+int SteppingMotor::readPulse()
 {
     TransferData readData, writeData;
     int32_t pulse = 4000000;
@@ -125,9 +125,9 @@ int SteppingMotor::readPulse(Data &data)
     while (pulse >= 4000000)
     {
         writeData.command1 = 0x33;
-        data.write(2, writeData);
+        __data->write(2, writeData);
         cv::waitKey(param.WAIT_TIME); // 限制发送速率，根据电脑运行速度和波特率进行调整(默认为3,默认比特率为115200)
-        readData = data.read(0x01, 0x6B);
+        readData = __data->read(0x01, 0x6B);
         // data.write(2, writeData);
         pulse = (((int32_t)readData.read1[0] << 24) |
                  ((int32_t)readData.read1[1] << 16) |
@@ -144,7 +144,7 @@ int SteppingMotor::readPulse(Data &data)
     return signed(pulse);
 }
 
-void SteppingMotor::writePulse(int pulse_num, Data &data)
+void SteppingMotor::writePulse(int pulse_num)
 {
     TransferData writeData, readData;
     // writeData.command2 = 0x01;
@@ -187,13 +187,13 @@ void SteppingMotor::writePulse(int pulse_num, Data &data)
     writeData.pulse_m = pulse[1];
     writeData.pulse_l = pulse[0];
 
-    data.write(4, writeData);
+    __data->write(4, writeData);
 }
 
-void SteppingMotor::setZero(Data &data)
+void SteppingMotor::setZero()
 {
     // set zero
     TransferData writeData;
-    data.write(1, writeData);
+    __data->write(1, writeData);
     cv::waitKey(5);
 }

@@ -16,12 +16,13 @@
 class SteppingMotor : public Motor
 {
 protected:
+    data_ptr __data = make_shared<Data>();
 
 public:
-    int readPulse(Data &);
-    void writePulse(int, Data &);
-    void setZero(Data &);
-    
+    int readPulse();
+    void writePulse(int);
+    void setZero();
+
     SteppingMotor() = default;
-    virtual int init(Data &, TransferData &, TransferData &) override;
+    virtual int init(TransferData &, TransferData &) override;
 };

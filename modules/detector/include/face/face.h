@@ -28,4 +28,4 @@ public:
     bool isValidFace(cv::Mat &, int);
 };
 
-using detect_ptr = shared_ptr<Face>;
+using face_ptr = shared_ptr<Face>;

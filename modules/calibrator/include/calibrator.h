@@ -25,12 +25,12 @@ protected:
 
 public:
     int calibratorInit(int64 &, motor_ptr &);
-    bool calibrate(int, Dis &, motor_ptr &, Data &, rs2::depth_frame &, cv::Mat &);
+    bool calibrate(int, dis_ptr &, motor_ptr &, rs2::depth_frame &, cv::Mat &);
 
     cv::Mat polyFit(vector<cv::Point2f> &, int, int);
-    void astraCalibration(int, Dis &, int64 &, Data &);
-    void rsCalibration(int, Dis &, int64 &, Data &);
-    void rsCalibrationNew(int, Dis &, int64 &, Data &);
+    void astraCalibration(int, Dis &, int64 &);
+    void rsCalibration(int, Dis &, int64 &);
+    void rsCalibrationNew(int, Dis &, int64 &);
 
 };
 

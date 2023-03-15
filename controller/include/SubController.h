@@ -29,16 +29,17 @@ struct AstraFrame
 
 class SubController
 {
+protected:
+    reader_ptr __reader;
+    dis_ptr __dis;
+    data_ptr __data;
+    motor_ptr __motor;
+
 public:
     SubController() = default;
 
-    reader_ptr __reader;
-    dis_ptr __dis;
-    motor_ptr __motor;
-
-    virtual int CalInit(int64 &) = 0; // todo:合并为一个init 以解决undefined reference问题
+    virtual int CalInit(int64 &) = 0;
     virtual bool FocusInit(int64 &, int &) = 0;
-    // virtual void rs_read(rs2::pipeline &, rs2::frameset &) = 0;
 };
 
 using subcontrol_ptr = shared_ptr<SubController>;

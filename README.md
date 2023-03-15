@@ -87,6 +87,10 @@ make
 待完善<br>
 
 ### 重要更新<br>
++ 2023.3.15
+基本完成顶层模块的重构和函数优化<br>
+下一步将继续优化modules，尤其是新增的tools工具库，以及完善奥比中光相机的reader<br>
+
 + 2023.3.12
 取消processor,将原有的processor模块分散至dis、motor、detector、reader、tools等模块<br>
 将原FrameProcessor改为FocusController,从原Calibrator分出CalController,加入顶层结构<br>

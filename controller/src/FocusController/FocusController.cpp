@@ -18,14 +18,14 @@
 
 using namespace std;
 
-int FocusController::CalInit(int64 &t0) {}
+int FocusController::CalInit(int64 &t0) { return 0; }
 
 bool FocusController::FocusInit(int64 &t0, int &lens_num)
 {
     Face face1;
     Dis dis1;
     TransferData writeData;
-    Data data;
+    __data = make_shared<Data>();
 
     // 每次循环：先读取当前电机位置
     // 随后根据目标距离解算电机脉冲目标值，求差
@@ -34,16 +34,16 @@ bool FocusController::FocusInit(int64 &t0, int &lens_num)
     if (lens_num > 0)
     {
         writeData.command2 = 0x01;
-        data.write(3, writeData); // 打开使能
+        __data->write(3, writeData); // 打开使能
         cv::waitKey(3);
         // motor.setZero(data); // 电机置零
         if (param.cam_module == ASTRA)
         {
-            astraProcessFrame(face1, dis1, t0, data);
+            astraProcessFrame(t0);
         }
         if (param.cam_module == REALSENSE)
         {
-            rsProcessFrame(face1, t0, data);
+            rsProcessFrame(t0);
         }
     }
     else
@@ -61,15 +61,18 @@ bool FocusController::FocusInit(int64 &t0, int &lens_num)
  * @param t0
  * @param data
  */
-void FocusController::rsProcessFrame(Face &face, int64 &t0, Data &data)
+void FocusController::rsProcessFrame(int64 &t0)
 {
     int key;
     int round = 0;
     int fps = param.FPS; // support 1,2,3,5,6,10,15,30
     int detect_rate = 30 / fps;
-
     __reader = make_shared<RsReader>();
     __motor = make_shared<SteppingMotor>();
+    __dis = make_shared<Dis>();
+    __face = make_shared<Face>();
+
+    // 相机初始化
     __reader->camInit();
 
     // 在指定时间后再进入循环，避免相机初始化未完成导致程序崩溃
@@ -96,10 +99,10 @@ void FocusController::rsProcessFrame(Face &face, int64 &t0, Data &data)
         }
 
         // 决策，判断该帧是否需要进行目标检测&采取的对焦策略
-        DIS = Decider(face, color, d16, detect_count);
+        DIS = Decider(color, d16, detect_count);
 
         // 读取当前脉冲值
-        int current_pulse = __motor->readPulse(data);
+        int current_pulse = __motor->readPulse();
 
         // 计算目标脉冲值-方案一:使用四次函数拟合，五次函数不稳定，A暂时废弃
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
@@ -109,7 +112,7 @@ void FocusController::rsProcessFrame(Face &face, int64 &t0, Data &data)
         cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
-        __motor->writePulse((target_pulse - current_pulse), data);
+        __motor->writePulse((target_pulse - current_pulse));
 
         // 输出彩色图和深度图
         imshow("Depth", depth * 15);
@@ -159,7 +162,7 @@ void FocusController::rsProcessFrame(Face &face, int64 &t0, Data &data)
  * @param dis
  * @param d16
  */
-void FocusController::dropProcess(int mode, dis_ptr &__dis, cv::Mat &d16)
+void FocusController::dropProcess(int mode, cv::Mat &d16)
 {
     cout << "mode : " << mode << endl;
     switch (mode)
@@ -236,19 +239,18 @@ void FocusController::dropProcess(int mode, dis_ptr &__dis, cv::Mat &d16)
  * @param detect_count
  * @return int DIS
  */
-int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &detect_count)
+int FocusController::Decider(cv::Mat &color, cv::Mat &d16, int &detect_count)
 {
-    __dis = make_shared<Dis>();
     // 复杂的判断过程(待简化)
     int DIS;
     int situation = 0;
     if (detect_count == 0)
     {
         // 进行检测的帧
-        bool detected = face.faceDetect(color, face.detected_faces, this->drop_count);
+        bool detected = __face->faceDetect(color, __face->detected_faces, this->drop_count);
         if (detected)
         {
-            if (!face.face_center.empty())
+            if (!__face->face_center.empty())
             {
                 // 若检测到人脸：锁定人脸（todo：多人脸策略）
                 situation = 1;
@@ -269,7 +271,7 @@ int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &dete
                 }
                 else
                 {
-                    if (!face.face_center.empty())
+                    if (!__face->face_center.empty())
                     {
                         // 掉帧数低于阈值,且面部队列不为空，则锁定面部队列末尾的点
                         situation = 1;
@@ -296,7 +298,7 @@ int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &dete
     }
     else
     {
-        if (!face.face_center.empty())
+        if (!__face->face_center.empty())
         {
             if (drop_count < param.MAX_DROP_FRAME)
             {
@@ -327,13 +329,13 @@ int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &dete
     case 0:
     {
         // situation=0:进入掉帧处理
-        this->dropProcess(param.DROP_PROCESS_MODE, __dis, d16);
+        this->dropProcess(param.DROP_PROCESS_MODE, d16);
         if (param.DROP_PROCESS_MODE == 1 && param.cam_module == REALSENSE)
         {
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
         DIS = __dis->target_dis.back();
-        face.face_center.clear();
+        __face->face_center.clear();
         break;
     }
     case 1:
@@ -341,36 +343,36 @@ int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &dete
         if (param.cam_module == REALSENSE)
         {
             // situation=1:锁定队列末尾的面部
-            for (int i = 0; i < face.face_center.size(); i++)
+            for (int i = 0; i < __face->face_center.size(); i++)
             {
                 DIS = 20000;
-                float center_y = face.face_center.at(i).y;
-                float center_x = face.face_center.at(i).x;
+                float center_y = __face->face_center.at(i).y;
+                float center_x = __face->face_center.at(i).x;
                 if (param.INVERT_ON)
                 {
-                    center_y = param.RS_height - face.face_center.at(i).y;
+                    center_y = param.RS_height - __face->face_center.at(i).y;
                 }
                 // cout << "list_size-3 " << rsDepthFrames.size() << endl;
                 int face_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(center_x, center_y));
                 // 对realsense相机来说，discalculate并不承担计算距离的功能
                 // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-                int current_dis = __dis->disCalculate(face_dis, d16, face.face_center);
+                int current_dis = __dis->disCalculate(face_dis, d16, __face->face_center);
                 if (current_dis < DIS)
                 {
                     DIS = current_dis;
-                    face.target_face_label = i;
+                    __face->target_face_label = i;
                 }
             }
             break;
         }
         else
         {
-            DIS = __dis->disCalculate(1, d16, face.face_center);
+            DIS = __dis->disCalculate(1, d16, __face->face_center);
             break;
         }
     }
     default:
-        this->dropProcess(param.DROP_PROCESS_MODE, __dis, d16);
+        this->dropProcess(param.DROP_PROCESS_MODE, d16);
         break;
     }
 
@@ -380,9 +382,9 @@ int FocusController::Decider(Face &face, cv::Mat &color, cv::Mat &d16, int &dete
         {
             // DIS = dis.target_dis.back();
             // cout << "DIS" << DIS << endl;
-            if (!face.face_center.empty())
+            if (!__face->face_center.empty())
             {
-                cv::circle(color, face.face_center.at(face.target_face_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                cv::circle(color, __face->face_center.at(__face->target_face_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
             }
             cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
@@ -452,7 +454,7 @@ int FocusController::disInterPolater(int &dis)
     return target_pulse;
 }
 
-void FocusController::astraProcessFrame(Face &face, Dis &dis, int64 &t0, Data &data)
+void FocusController::astraProcessFrame(int64 &t0)
 {
     // cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
     // cv::VideoCapture colorStream(4, cv::CAP_V4L2);
