@@ -15,6 +15,7 @@
 #include <vector>
 #include "TransferData.h"
 #include "SerialPort.h"
+#include "LogicTools.h"
 #include "param.h"
 
 #pragma pack(1)

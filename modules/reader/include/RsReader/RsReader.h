@@ -8,6 +8,7 @@
  * @copyright Copyright SCUT RobotLab(c) 2021
  *
  */
+#pragma once
 
 #include "reader.h"
 

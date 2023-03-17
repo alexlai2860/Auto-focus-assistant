@@ -14,38 +14,6 @@
 #include "LensParam.h"
 #include "param.h"
 
-int Calibrator::calibratorInit(int64 &t0, motor_ptr &__motor)
-{
-    TransferData readData, writeData;
-    Dis dis1;
-    int lens_num = __motor->init(readData, writeData); // 区分当前镜头，并初始化电机位置 （ todo:将参数写入yml）
-    if (lens_num < 0)
-    {
-        // 创建新镜头函数
-        // todo:读取多点电机数据与距离数据，拟合曲线，储存为图片格式
-        if (param.cam_module == ASTRA)
-        {
-            astraCalibration(lens_num, dis1, t0);
-        }
-        if (param.cam_module == REALSENSE)
-        {
-            // rsCalibration(lens_num, dis1, t0, data);
-            // rsCalibrationNew(lens_num, dis1, t0, data);
-        }
-        // 最后对lens_num取反，传入processor
-        cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
-        int key;
-        while (key != 1)
-        {
-            cin >> key;
-        }
-        lens_num = -lens_num;
-        return lens_num;
-    }
-    return lens_num;
-}
-
-
 bool Calibrator::calibrate(int lens_num, dis_ptr &__dis, motor_ptr &__motor, rs2::depth_frame &depth, cv::Mat &color)
 {
     // 选取中心点
@@ -250,8 +218,8 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     return curve;
 }
 
-void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0)
-{
+// void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0)
+// {
     // cv::VideoCapture depthStream(cv::CAP_OPENNI2_ASTRA);
     // cv::VideoCapture colorStream(4, cv::CAP_V4L2);
 
@@ -448,4 +416,4 @@ void Calibrator::astraCalibration(int lens_num, Dis &dis, int64 &t0)
     //         }
     //     }
     // }
-}
+// }

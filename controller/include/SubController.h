@@ -14,9 +14,11 @@
 #include "dis.h"
 #include "face.h"
 #include "RsReader.h"
+#include "LogicTools.h"
 #include "param.h"
 #include "LensParam.h"
 #include "SteppingMotor.h"
+// #include "decider.h"
 #include "calibrator.h"
 
 using namespace std;
@@ -30,6 +32,7 @@ struct AstraFrame
 class SubController
 {
 protected:
+    logic_ptr __logic;
     reader_ptr __reader;
     dis_ptr __dis;
     data_ptr __data;

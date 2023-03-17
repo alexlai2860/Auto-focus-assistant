@@ -1,18 +1,15 @@
 /**
  * @file stepping_motor.cpp
  * @author 赖建宇 (lai.jianyu@foxmail.com)
- * @brief 
+ * @brief
  * @version 1.0
  * @date 2023-03-07
- * 
+ *
  * @copyright Copyright SCUT RobotLab(c) 2021
- * 
+ *
  */
 
-
 #include "SteppingMotor.h"
-#include "LensParam.h"
-#include "param.h"
 
 using namespace std;
 
@@ -20,26 +17,17 @@ int SteppingMotor::init(TransferData &readData, TransferData &writeData)
 {
     writeData.command2 = 0x00;
     __data->write(3, writeData); // 关闭使能
-    int key = 0, lens_num = 0;
-    cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
-    while (key != 1)
-    {
-        cin >> key;
-    }
-    // while (1)
-    // {
-    //     cv::Mat test = cv::imread("../SRVL.png", 0);
-    //     cv::imshow("test", test);
-    //     char key1 = (char)cv::waitKey(1);
-    //     if (key1 == '1')
-    //     {
-    //         break;
-    //     }
-    //     continue;
-    // }
+
+    int key = -1;
+    int lens_num = 0;
+    __logic = make_shared<LogicTools>();
+
+    // 确定对焦初始位置
+    cout << "请将对焦环旋转至最近距离处" << endl;
+    __logic->waitForNum(1);
     this->setZero();
 
-    key = -1;
+    // 确定镜头编号，判断是否需要新建镜头
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
     cin >> key;
     if (key != 0)
@@ -190,10 +178,25 @@ void SteppingMotor::writePulse(int pulse_num)
     __data->write(4, writeData);
 }
 
+/**
+ * @brief pulse setzero
+ *
+ */
 void SteppingMotor::setZero()
 {
-    // set zero
     TransferData writeData;
     __data->write(1, writeData);
+    cv::waitKey(5);
+}
+
+/**
+ * @brief motor enable
+ *
+ */
+void SteppingMotor::enable()
+{
+    TransferData writeData;
+    writeData.command2 = 0x01;
+    __data->write(3, writeData); // 打开使能
     cv::waitKey(5);
 }

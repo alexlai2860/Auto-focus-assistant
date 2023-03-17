@@ -9,5 +9,6 @@ project (AutoFocusAssistant)
 
 add_subdirectory(param)
 add_subdirectory(serial)
+add_subdirectory(tools)
 add_subdirectory(modules)
 add_subdirectory(controller)

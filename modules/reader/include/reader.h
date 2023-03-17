@@ -8,6 +8,7 @@
  * @copyright Copyright SCUT RobotLab(c) 2021
  *
  */
+#pragma once
 // #include "MotorData.h"
 // #include "SteppingMotor.h"
 // #include "KalmanFilterX.hpp"
@@ -29,6 +30,7 @@
 #include <librealsense2/rs_advanced_mode.hpp>
 
 #define ASTRA 0
+#define REALSENSE 1
 
 class reader
 {

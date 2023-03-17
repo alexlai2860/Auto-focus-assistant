@@ -21,6 +21,7 @@ int CalController::CalInit(int64 &t0)
 {
     TransferData readData, writeData;
     __motor = make_shared<SteppingMotor>();
+    __logic = make_shared<LogicTools>();
 
     // 区分当前镜头，并初始化电机位置
     int lens_num = __motor->init(readData, writeData);
@@ -37,12 +38,8 @@ int CalController::CalInit(int64 &t0)
             rsCalibration(lens_num, t0);
         }
         // 最后对lens_num取反，传入processor
-        cout << "请将对焦环旋转至最近距离处 随后输入1并回车 " << endl;
-        int key;
-        while (key != 1)
-        {
-            cin >> key;
-        }
+        cout << "请将对焦环旋转至最近距离处" << endl;
+        __logic->waitForNum(1);
         lens_num = -lens_num;
         return lens_num;
     }
@@ -58,12 +55,7 @@ void CalController::rsCalibration(int lens_num, int64 &t0)
     cout << "按输入1并回车,开始校准" << endl;
     cout << "ps1: 请关注图片上的距离值,单位为mm,若与实际情况偏差过大请重新校准" << endl;
     cout << "ps2: 校准完毕后会自动退出,请重新启动程序;校准过程中按esc退出" << endl;
-    int key0;
-    int key1 = 0;
-    while (key0 != 1)
-    {
-        cin >> key0;
-    }
+    __logic->waitForNum(1);
 
     __reader = make_shared<RsReader>();
     __cal = make_shared<Calibrator>();
@@ -71,17 +63,16 @@ void CalController::rsCalibration(int lens_num, int64 &t0)
     __reader->camInit();
     cv::waitKey(1000);
 
+    int key1 = 0;
     while (key1 != 27)
     {
         __reader->read();
         rs2::depth_frame depth = __reader->rsDepthFrames.back();
         cv::Mat color = __reader->color;
-        bool cal_status = __cal->calibrate(lens_num, __dis, __motor, depth, color);
-        if (cal_status == 1)
+        if (__cal->calibrate(lens_num, __dis, __motor, depth, color))
         {
             break;
         }
-
         imshow("Depth", __reader->depth * 15);
         imshow("Color", color);
     }

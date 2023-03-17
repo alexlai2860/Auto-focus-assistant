@@ -14,11 +14,15 @@
 
 class Motor
 {
+protected:
+    logic_ptr __logic;
+
 public:
     Motor() = default;
     virtual int readPulse() = 0;
     virtual void writePulse(int) = 0;
     virtual void setZero() = 0;
+    virtual void enable() = 0;
     virtual int init(TransferData &, TransferData &) = 0;
 };
 

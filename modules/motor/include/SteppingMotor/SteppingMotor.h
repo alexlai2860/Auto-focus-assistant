@@ -22,6 +22,7 @@ public:
     int readPulse();
     void writePulse(int);
     void setZero();
+    void enable();
 
     SteppingMotor() = default;
     virtual int init(TransferData &, TransferData &) override;
