@@ -17,8 +17,10 @@ using namespace std;
 void Controller::control(int64 &t0)
 {
     // 初始化
+    __controller = make_shared<Capturer>();
+    __controller->init(t0, 0);
     __controller = make_shared<CalController>();
-    int lens_num = __controller->CalInit(t0);
+    int lens_num = __controller->init(t0, 0);
     __controller = make_shared<FocusController>();
-    bool init_status = __controller->FocusInit(t0, lens_num);
+    bool init_status = __controller->init(t0, lens_num);
 }

@@ -41,8 +41,7 @@ protected:
 public:
     SubController() = default;
 
-    virtual int CalInit(int64 &) = 0;
-    virtual bool FocusInit(int64 &, int &) = 0;
+    virtual int init(int64 &, int) = 0;
 };
 
 using subcontrol_ptr = shared_ptr<SubController>;

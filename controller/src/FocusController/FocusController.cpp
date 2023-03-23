@@ -18,9 +18,7 @@
 
 using namespace std;
 
-int FocusController::CalInit(int64 &t0) { return 0; }
-
-bool FocusController::FocusInit(int64 &t0, int &lens_num)
+int FocusController::init(int64 &t0, int lens_num)
 {
     Face face1;
     Dis dis1;

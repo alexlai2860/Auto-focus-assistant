@@ -8,9 +8,11 @@
  * @copyright Copyright SCUT RobotLab(c) 2021
  *
  */
+#pragma once
 
 #include "CalController.h"
 #include "FocusController.h"
+#include "Capturer.h"
 // #include "calibrator.h"
 
 class Controller

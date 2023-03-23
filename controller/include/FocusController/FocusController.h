@@ -28,8 +28,7 @@ protected:
     decider_ptr __decider;
 
 public:
-    bool FocusInit(int64 &, int &) override;
-    int CalInit(int64 &) override;
+    int init(int64 &, int) override;
     void astraProcessFrame(int64 &);
     void rsProcessFrame(int64 &);
 };

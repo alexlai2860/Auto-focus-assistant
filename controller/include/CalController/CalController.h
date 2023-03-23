@@ -20,8 +20,7 @@ protected:
     cal_ptr __cal;
 
 public:
-    int CalInit(int64 &) override;
-    bool FocusInit(int64 &, int &) override;
+    int init(int64 &, int) override;
     void astraCalibration(int, int64 &);
     void rsCalibration(int, int64 &);
 };

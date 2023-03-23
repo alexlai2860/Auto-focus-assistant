@@ -15,9 +15,7 @@
 
 using namespace std;
 
-bool CalController::FocusInit(int64 &t0, int &lens_num) { return 0; }
-
-int CalController::CalInit(int64 &t0)
+int CalController::init(int64 &t0, int num)
 {
     TransferData readData, writeData;
     __motor = make_shared<SteppingMotor>();
