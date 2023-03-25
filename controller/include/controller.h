@@ -13,6 +13,7 @@
 #include "CalController.h"
 #include "FocusController.h"
 #include "Capturer.h"
+#include "SleepPoseController.h"
 // #include "calibrator.h"
 
 class Controller

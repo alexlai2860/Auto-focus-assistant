@@ -23,7 +23,6 @@ int FocusController::init(int64 &t0, int lens_num)
     Face face1;
     Dis dis1;
     TransferData writeData;
-    __data = make_shared<Data>();
     __dis = make_shared<Dis>();
     __face = make_shared<Face>();
     __motor = make_shared<SteppingMotor>();

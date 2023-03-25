@@ -20,10 +20,15 @@ add_library(Capturer STATIC ${SRC_LIST})
 target_include_directories(Capturer PUBLIC include/Capturer include/FocusController include/CalController include)
 target_link_libraries(Capturer dis motor reader calibrator decider)
 
+aux_source_directory(src/SleepPoseController SRC_LIST)
+add_library(SleepPoseController STATIC ${SRC_LIST})
+target_include_directories(SleepPoseController PUBLIC include/Capturer include/FocusController include/CalController include/SleepPoseController include)
+target_link_libraries(SleepPoseController dis motor reader calibrator decider)
+
 aux_source_directory(src SRC_LIST)
 add_library(controller STATIC ${SRC_LIST})
 target_include_directories(controller PUBLIC include)
-target_link_libraries(controller dis motor FocusController CalController Capturer reader)
+target_link_libraries(controller dis motor FocusController CalController Capturer SleepPoseController reader)
 
 # find_package(OpenCV REQUIRED)
 # find_package(realsense2 REQUIRED)
