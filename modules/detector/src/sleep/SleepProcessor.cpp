@@ -22,12 +22,19 @@ void Sleep::loadModel(const string &path)
 
 int Sleep::sleepPoseJudge(cv::Mat &depth)
 {
-    // string path = "../onnx/mobilenet_v2.onnx";
-    // cv::resize(depth, depth, cv::Size(224, 224));
+    cv::Mat depth_resized;
+    cv::resize(depth, depth_resized, cv::Size(224, 224));
     cv::Mat depth_blob;
-    preProcess(depth, depth_blob);
-
-    string path = "../onnx/resnet101_2.onnx";
+    preProcess(depth_resized, depth_blob);
+    string path;
+    if (depth_blob.type() == 0)
+    {
+        path = "../onnx/resnet50_mergecam_gray.onnx";
+    }
+    else
+    {
+        path = "../onnx/resnet50_mergecam.onnx";
+    }
     loadModel(path);
     cv::Mat input = cv::dnn::blobFromImage(depth_blob, 1.0, cv::Size(224, 224), cv::Scalar(0, 0, 0), false, true, CV_32F);
     resnet_101.setInput(input);
@@ -41,7 +48,7 @@ int Sleep::sleepPoseJudge(cv::Mat &depth)
     int classId = classIdPoint.x;
     cout << "classID:" << classId << endl;
 
-    return 0;
+    return classId;
 }
 
 // 图像处理  标准化处理
@@ -49,32 +56,37 @@ void Sleep::preProcess(const cv::Mat &image, cv::Mat &image_blob)
 {
     cv::Mat input;
     image.copyTo(input);
-
+    int type = input.type();
     input.convertTo(input, CV_32F); // 一定要转为CV_32F使用！
 
     // 数据处理 标准化
     std::vector<cv::Mat> channels, channel_p;
     split(input, channels);
     cv::Mat R, G, B;
-    B = channels.at(0);
-    G = channels.at(1);
-    R = channels.at(2);
 
-    B = (B / 255. - 0.5) / 0.5;
-    G = (G / 255. - 0.5) / 0.5;
-    R = (R / 255. - 0.5) / 0.5;
+    // 区分单通道和多通道
+    if (type == 0)
+    {
+        B = channels.at(0);
+        B = (B / 255. - 0.5) / 0.5;
+        channel_p.push_back(B);
+    }
+    else
+    {
+        B = channels.at(0);
+        G = channels.at(1);
+        R = channels.at(2);
 
-    channel_p.push_back(R);
-    channel_p.push_back(G);
-    channel_p.push_back(B);
+        B = (B / 255. - 0.5) / 0.5;
+        G = (G / 255. - 0.5) / 0.5;
+        R = (R / 255. - 0.5) / 0.5;
+
+        channel_p.push_back(R);
+        channel_p.push_back(G);
+        channel_p.push_back(B);
+    }
 
     cv::Mat outt;
     merge(channel_p, outt);
     image_blob = outt;
-
-    // input.convertTo(input, CV_32F, 1.0 / 255.0);
-    // cv::subtract(input, cv::Scalar(0.5, 0.5, 0.5), input);
-    // cv::divide(input, cv::Scalar(0.5, 0.5, 0.5), input);
-
-    // image_blob = input;
 }

@@ -19,6 +19,8 @@ class Capturer : public SubController
 protected:
     // face_ptr __face;
     // decider_ptr __decider;
+    int64 last_capture_time = 0;
+    bool timeTrigger(int64 &, float);
 
 public:
     int init(int64 &, int) override;

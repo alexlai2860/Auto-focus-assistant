@@ -23,49 +23,71 @@ int Capturer::init(int64 &t0, int none)
     __reader->camInit();
     cv::waitKey(2000);
     int num = 0;
+    float run_time = 0;
     while (1)
     {
         __reader->read();
-        cv::Mat depth = __reader->depth * 15;
+        cv::Mat depth = __reader->depth * 16; // 有效距离限制为4.1m
         cv::Mat color = __reader->color;
         cv::Mat depth_8bit;
         cv::Mat depth_8bit_c3;
         depth.convertTo(depth_8bit, CV_8U, 255.f / 65535.f);
-        cv::cvtColor(depth_8bit, depth_8bit_c3, cv::COLOR_GRAY2BGR); // 转为16bit三通道
-        cout << "type:" << depth_8bit_c3.type() << endl;
+        cv::cvtColor(depth_8bit, depth_8bit_c3, cv::COLOR_GRAY2BGR); // 转为8bit三通道
+        // cout << "type:" << depth_8bit_c3.type() << endl;
 
-        cv::imshow("depth", depth);
-        cv::imshow("depth_8bit", depth_8bit);
+        // cv::imshow("depth", depth);
+        // cv::imshow("depth_8bit", depth_8bit);
         cv::imshow("depth_8bit_c3", depth_8bit_c3);
         char key1 = (char)cv::waitKey(1);
-        string filename_side = "../doc/side/side_" + to_string(num) + ".png";
-        string filename_back = "../doc/back/back_" + to_string(num) + ".png";
-        string filename_down = "../doc/down/down_" + to_string(num) + ".png";
-        string filename_sit = "../doc/sit/sit_" + to_string(num) + ".png";
-        if (key1 == 's')
+        string filename_side = "../doc/side/3_28_side_" + to_string(num) + ".jpg";
+        string filename_back = "../doc/back/3_28_back_" + to_string(num) + ".jpg";
+        string filename_down = "../doc/down/3_28_down_" + to_string(num) + ".jpg";
+        string filename_sit = "../doc/sit/3_28_sit_" + to_string(num) + ".jpg";
+        if (timeTrigger(t0, 3))
         {
-            num++;
-            cv::imwrite(filename_side, depth);
-            cout << "capture side pic " << num << endl;
+            key1 = 'b'; // 锁定收集的类别
+            if (key1 == 's')
+            {
+                num++;
+                cv::imwrite(filename_side, depth_8bit_c3);
+                cout << "capture side pic " << num << endl;
+            }
+            if (key1 == 'b')
+            {
+                num++;
+                cv::imwrite(filename_back, depth_8bit_c3);
+                cout << "capture back pic " << num << endl;
+            }
+            if (key1 == 'd')
+            {
+                num++;
+                cv::imwrite(filename_down, depth_8bit_c3);
+                cout << "capture down pic " << num << endl;
+            }
+            if (key1 == 't')
+            {
+                num++;
+                cv::imwrite(filename_sit, depth_8bit_c3);
+                cout << "capture sit pic " << num << endl;
+            }
         }
-        if (key1 == 'b')
-        {
-            num++;
-            cv::imwrite(filename_back, depth);
-            cout << "capture back pic " << num << endl;
-        }
-        if (key1 == 'd')
-        {
-            num++;
-            cv::imwrite(filename_down, depth);
-            cout << "capture down pic " << num << endl;
-        }
-        if (key1 == 't')
-        {
-            num++;
-            cv::imwrite(filename_sit, depth);
-            cout << "capture sit pic " << num << endl;
-        }
-        cv::waitKey(5);
+        cv::waitKey(3);
+    }
+}
+
+bool Capturer::timeTrigger(int64 &t0, const float fps)
+{
+    int run_time = 1000 * ((cv::getTickCount() - t0) / cv::getTickFrequency());
+    int delta_time = 1000.0 / fps;
+    // cout << "runtime" << run_time << endl;
+    // cout << "delta_time" << delta_time << endl;
+    if ((run_time - last_capture_time) >= delta_time)
+    {
+        last_capture_time = run_time;
+        return 1;
+    }
+    else
+    {
+        return 0;
     }
 }
