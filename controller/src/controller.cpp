@@ -16,9 +16,10 @@ using namespace std;
 
 void Controller::control(int64 &t0)
 {
+    
     // 初始化
-    __controller = make_shared<Capturer>();
-    __controller->init(t0, 0);
+    // __controller = make_shared<Capturer>();
+    // __controller->init(t0, 0);
     __controller = make_shared<SleepPoseController>();
     __controller->init(t0, 0);
     __controller = make_shared<CalController>();

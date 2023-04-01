@@ -39,18 +39,24 @@ int Capturer::init(int64 &t0, int none)
         // cv::imshow("depth_8bit", depth_8bit);
         cv::imshow("depth_8bit_c3", depth_8bit_c3);
         char key1 = (char)cv::waitKey(1);
-        string filename_side = "../doc/side/3_28_side_" + to_string(num) + ".jpg";
-        string filename_back = "../doc/back/3_28_back_" + to_string(num) + ".jpg";
-        string filename_down = "../doc/down/3_28_down_" + to_string(num) + ".jpg";
-        string filename_sit = "../doc/sit/3_28_sit_" + to_string(num) + ".jpg";
+        string filename_side_1 = "../doc/side1/3_31_side1_" + to_string(num) + ".jpg";
+        string filename_side_2 = "../doc/side2/3_31_side2_" + to_string(num) + ".jpg";
+        string filename_back = "../doc/back/3_31_back_" + to_string(num) + ".jpg";
+        string filename_sit = "../doc/sit/3_31_sit_" + to_string(num) + ".jpg";
         if (timeTrigger(t0, 3))
         {
-            key1 = 'b'; // 锁定收集的类别
-            if (key1 == 's')
+            key1 = 't'; // 锁定收集的类别
+            if (key1 == 'o')
             {
                 num++;
-                cv::imwrite(filename_side, depth_8bit_c3);
-                cout << "capture side pic " << num << endl;
+                cv::imwrite(filename_side_1, depth_8bit_c3);
+                cout << "capture side one pic " << num << endl;
+            }
+            if (key1 == 't')
+            {
+                num++;
+                cv::imwrite(filename_side_2, depth_8bit_c3);
+                cout << "capture side two pic " << num << endl;
             }
             if (key1 == 'b')
             {
@@ -58,13 +64,7 @@ int Capturer::init(int64 &t0, int none)
                 cv::imwrite(filename_back, depth_8bit_c3);
                 cout << "capture back pic " << num << endl;
             }
-            if (key1 == 'd')
-            {
-                num++;
-                cv::imwrite(filename_down, depth_8bit_c3);
-                cout << "capture down pic " << num << endl;
-            }
-            if (key1 == 't')
+            if (key1 == 's')
             {
                 num++;
                 cv::imwrite(filename_sit, depth_8bit_c3);

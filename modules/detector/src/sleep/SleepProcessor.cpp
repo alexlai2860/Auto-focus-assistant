@@ -27,9 +27,9 @@ int Sleep::sleepPoseJudge(cv::Mat &depth)
     cv::Mat depth_blob;
     preProcess(depth_resized, depth_blob);
     string path;
-    if (depth_blob.type() == 0)
+    if (depth_blob.type() == 0 || depth_blob.type() == 5)
     {
-        path = "../onnx/resnet50_mergecam_gray.onnx";
+        path = "../onnx/resnet50_mergecam_gray_side.onnx";
     }
     else
     {
@@ -68,8 +68,10 @@ void Sleep::preProcess(const cv::Mat &image, cv::Mat &image_blob)
     if (type == 0)
     {
         B = channels.at(0);
-        B = (B / 255. - 0.5) / 0.5;
         channel_p.push_back(B);
+        B = (B / 255. - 0.5) / 0.5;
+        image_blob = B;
+        image_blob.convertTo(image_blob, CV_32FC1);
     }
     else
     {
@@ -84,9 +86,9 @@ void Sleep::preProcess(const cv::Mat &image, cv::Mat &image_blob)
         channel_p.push_back(R);
         channel_p.push_back(G);
         channel_p.push_back(B);
+        cv::Mat outt;
+        merge(channel_p, outt);
+        image_blob = outt;
     }
-
-    cv::Mat outt;
-    merge(channel_p, outt);
-    image_blob = outt;
+    // cout << image_blob.type() << endl;
 }
