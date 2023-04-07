@@ -22,9 +22,12 @@ public:
     Face() { cout << "face-constructor" << endl; }
     ~Face() { cout << "face-destructor" << endl; }
     int target_face_label;
+    bool draw_face_box = 0;
     deque<cv::Point2f> face_center;
     cv::Mat detected_faces;
-    bool faceDetect(cv::Mat &, cv::Mat &, int &);
+
+    bool faceDetect(cv::Mat &, int &);
+    bool drawFaceBox(cv::Mat &);
     bool isValidFace(cv::Mat &, int);
 };
 

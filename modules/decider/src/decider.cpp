@@ -20,7 +20,7 @@
  * @param detect_count
  * @return int DIS
  */
-int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, dis_ptr &__dis, reader_ptr &__reader)
+int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &__object, dis_ptr &__dis, reader_ptr &__reader)
 {
     // 掉帧控制
     if (drop_init)
@@ -38,7 +38,10 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, dis_ptr &__d
     if (detect_count == 0)
     {
         // 进行检测的帧
-        bool detected = __face->faceDetect(color, __face->detected_faces, drop_count);
+        // bool detected = __face->faceDetect(color, drop_count);
+        bool detected = 1;
+        __object->objectDetect(color, drop_count);
+        // __object->
         if (detected)
         {
             if (!__face->face_center.empty())
@@ -266,7 +269,6 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
         break;
     }
 }
-
 
 /**
  * @brief 内插法计算目标脉冲

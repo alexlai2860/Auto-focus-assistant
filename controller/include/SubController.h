@@ -13,6 +13,7 @@
 
 #include "dis.h"
 #include "face.h"
+#include "object.h"
 #include "RsReader.h"
 #include "LogicTools.h"
 #include "param.h"

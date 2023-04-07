@@ -25,6 +25,7 @@ protected:
     // int disInterPolater(int &);
     // void dropProcess(int, cv::Mat &);
     face_ptr __face;
+    object_ptr __object;
     decider_ptr __decider;
 
 public:

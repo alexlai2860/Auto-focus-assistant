@@ -1,6 +1,3 @@
-find_package(OpenCV REQUIRED)
-find_package(realsense2 REQUIRED)
-
 aux_source_directory(src reader_DIRS)
 aux_source_directory(src/RsReader reader_DIRS)
 # aux_source_directory(src/AstraReader reader_DIRS)

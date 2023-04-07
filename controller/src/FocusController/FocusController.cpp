@@ -26,6 +26,7 @@ int FocusController::init(int64 &t0, int lens_num)
     __data = make_shared<Data>();
     __dis = make_shared<Dis>();
     __face = make_shared<Face>();
+    __object = make_shared<Object>();
     __motor = make_shared<SteppingMotor>();
     // __decider = make_shared<decider>();
 
@@ -86,9 +87,17 @@ void FocusController::rsProcessFrame(int64 &t0)
         cv::Mat color = __reader->color;
         cv::Mat depth = __reader->depth;
 
+        if (__face->draw_face_box)
+        {
+            __face->drawFaceBox(color);
+        }
+        if (__object->draw_object_box)
+        {
+            __object->drawObjectBox(color);
+        }
         // 决策，判断该帧是否需要进行目标检测&采取的对焦策略
         // DIS = Decider(color, d16, detect_count);
-        DIS = __decider->decide(color, d16, __face, __dis, __reader);
+        DIS = __decider->decide(color, d16, __face, __object, __dis, __reader);
 
         // 读取当前脉冲值
         int current_pulse = __motor->readPulse();
@@ -105,7 +114,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         __motor->writePulse((target_pulse - current_pulse));
 
         // 输出彩色图和深度图
-        imshow("Depth", depth * 15);
+        imshow("Depth", depth * 10);
         imshow("Color", color);
 
         // 计算运行时间
