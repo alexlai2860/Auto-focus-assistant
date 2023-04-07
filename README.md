@@ -72,6 +72,7 @@
 #### 安装依赖库<br>
 + OpenCV 4.5.0或更新版本
 + Realsense SDK 2.0
++ （update） nuitrack 0.36
 #### 运行程序<br>
 (在项目文件夹下)<br>
 ```
@@ -87,6 +88,21 @@ make
 待完善<br>
 
 ### 重要更新<br>
++ 2023.4.06
+部署nuitrack sdk<br>
+这玩意真的过于阴间，此处记录一下安装步骤<br>
+- stage 1: 下载和安装
+    - 首先在github上找到nuitrack_sdk，下载Platforms文件夹中对应的安装包（ubuntu amd64），打开并安装
+    - 用第三方工具下载其Example和Nuitrack文件夹(完整下载SDK体积会很大)
+- stage 2: 激活和测试
+    - 接下来请登陆Nuitrack官网，申请trial license（试用版本），会收到相应包含激活码的邮件
+    - 此时打开ubuntu命令行，输入nuitrack，会出现图形界面
+    - 随后插入深度相机，激活（会和相机固件绑定）并测试
+- stage 3: 部署必要文件
+    - 将Nuitrack文件夹复制/剪切到和Auto Focus Assistant文件夹所在位置相同的位置（作为AF assistant的子文件夹）
+    - 将Examples中的multisensor文件夹打开，将它提供的opencv3.4headers解压到Nuitrack文件夹的include目录中
+        - (此时include文件夹中应含有opencv子文件夹和opencv2子文件夹)
+
 + 2023.3.23
 重构工作基本收工(撒花)<br>
 今日测试新增部分数据集收集相关的功能，新建顶层模块即可，安全方便<br>
