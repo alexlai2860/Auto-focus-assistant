@@ -10,25 +10,19 @@
  */
 #pragma once
 
-#include "dis.h"
-#include "param.h"
-#include <iostream>
+#include"detector.h"
 
 using namespace std;
 
-class Face
+class Face : public Detector
 {
 public:
     Face() { cout << "face-constructor" << endl; }
     ~Face() { cout << "face-destructor" << endl; }
-    int target_face_label;
-    bool draw_face_box = 0;
-    deque<cv::Point2f> face_center;
+    // bool draw_face_box = 0;
     cv::Mat detected_faces;
 
-    bool faceDetect(cv::Mat &, int &);
-    bool drawFaceBox(cv::Mat &);
+    bool virtual detect(cv::Mat &, int &) override;
+    bool virtual drawBox(cv::Mat &) override;
     bool isValidFace(cv::Mat &, int);
 };
-
-using face_ptr = shared_ptr<Face>;

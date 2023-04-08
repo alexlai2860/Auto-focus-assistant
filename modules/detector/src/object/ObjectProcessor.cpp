@@ -1,21 +1,20 @@
 /**
  * @file ObjectProcessor.cpp
  * @author 赖建宇 (lai.jianyu@foxmail.com)
- * @brief
+ * @brief 采用yolov5s部署的目标检测器
  * @version 1.0
  * @date 2023-04-07
  *
  * @copyright Copyright SCUT RobotLab(c) 2021
  *
  */
-
 #include "object.h"
 
 using namespace std;
 using namespace cv;
 using namespace cv::dnn;
 
-bool Object::objectDetect(cv::Mat &color_frame, int &count)
+bool Object::detect(cv::Mat &color_frame, int &count)
 {
     Net net;
     Mat img = color_frame;
@@ -43,7 +42,7 @@ bool Object::objectDetect(cv::Mat &color_frame, int &count)
     return 1;
 }
 
-bool Object::drawObjectBox(cv::Mat &color_frame)
+bool Object::drawBox(cv::Mat &color_frame)
 {
     // 生成随机颜色
     std::vector<Scalar> color;

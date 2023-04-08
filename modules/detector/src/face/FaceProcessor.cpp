@@ -22,7 +22,7 @@ using namespace std;
  * @return true 识别到人脸
  * @return false 未识别到人脸
  */
-bool Face::faceDetect(cv::Mat &color_frame, int &count)
+bool Face::detect(cv::Mat &color_frame, int &count)
 {
     cv::Mat &faces = detected_faces;
     // detect faces from the colorframe
@@ -53,7 +53,6 @@ bool Face::faceDetect(cv::Mat &color_frame, int &count)
                 this->face_center.push_back(center);
                 // cout << "center: " << center << endl;
             }
-            draw_face_box = 0;
         }
         if (this->face_center.size() >= param.FACE_DEQUE)
         {
@@ -67,6 +66,7 @@ bool Face::faceDetect(cv::Mat &color_frame, int &count)
         count++;
         if (face_center.empty())
         {
+            draw_face_box = 0;
             return 0;
         }
         cv::Point2f last_center = face_center.back();
@@ -79,7 +79,7 @@ bool Face::faceDetect(cv::Mat &color_frame, int &count)
     }
 }
 
-bool Face::drawFaceBox(cv::Mat &color_frame)
+bool Face::drawBox(cv::Mat &color_frame)
 {
     cv::Mat faces = detected_faces;
     for (int i = 0; i < faces.rows; i++)

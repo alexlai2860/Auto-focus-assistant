@@ -20,7 +20,7 @@
  * @param detect_count
  * @return int DIS
  */
-int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &__object, dis_ptr &__dis, reader_ptr &__reader)
+int decider::decide(cv::Mat &color, cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, reader_ptr &__reader)
 {
     // 掉帧控制
     if (drop_init)
@@ -39,12 +39,13 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
     {
         // 进行检测的帧
         // bool detected = __face->faceDetect(color, drop_count);
-        bool detected = 1;
-        __object->objectDetect(color, drop_count);
+        // bool detected = 1;
+        // __object->objectDetect(color, drop_count);
+        bool detected = __detector->detect(color, drop_count);
         // __object->
         if (detected)
         {
-            if (!__face->face_center.empty())
+            if (!__detector->face_center.empty())
             {
                 // 若检测到人脸：锁定人脸（todo：多人脸策略）
                 situation = 1;
@@ -65,7 +66,7 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
                 }
                 else
                 {
-                    if (!__face->face_center.empty())
+                    if (!__detector->face_center.empty())
                     {
                         // 掉帧数低于阈值,且面部队列不为空，则锁定面部队列末尾的点
                         situation = 1;
@@ -92,7 +93,7 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
     }
     else
     {
-        if (!__face->face_center.empty())
+        if (!__detector->face_center.empty())
         {
             if (drop_count < param.MAX_DROP_FRAME)
             {
@@ -129,7 +130,7 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
         DIS = __dis->target_dis.back();
-        __face->face_center.clear();
+        __detector->face_center.clear();
         break;
     }
     case 1:
@@ -137,31 +138,31 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
         if (param.cam_module == REALSENSE)
         {
             // situation=1:锁定队列末尾的面部
-            for (int i = 0; i < __face->face_center.size(); i++)
+            for (int i = 0; i < __detector->face_center.size(); i++)
             {
                 DIS = 20000;
-                float center_y = __face->face_center.at(i).y;
-                float center_x = __face->face_center.at(i).x;
+                float center_y = __detector->face_center.at(i).y;
+                float center_x = __detector->face_center.at(i).x;
                 if (param.INVERT_ON)
                 {
-                    center_y = param.RS_height - __face->face_center.at(i).y;
+                    center_y = param.RS_height - __detector->face_center.at(i).y;
                 }
                 // cout << "list_size-3 " << rsDepthFrames.size() << endl;
                 int face_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(center_x, center_y));
                 // 对realsense相机来说，discalculate并不承担计算距离的功能
                 // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-                int current_dis = __dis->disCalculate(face_dis, d16, __face->face_center);
+                int current_dis = __dis->disCalculate(face_dis, d16, __detector->face_center);
                 if (current_dis < DIS)
                 {
                     DIS = current_dis;
-                    __face->target_face_label = i;
+                    __detector->target_label = i;
                 }
             }
             break;
         }
         else
         {
-            DIS = __dis->disCalculate(1, d16, __face->face_center);
+            DIS = __dis->disCalculate(1, d16, __detector->face_center);
             break;
         }
     }
@@ -176,9 +177,9 @@ int decider::decide(cv::Mat &color, cv::Mat &d16, face_ptr &__face, object_ptr &
         {
             // DIS = dis.target_dis.back();
             // cout << "DIS" << DIS << endl;
-            if (!__face->face_center.empty())
+            if (!__detector->face_center.empty())
             {
-                cv::circle(color, __face->face_center.at(__face->target_face_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                cv::circle(color, __detector->face_center.at(__detector->target_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
             }
             cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }

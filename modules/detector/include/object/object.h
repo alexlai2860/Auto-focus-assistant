@@ -8,12 +8,9 @@
  * @copyright Copyright SCUT RobotLab(c) 2021
  *
  */
-
 #pragma once
-#include <iostream>
-#include <opencv2/opencv.hpp>
-#include "dis.h"
-#include "param.h"
+
+#include "detector.h"
 
 #define YOLO_P6 true // 是否使用P6模型
 
@@ -67,7 +64,7 @@ private:
                                            "hair drier", "toothbrush"};
 };
 
-class Object
+class Object : public Detector
 {
 public:
     Yolov5 test;
@@ -75,9 +72,6 @@ public:
     bool draw_object_box = 0;
     vector<Output> result;
 
-    bool drawObjectBox(cv::Mat &);
-    bool objectDetect(cv::Mat &, int &);
+    bool virtual detect(cv::Mat &, int &) override;
+    bool virtual drawBox(cv::Mat &) override;
 };
-using object_ptr = shared_ptr<Object>;
-
-

@@ -25,8 +25,6 @@ int FocusController::init(int64 &t0, int lens_num)
     TransferData writeData;
     __data = make_shared<Data>();
     __dis = make_shared<Dis>();
-    __face = make_shared<Face>();
-    __object = make_shared<Object>();
     __motor = make_shared<SteppingMotor>();
     // __decider = make_shared<decider>();
 
@@ -70,6 +68,8 @@ void FocusController::rsProcessFrame(int64 &t0)
     int detect_rate = 30 / fps;
     __reader = make_shared<RsReader>();
     __decider = make_shared<decider>();
+    __face = make_shared<Face>();
+    __object = make_shared<ObjectLight>();
 
     // 相机初始化
     __reader->camInit();
@@ -85,20 +85,22 @@ void FocusController::rsProcessFrame(int64 &t0)
         int DIS = 0;
         cv::Mat d16, dColor;
         cv::Mat color = __reader->color;
+        cv::Mat color_copy = color;
         cv::Mat depth = __reader->depth;
 
-        if (__face->draw_face_box)
+        if (__face->isValideFace())
         {
-            __face->drawFaceBox(color);
+            __face->drawBox(color);
+            cout << "face" << endl;
         }
-        if (__object->draw_object_box)
+        if (__object->isValideObject())
         {
-            __object->drawObjectBox(color);
+            __object->drawBox(color);
+            cout << "obj" << endl;
         }
         // 决策，判断该帧是否需要进行目标检测&采取的对焦策略
         // DIS = Decider(color, d16, detect_count);
-        DIS = __decider->decide(color, d16, __face, __object, __dis, __reader);
-
+        DIS = __decider->decide(color_copy, d16, __face, __dis, __reader);
         // 读取当前脉冲值
         int current_pulse = __motor->readPulse();
 

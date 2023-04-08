@@ -24,9 +24,10 @@ protected:
     // int Decider(cv::Mat &, cv::Mat &, int &);
     // int disInterPolater(int &);
     // void dropProcess(int, cv::Mat &);
-    face_ptr __face;
-    object_ptr __object;
     decider_ptr __decider;
+    detector_ptr __face;
+    detector_ptr __object;
+    detector_ptr __detector;
 
 public:
     int init(int64 &, int) override;

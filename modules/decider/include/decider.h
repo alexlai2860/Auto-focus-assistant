@@ -13,6 +13,7 @@
 #include "dis.h"
 #include "face.h"
 #include "object.h"
+#include "detector.h"
 #include "RsReader.h"
 
 class decider
@@ -25,7 +26,7 @@ protected:
     const int detect_rate = 30 / param.FPS;
 
 public:
-    int decide(cv::Mat &, cv::Mat &, face_ptr &, object_ptr &, dis_ptr &, reader_ptr &);
+    int decide(cv::Mat &, cv::Mat &, detector_ptr &, dis_ptr &, reader_ptr &);
     int disInterPolater(int &);
     void dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &);
 };
