@@ -19,6 +19,10 @@
 class yolo_fast
 {
 public:
+    vector<int> classIds;
+    vector<float> confidences;
+    vector<cv::Rect> boxes;
+    
     bool init(string modelpath, float objThreshold, float confThreshold, float nmsThreshold);
     bool detect(cv::Mat &srcimg);
     void drawPred(cv::Mat &frame);
@@ -34,11 +38,8 @@ private:
     float objThreshold;
     float confThreshold;
     float nmsThreshold;
-    vector<int> classIds;
-    vector<float> confidences;
-    vector<cv::Rect> boxes;
     std::vector<string> classes;
-    const string classesFile = "../onnx/coco.names";
+    const string classesFile = "../param/coco.names";
     int num_class;
     cv::dnn::Net net;
 };
@@ -48,6 +49,6 @@ class ObjectLight : public Detector
 public:
     yolo_fast yolo;
     bool init = 0;
-    bool virtual detect(cv::Mat &, int &) override;
+    bool virtual detect(cv::Mat &) override;
     bool virtual drawBox(cv::Mat &) override;
 };

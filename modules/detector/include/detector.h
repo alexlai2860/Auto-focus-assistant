@@ -22,15 +22,21 @@ protected:
     bool draw_object_box = 0;
     bool draw_human_box = 0;
 
-
 public:
-    deque<cv::Point2f> face_center;
-    deque<cv::Point2f> target_center;
-    int target_label;
+    deque<vector<cv::Point2f>> face_center;     // 面部中心的时间队列
+    deque<vector<cv::Rect>> target_box; // 目标框的时间队列
+    deque<vector<int>> target_id;       // 目标框的ID队列
+    deque<vector<float>> target_conf;   // 目标框的置信度队列
+    int face_label;                     // 锁定的面部在队列中的位置
+    int target_label;                   // 锁定的目标在队列中的位置
 
-    virtual bool detect(cv::Mat &, int &) = 0;
+    virtual bool detect(cv::Mat &) = 0;
     virtual bool drawBox(cv::Mat &) = 0;
     inline bool isValideFace() { return draw_face_box; }
     inline bool isValideObject() { return draw_object_box; }
+    inline float getPointDis(const cv::Point2f &pt_1, const cv::Point2f &pt_2)
+    {
+        return sqrt(pow(pt_1.x - pt_2.x, 2) + pow(pt_1.y - pt_2.y, 2));
+    }
 };
 using detector_ptr = shared_ptr<Detector>;

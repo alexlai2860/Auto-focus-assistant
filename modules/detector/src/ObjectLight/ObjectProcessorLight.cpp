@@ -14,7 +14,7 @@ using namespace cv;
 using namespace dnn;
 using namespace std;
 
-bool ObjectLight::detect(cv::Mat &color_frame, int &drop_count)
+bool ObjectLight::detect(cv::Mat &color_frame)
 {
     if (!init)
     {

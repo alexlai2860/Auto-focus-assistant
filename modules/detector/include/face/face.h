@@ -17,12 +17,10 @@ using namespace std;
 class Face : public Detector
 {
 public:
-    Face() { cout << "face-constructor" << endl; }
-    ~Face() { cout << "face-destructor" << endl; }
     // bool draw_face_box = 0;
     cv::Mat detected_faces;
 
-    bool virtual detect(cv::Mat &, int &) override;
+    bool virtual detect(cv::Mat &) override;
     bool virtual drawBox(cv::Mat &) override;
     bool isValidFace(cv::Mat &, int);
 };

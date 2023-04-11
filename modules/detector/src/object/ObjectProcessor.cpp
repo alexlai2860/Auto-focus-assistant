@@ -14,7 +14,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::dnn;
 
-bool Object::detect(cv::Mat &color_frame, int &count)
+bool Object::detect(cv::Mat &color_frame)
 {
     Net net;
     Mat img = color_frame;

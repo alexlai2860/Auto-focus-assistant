@@ -72,6 +72,6 @@ public:
     bool draw_object_box = 0;
     vector<Output> result;
 
-    bool virtual detect(cv::Mat &, int &) override;
+    bool virtual detect(cv::Mat &) override;
     bool virtual drawBox(cv::Mat &) override;
 };

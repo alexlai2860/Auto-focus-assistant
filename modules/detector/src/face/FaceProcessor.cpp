@@ -22,10 +22,17 @@ using namespace std;
  * @return true 识别到人脸
  * @return false 未识别到人脸
  */
-bool Face::detect(cv::Mat &color_frame, int &count)
+bool Face::detect(cv::Mat &color_frame)
 {
     cv::Mat &faces = detected_faces;
-    // detect faces from the colorframe
+    int last_deque_size = face_center.size();
+    int last_face_num = 0;
+    if (last_deque_size != 0)
+    {
+        last_face_num = face_center.back().size();
+    }
+
+    // detect
     string onnx_path = "../onnx/yunet.onnx";
     cv::Ptr<cv::FaceDetectorYN> faceDetector;
     if (param.cam_module == ASTRA)
@@ -37,44 +44,66 @@ bool Face::detect(cv::Mat &color_frame, int &count)
         faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.98);
     }
     faceDetector->detect(color_frame, faces);
+
+    // process
     if (faces.cols > 0)
     {
-        count = 0;
+        vector<cv::Point2f> new_centers;
         for (int i = 0; i < faces.rows; i++)
         {
             if (isValidFace(faces, i))
             {
                 draw_face_box = 1;
-                // cout << "faces" << faces << endl;
                 // 计算方框中心
                 cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
-
-                // 储存face_center
-                this->face_center.push_back(center);
-                // cout << "center: " << center << endl;
+                new_centers.push_back(center);
             }
         }
-        if (this->face_center.size() >= param.FACE_DEQUE)
+        // // simple tracker
+        // if (last_deque_size != 0)
+        // {
+        //     if (faces.rows == last_face_num)
+        //     {
+        //         // 匹配
+        //         int label = 0;
+        //         int min_dis = INT_MAX;
+        //         for (int i = 0; i < face_center.back().size(); i++)
+        //         {
+        //             if (getPointDis(center, face_center.back().at(i)) < min_dis)
+        //             {
+        //                 label = i;
+        //             }
+        //         }
+        //         new_centers.at(label) = center;
+        //     }
+        // }
+        // else
+        // {
+        //     // 初始化
+        //     new_centers.push_back(center);
+        // }
+        // // 面部数量出现新增或删减
+        // if (faces.rows != last_face_num && last_face_num != 0)
+        // {
+        // }
+        face_center.push_back(new_centers);
+        if (face_center.size() >= param.FACE_DEQUE)
         {
-            this->face_center.pop_front();
+            face_center.pop_front();
         }
         return 1;
     }
     else
     {
         // Frame drop process
-        count++;
         if (face_center.empty())
         {
+            // 只有在人脸队列为空时，才不绘制人脸框
             draw_face_box = 0;
             return 0;
         }
-        cv::Point2f last_center = face_center.back();
+        vector<cv::Point2f> last_center = face_center.back();
         this->face_center.push_back(last_center);
-        // if (count > 15)
-        // {
-        //     this->face_center.clear();
-        // }
         return 0;
     }
 }

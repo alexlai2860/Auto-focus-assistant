@@ -6,7 +6,7 @@ FPS: 10
 # 距离队列(帧)
 DIS_DEQUE: 150
 # 最大面部数量
-FACE_DEQUE: 25
+FACE_DEQUE: 40
 # 移动判别(mm)
 MOVE_JUDGE: 25
 

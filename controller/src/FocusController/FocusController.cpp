@@ -26,6 +26,7 @@ int FocusController::init(int64 &t0, int lens_num)
     __data = make_shared<Data>();
     __dis = make_shared<Dis>();
     __motor = make_shared<SteppingMotor>();
+    __logic = make_shared<LogicTools>();
     // __decider = make_shared<decider>();
 
     // 每次循环：先读取当前电机位置
@@ -83,11 +84,16 @@ void FocusController::rsProcessFrame(int64 &t0)
         __reader->read();
 
         int DIS = 0;
+        int detect_flag = 0;
+        bool detected = 0;
+        bool preserve = 0;
+
         cv::Mat d16, dColor;
         cv::Mat color = __reader->color;
         cv::Mat color_copy = color;
         cv::Mat depth = __reader->depth;
 
+        // 绘制目标框
         if (__face->isValideFace())
         {
             __face->drawBox(color);
@@ -98,9 +104,24 @@ void FocusController::rsProcessFrame(int64 &t0)
             __object->drawBox(color);
             cout << "obj" << endl;
         }
-        // 决策，判断该帧是否需要进行目标检测&采取的对焦策略
-        // DIS = Decider(color, d16, detect_count);
-        DIS = __decider->decide(color_copy, d16, __face, __dis, __reader);
+
+        // 检测器，判断该帧是否需要进行目标检测
+        if (__logic->timeTrigger(t0, 10))
+        {
+            detected = __face->detect(color_copy);
+            __detector = __face;
+            detect_flag = 1;
+        }
+        else if (__logic->timeTrigger(t0, 15))
+        {
+            detected = __object->detect(color_copy);
+            __detector = __object;
+            detect_flag = 2;
+        }
+
+        // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
+        DIS = __decider->decide(d16, __detector, __dis, __logic, detected, detect_flag, preserve);
+
         // 读取当前脉冲值
         int current_pulse = __motor->readPulse();
 
@@ -108,7 +129,6 @@ void FocusController::rsProcessFrame(int64 &t0)
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
 
         // 计算目标脉冲值-方案二:使用插值法
-        // int target_pulse = disInterPolater(DIS);
         int target_pulse = __decider->disInterPolater(DIS);
         cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
