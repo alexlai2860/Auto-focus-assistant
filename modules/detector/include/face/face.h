@@ -19,6 +19,7 @@ class Face : public Detector
 public:
     // bool draw_face_box = 0;
     cv::Mat detected_faces;
+    deque<cv::Mat> faces_deque;
 
     bool virtual detect(cv::Mat &) override;
     bool virtual drawBox(cv::Mat &) override;

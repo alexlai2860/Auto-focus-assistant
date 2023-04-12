@@ -26,8 +26,10 @@ bool LogicTools::waitForNum(int num)
 bool LogicTools::timeTrigger(int64 &t0, float fps)
 {
     int64 run_time = 1000 * ((cv::getTickCount() - t0) / cv::getTickFrequency());
-    int delta_time = 1000.0 / fps;
+    int64 delta_time = 1000.0 / fps;
+    // cout << "last_capture_time" << last_capture_time << endl;
     // cout << "runtime" << run_time << endl;
+    // cout << "runtime - lct" << run_time - last_capture_time << endl;
     // cout << "delta_time" << delta_time << endl;
     if ((run_time - last_capture_time) >= delta_time)
     {

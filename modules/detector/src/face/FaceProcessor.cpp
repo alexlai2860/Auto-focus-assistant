@@ -24,7 +24,8 @@ using namespace std;
  */
 bool Face::detect(cv::Mat &color_frame)
 {
-    cv::Mat &faces = detected_faces;
+    // cv::Mat &faces = detected_faces;
+    cv::Mat faces;
     int last_deque_size = face_center.size();
     int last_face_num = 0;
     if (last_deque_size != 0)
@@ -49,6 +50,7 @@ bool Face::detect(cv::Mat &color_frame)
     if (faces.cols > 0)
     {
         vector<cv::Point2f> new_centers;
+        cv::Mat selected_faces;
         for (int i = 0; i < faces.rows; i++)
         {
             if (isValidFace(faces, i))
@@ -56,40 +58,21 @@ bool Face::detect(cv::Mat &color_frame)
                 draw_face_box = 1;
                 // 计算方框中心
                 cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
+                cv::Mat selected_face = faces.rowRange(i, i + 1);
                 new_centers.push_back(center);
+                selected_faces.push_back(selected_face);
+                // cout << selected_face << endl;
+                cout << faces << endl;
             }
         }
-        // // simple tracker
-        // if (last_deque_size != 0)
-        // {
-        //     if (faces.rows == last_face_num)
-        //     {
-        //         // 匹配
-        //         int label = 0;
-        //         int min_dis = INT_MAX;
-        //         for (int i = 0; i < face_center.back().size(); i++)
-        //         {
-        //             if (getPointDis(center, face_center.back().at(i)) < min_dis)
-        //             {
-        //                 label = i;
-        //             }
-        //         }
-        //         new_centers.at(label) = center;
-        //     }
-        // }
-        // else
-        // {
-        //     // 初始化
-        //     new_centers.push_back(center);
-        // }
-        // // 面部数量出现新增或删减
-        // if (faces.rows != last_face_num && last_face_num != 0)
-        // {
-        // }
+        faces_deque.push_back(selected_faces);
+        cout << faces_deque.size() << endl;
+        cout << faces_deque.back() << endl;
         face_center.push_back(new_centers);
         if (face_center.size() >= param.FACE_DEQUE)
         {
             face_center.pop_front();
+            faces_deque.pop_front();
         }
         return 1;
     }
@@ -110,7 +93,9 @@ bool Face::detect(cv::Mat &color_frame)
 
 bool Face::drawBox(cv::Mat &color_frame)
 {
-    cv::Mat faces = detected_faces;
+    // cv::Mat faces = detected_faces;
+    cout << "1" << endl;
+    cv::Mat faces = faces_deque.back();
     for (int i = 0; i < faces.rows; i++)
     {
         // 画人脸框

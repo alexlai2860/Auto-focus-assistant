@@ -15,7 +15,7 @@
 
 class LogicTools
 {
-    int64 last_capture_time;
+    int64 last_capture_time = 0;
 
 public:
     bool waitForNum(int num);
@@ -24,6 +24,5 @@ public:
     template <typename T>
     int maxMapItem(map<int, T> map, int threshold);
     int maxDequeItem(deque<int> &, int threshold);
-
 };
 using logic_ptr = shared_ptr<LogicTools>;

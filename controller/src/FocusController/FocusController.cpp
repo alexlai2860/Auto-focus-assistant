@@ -94,6 +94,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         cv::Mat depth = __reader->depth;
 
         // 绘制目标框
+        cout << "vf" << __face->isValideFace() << endl;
         if (__face->isValideFace())
         {
             __face->drawBox(color);
@@ -112,15 +113,13 @@ void FocusController::rsProcessFrame(int64 &t0)
             __detector = __face;
             detect_flag = 1;
         }
-        else if (__logic->timeTrigger(t0, 15))
+        else
         {
-            detected = __object->detect(color_copy);
-            __detector = __object;
-            detect_flag = 2;
+            detect_flag = 0;
         }
 
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
-        DIS = __decider->decide(d16, __detector, __dis, __logic, detected, detect_flag, preserve);
+        DIS = __decider->decide(d16, color, __reader, __detector, __dis, __logic, detected, detect_flag, preserve);
 
         // 读取当前脉冲值
         int current_pulse = __motor->readPulse();

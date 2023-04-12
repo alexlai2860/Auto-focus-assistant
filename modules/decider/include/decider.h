@@ -28,20 +28,21 @@ protected:
     const string logicFile = "../param/logic.names";
     std::vector<string> logic;
 
+    inline void faceDropInit(int i) { face_dropcount.at(i) = 0; };
+    inline void objectDropInit(int i) { object_dropcount.at(i) = 0; };
+    inline void dropInit(map<int, int> map)
+    {
+        for (int i = 0; i < 50; i++)
+            map[i] = 0;
+    };
+
 public:
-    int decide(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, bool);
+    int decide(cv::Mat &,cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, bool);
     int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool);
     int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool);
     int disInterPolater(int &);
     void dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &);
 
-    inline void faceDropInit(int i) { face_dropcount.at(i) = 0; };
-    inline void faceDropInit(int i) { object_dropcount.at(i) = 0; };
-    inline void dropInit(map<int, int> map)
-    {
-        for (int i = 0; i < 100; i++)
-            map.at(i) = 0;
-    };
 };
 
 using decider_ptr = shared_ptr<decider>;
