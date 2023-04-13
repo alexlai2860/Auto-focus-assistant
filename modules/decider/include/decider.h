@@ -19,7 +19,7 @@
 class decider
 {
 protected:
-    bool drop_init;
+    bool isDropInit = 0;
     bool detect_init = 1;
     int detect_count;
     map<int, int> face_dropcount;
@@ -37,12 +37,11 @@ protected:
     };
 
 public:
-    int decide(cv::Mat &,cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, bool);
-    int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool);
-    int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool);
+    int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, bool);
+    int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
+    int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int disInterPolater(int &);
     void dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &);
-
 };
 
 using decider_ptr = shared_ptr<decider>;

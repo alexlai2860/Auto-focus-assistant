@@ -15,16 +15,30 @@
 #include "param.h"
 #include <iostream>
 
+class SingleFace
+{
+public:
+    cv::Point2f center;
+    cv::Mat single_face;
+};
+
+class SingleObject
+{
+public:
+    cv::Point2f center;
+    cv::Rect single_object_box;
+};
+
 class Detector
 {
-protected:
+    // protected:
+public:
     bool draw_face_box = 0;
     bool draw_object_box = 0;
     bool draw_human_box = 0;
 
-public:
-    deque<vector<cv::Point2f>> face_center;     // 面部中心的时间队列
-    deque<vector<cv::Rect>> target_box; // 目标框的时间队列
+    deque<vector<SingleFace>> face;     // 面部中心的时间队列
+    deque<vector<SingleObject>> target; // 目标框的时间队列
     deque<vector<int>> target_id;       // 目标框的ID队列
     deque<vector<float>> target_conf;   // 目标框的置信度队列
     int face_label;                     // 锁定的面部在队列中的位置

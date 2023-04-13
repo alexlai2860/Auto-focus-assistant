@@ -36,24 +36,29 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         this->logic.push_back(line);
     }
 
-    cout << "perceptron:" << control_flag << endl;
+    cout << "detected? " << detected << endl;
+    cout << "face-size-1 ? " << __detector->face.size() << endl;
     switch (control_flag)
     {
     case 0:
-        situation = facePerceptron(d16, __detector, __dis, __tool, 0);
+        cout << "case " << 0 << endl;
+        situation = facePerceptron(d16, __detector, __dis, __tool, 0, 0);
         break;
     case 1:
-        situation = facePerceptron(d16, __detector, __dis, __tool, detected);
+        cout << "case " << 1 << endl;
+        situation = facePerceptron(d16, __detector, __dis, __tool, detected, 1);
         break;
     case 2:
-        situation = objectPerceptron(d16, __detector, __dis, __tool, detected);
+        cout << "case " << 2 << endl;
+        situation = objectPerceptron(d16, __detector, __dis, __tool, detected, 1);
         break;
     default:
         situation = 1;
         break;
     }
 
-    cout << "face-size" << __detector->face_center.size() << endl;
+    cout << "face-size-2 ? " << __detector->face.size() << endl;
+    cout << "situation? " << situation << endl;
 
     // 对判断得到的状态进行决策
     switch (situation)
@@ -67,7 +72,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
         DIS = __dis->target_dis.back();
-        __detector->face_center.clear();
+        __detector->face.clear();
         break;
     }
     case 1:
@@ -76,13 +81,13 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         {
             DIS = 20000; // 面部距离限制
             // situation=1:锁定队列末尾距离最近的面部
-            for (int i = 0; i < __detector->face_center.back().size(); i++)
+            for (int i = 0; i < __detector->face.back().size(); i++)
             {
-                float center_y = __detector->face_center.back().at(i).y;
-                float center_x = __detector->face_center.back().at(i).x;
+                float center_y = __detector->face.back().at(i).center.y;
+                float center_x = __detector->face.back().at(i).center.x;
                 if (param.INVERT_ON)
                 {
-                    center_y = param.RS_height - __detector->face_center.back().at(i).y;
+                    center_y = param.RS_height - __detector->face.back().at(i).center.y;
                 }
                 int face_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(center_x, center_y));
                 // 对realsense相机来说，discalculate并不承担计算距离的功能
@@ -114,9 +119,9 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
         if (DIS < 30000)
         {
-            if (!__detector->face_center.empty())
+            if (!__detector->face.empty())
             {
-                cv::circle(color, __detector->face_center.back().at(__detector->face_label), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                cv::circle(color, __detector->face.back().at(__detector->face_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
             }
             cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
@@ -135,16 +140,21 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
 }
 
 /**
- * @brief 面部识别状态感知器
+ * @brief 面部识别状态感知器/控制situation
  *
  * @return int
  */
-int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected)
+int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, int control_flag)
 {
     // 复杂的判断过程(待简化)
     int situation = 0;
-    int max_drop_num = 15;
-    dropInit(face_dropcount);
+    int max_drop_num = 30;
+    if (!isDropInit)
+    {
+        dropInit(face_dropcount);
+        isDropInit = 1;
+        cout << "dropinit" << endl;
+    }
     // 掉帧控制
     // if ()
     // {
@@ -153,44 +163,58 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
     if (detected)
     {
         // 简易追踪器：队列末尾重新排序
-        int last_deque_size = __detector->face_center.size();
+        int last_deque_size = __detector->face.size();
         int last_face_num = 0;
         if (last_deque_size > 1)
         {
-            last_face_num = __detector->face_center.at(last_deque_size - 1).size();
+            last_face_num = __detector->face.at(last_deque_size - 1).size();
         }
 
-        // 队列长度=1时 不做处理
+        // 队列长度>1时
         if (last_deque_size > 1)
         {
             cout << "1-init" << endl;
             // 三组中心vector,分别为前一次检测的数据、此次检测的数据和等待重新排序的数据
-            vector<cv::Point2f> current_centers = __detector->face_center.back();
-            vector<cv::Point2f> last_centers = __detector->face_center.at(last_deque_size - 2);
-            vector<cv::Point2f> new_centers;
+            vector<SingleFace> current_faces = __detector->face.back();
+            vector<SingleFace> last_faces = __detector->face.at(last_deque_size - 2);
+            vector<SingleFace> new_faces;
+
+            cout << "last_faces:" << last_faces.size() << endl;
+            cout << "current_faces:" << current_faces.size() << endl;
+            // vector<cv::Point2f> current_centers;
+            // vector<cv::Point2f> last_centers;
+            // vector<cv::Point2f> new_centers;
+            // for (int i = 0; i < current_faces.size(); i++)
+            // {
+            //     current_centers.push_back(current_faces.at(i).center);
+            // }
+            // for (int i = 0; i < last_faces.size(); i++)
+            // {
+            //     last_centers.push_back(last_faces.at(i).center);
+            // }
 
             // *****当前一次面部与当前面部数量相同时*****
-            if (last_centers.size() == current_centers.size())
+            if (last_faces.size() == current_faces.size())
             {
                 // 匹配
                 int label = 0;
                 int min_dis = INT_MAX;
-                new_centers = current_centers;
+                new_faces = current_faces;
                 cout << "1-1" << endl;
-                for (int i = 0; i < current_centers.size(); i++)
+                for (int i = 0; i < current_faces.size(); i++)
                 {
-                    for (int j = 0; j < last_centers.size(); j++)
+                    for (int j = 0; j < last_faces.size(); j++)
                     {
-                        if (__detector->getPointDis(current_centers.at(i), last_centers.at(j)) < min_dis)
+                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
                         {
-                            min_dis = __detector->getPointDis(current_centers.at(i), last_centers.at(j));
+                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
                             label = j; // label更新为欧氏距离最接近的j
                         }
                     }
                     cout << "1-2" << endl;
                     if (label != i)
                     {
-                        new_centers.at(label) = current_centers.at(i);
+                        new_faces.at(label) = current_faces.at(i);
                     }
                 }
                 // 重新初始化掉帧计数器
@@ -199,33 +223,33 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
             }
 
             // *****当前一次面部比当前面部数量多时（掉帧）*****
-            if (last_centers.size() > current_centers.size())
+            if (last_faces.size() > current_faces.size())
             {
                 // 匹配
                 int label = 0;
                 int min_dis = INT_MAX;
                 vector<int> match_label;
-                new_centers = last_centers;
+                new_faces = last_faces;
                 cout << "2-1" << endl;
-                for (int i = 0; i < current_centers.size(); i++)
+                for (int i = 0; i < current_faces.size(); i++)
                 {
-                    for (int j = 0; j < last_centers.size(); j++)
+                    for (int j = 0; j < last_faces.size(); j++)
                     {
-                        if (__detector->getPointDis(current_centers.at(i), last_centers.at(j)) < min_dis)
+                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
                         {
-                            min_dis = __detector->getPointDis(current_centers.at(i), last_centers.at(j));
+                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
                             label = j; // label更新为欧氏距离最接近的j
                         }
                     }
                     if (label != i)
                     {
-                        new_centers.at(label) = current_centers.at(i);
+                        new_faces.at(label) = current_faces.at(i);
                     }
                     match_label.push_back(label);
                 }
                 cout << "2-2" << endl;
                 // 标记掉帧的序列(so uncivilized):
-                for (int i = 0; i < last_centers.size(); i++)
+                for (int i = 0; i < last_faces.size(); i++)
                 {
                     bool is_drop_label = 1;
                     for (int j = 0; j < match_label.size(); j++)
@@ -247,34 +271,34 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     if (face_dropcount[i] > max_drop_num)
                     {
                         face_dropcount[i] = 0;
-                        auto iter = new_centers.erase(new_centers.begin() + i); // 删除指定元素
+                        auto iter = new_faces.erase(new_faces.begin() + i); // 删除指定元素
                     }
                 }
                 std::cout << "trackstatus-2" << endl;
             }
 
             // *****当前一次面部比当前面部数量少时（新增）*****
-            if (last_centers.size() < current_centers.size())
+            if (last_faces.size() < current_faces.size())
             {
                 // 匹配
                 int label = 0;
                 int min_dis = INT_MAX;
                 vector<int> match_label;
-                vector<cv::Point2f> new_faces; // 新识别到的面部中心
+                vector<SingleFace> new_faces_2; // 新识别到的面部中心
                 map<int, int> match_dis;
-                new_centers = last_centers;
+                new_faces = last_faces;
                 cout << "3-1" << endl;
-                for (int i = 0; i < last_centers.size(); i++)
+                for (int i = 0; i < last_faces.size(); i++)
                 {
                     match_dis[i] = 0;
                 }
-                for (int i = 0; i < current_centers.size(); i++)
+                for (int i = 0; i < current_faces.size(); i++)
                 {
-                    for (int j = 0; j < last_centers.size(); j++)
+                    for (int j = 0; j < last_faces.size(); j++)
                     {
-                        if (__detector->getPointDis(current_centers.at(i), last_centers.at(j)) < min_dis)
+                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
                         {
-                            min_dis = __detector->getPointDis(current_centers.at(i), last_centers.at(j));
+                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
                             label = j;
                         }
                     }
@@ -294,7 +318,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     if (isValidLabel)
                     {
                         // 未使用过
-                        new_centers.at(label) = current_centers.at(i);
+                        new_faces.at(label) = current_faces.at(i);
                         match_label.push_back(label);
                         match_dis[label] = min_dis;
                     }
@@ -306,47 +330,110 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                         {
                             // 替换label处的面部
                             match_dis[label] = min_dis;
-                            new_faces.push_back(new_centers.at(label));
-                            new_centers.at(label) = current_centers.at(i);
+                            new_faces_2.push_back(new_faces.at(label));
+                            new_faces.at(label) = current_faces.at(i);
                         }
                         else
                         {
-                            new_faces.push_back(current_centers.at(i));
+                            new_faces_2.push_back(current_faces.at(i));
                         }
                     }
                 }
                 cout << "3-3" << endl;
                 // 将匹配好的center和新识别到的center拼接在一起
-                new_centers.insert(new_centers.end(), new_faces.begin(), new_faces.end());
+                new_faces.insert(new_faces.end(), new_faces.begin(), new_faces_2.end());
                 std::cout << "trackstatus-3" << endl;
             }
             // 将重新排序的面部储存回face_center
-            __detector->face_center.back() = new_centers;
-        }
-        return 1;
-    }
-    else
-    {
-        if (!__detector->face_center.empty())
-        {
-            for (int i = 0; i < 100; i++)
+            __detector->face.back() = new_faces;
+            // 重置掉帧计数器
+            dropInit(face_dropcount);
+            // 标准判断drawbox状态语句
+            if (!__detector->face.empty())
             {
-                face_dropcount[i]++;
-                if (face_dropcount[i] > max_drop_num)
+                if (__detector->face.back().empty())
                 {
-                    face_dropcount[i] = 0;
-                    auto iter = __detector->face_center.erase(__detector->face_center.begin() + i); // 删除指定元素
+                    __detector->draw_face_box = 0;
+                    cout << "empty" << endl;
+                    return 0;
+                }
+                else
+                {
+                    __detector->draw_face_box = 1;
+                    cout << "!empty" << endl;
+                    return 1;
                 }
             }
-            cout << face_dropcount.size() << endl;
-        }
-        if (__detector->face_center.empty())
-        {
-            return 0;
+            else
+            {
+                __detector->draw_face_box = 0;
+                return 0;
+            }
         }
         else
         {
-            return 1;
+            // 标准判断drawbox状态语句
+            if (!__detector->face.empty())
+            {
+                if (__detector->face.back().empty())
+                {
+                    __detector->draw_face_box = 0;
+                    cout << "empty" << endl;
+                    return 0;
+                }
+                else
+                {
+                    __detector->draw_face_box = 1;
+                    cout << "!empty" << endl;
+                    return 1;
+                }
+            }
+            else
+            {
+                __detector->draw_face_box = 0;
+                return 0;
+            }
+        }
+    }
+    else
+    {
+        if (!__detector->face.empty())
+        {
+            for (int i = 0; i < __detector->face.back().size(); i++)
+            {
+                if (control_flag == 1)
+                {
+                    face_dropcount[i]++;
+                    if (face_dropcount[i] > max_drop_num)
+                    {
+                        face_dropcount[i] = 0;
+                        auto iter = __detector->face.back().erase(__detector->face.back().begin() + i); // 删除指定元素
+                    }
+                }
+            }
+            cout << "fdc-size" << face_dropcount.size() << endl;
+            cout << "fdc" << face_dropcount[0] << endl;
+        }
+        // 标准判断drawbox状态语句
+        if (!__detector->face.empty())
+        {
+            if (__detector->face.back().empty())
+            {
+                __detector->draw_face_box = 0;
+                cout << "empty" << endl;
+                return 0;
+            }
+            else
+            {
+                __detector->draw_face_box = 1;
+                cout << "!empty" << endl;
+                return 1;
+            }
+        }
+        else
+        {
+            __detector->draw_face_box = 0;
+            return 0;
         }
     }
 }
@@ -356,7 +443,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
  *
  * @return int
  */
-int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected)
+int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, int control_flag)
 {
 }
 

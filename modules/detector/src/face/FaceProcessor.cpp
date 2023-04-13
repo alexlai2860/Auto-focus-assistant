@@ -13,6 +13,21 @@
 
 using namespace std;
 
+bool Face::YNinit()
+{
+    string onnx_path = "../onnx/yunet.onnx";
+    if (param.cam_module == ASTRA)
+    {
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.ASTRA_width, param.ASTRA_height), 0.96);
+    }
+    if (param.cam_module == REALSENSE)
+    {
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.96);
+    }
+    isYN_init = 1;
+    return 1;
+}
+
 /**
  * @brief 面部识别主函数
  *
@@ -26,25 +41,23 @@ bool Face::detect(cv::Mat &color_frame)
 {
     // cv::Mat &faces = detected_faces;
     cv::Mat faces;
-    int last_deque_size = face_center.size();
+    int last_deque_size = face.size();
     int last_face_num = 0;
     if (last_deque_size != 0)
     {
-        last_face_num = face_center.back().size();
+        last_face_num = face.back().size();
     }
 
     // detect
-    string onnx_path = "../onnx/yunet.onnx";
-    cv::Ptr<cv::FaceDetectorYN> faceDetector;
-    if (param.cam_module == ASTRA)
+    if (isYN_init)
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.ASTRA_width, param.ASTRA_height), 0.98);
+        faceDetector->detect(color_frame, faces);
     }
-    if (param.cam_module == REALSENSE)
+    else
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.98);
+        YNinit();
+        faceDetector->detect(color_frame, faces);
     }
-    faceDetector->detect(color_frame, faces);
 
     // process
     if (faces.cols > 0)
@@ -61,32 +74,35 @@ bool Face::detect(cv::Mat &color_frame)
                 cv::Mat selected_face = faces.rowRange(i, i + 1);
                 new_centers.push_back(center);
                 selected_faces.push_back(selected_face);
-                // cout << selected_face << endl;
-                cout << faces << endl;
+                // 载入face_center
+                SingleFace single_face;
+                single_face.center = center;
+                single_face.single_face = selected_face;
+                vector<SingleFace> current_faces;
+                current_faces.push_back(single_face);
+                face.push_back(current_faces);
             }
         }
-        faces_deque.push_back(selected_faces);
-        cout << faces_deque.size() << endl;
-        cout << faces_deque.back() << endl;
-        face_center.push_back(new_centers);
-        if (face_center.size() >= param.FACE_DEQUE)
+        // faces_deque.push_back(selected_faces);
+        // cout << faces_deque.size() << endl;
+        // cout << faces_deque.back() << endl;
+        if (face.size() >= param.FACE_DEQUE)
         {
-            face_center.pop_front();
-            faces_deque.pop_front();
+            face.pop_front();
         }
         return 1;
     }
     else
     {
         // Frame drop process
-        if (face_center.empty())
+        if (face.empty())
         {
             // 只有在人脸队列为空时，才不绘制人脸框
             draw_face_box = 0;
             return 0;
         }
-        vector<cv::Point2f> last_center = face_center.back();
-        this->face_center.push_back(last_center);
+        vector<SingleFace> last_face = face.back();
+        this->face.push_back(last_face);
         return 0;
     }
 }
@@ -95,7 +111,13 @@ bool Face::drawBox(cv::Mat &color_frame)
 {
     // cv::Mat faces = detected_faces;
     cout << "1" << endl;
-    cv::Mat faces = faces_deque.back();
+    // cv::Mat faces = faces_deque.back();
+    vector<SingleFace> face_vector = face.back();
+    cv::Mat faces;
+    for (int i = 0; i < face_vector.size(); i++)
+    {
+        faces.push_back(face_vector.at(i).single_face);
+    }
     for (int i = 0; i < faces.rows; i++)
     {
         // 画人脸框

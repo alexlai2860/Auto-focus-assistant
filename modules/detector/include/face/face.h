@@ -10,12 +10,17 @@
  */
 #pragma once
 
-#include"detector.h"
+#include "detector.h"
 
 using namespace std;
 
 class Face : public Detector
 {
+private:
+    cv::Ptr<cv::FaceDetectorYN> faceDetector;
+    bool isYN_init;
+    bool YNinit();
+
 public:
     // bool draw_face_box = 0;
     cv::Mat detected_faces;
