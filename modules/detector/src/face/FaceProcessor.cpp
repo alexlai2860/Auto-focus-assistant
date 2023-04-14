@@ -22,7 +22,7 @@ bool Face::YNinit()
     }
     if (param.cam_module == REALSENSE)
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.96);
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.9);
     }
     isYN_init = 1;
     return 1;
@@ -64,6 +64,7 @@ bool Face::detect(cv::Mat &color_frame)
     {
         vector<cv::Point2f> new_centers;
         cv::Mat selected_faces;
+        vector<SingleFace> current_faces;
         for (int i = 0; i < faces.rows; i++)
         {
             if (isValidFace(faces, i))
@@ -78,11 +79,12 @@ bool Face::detect(cv::Mat &color_frame)
                 SingleFace single_face;
                 single_face.center = center;
                 single_face.single_face = selected_face;
-                vector<SingleFace> current_faces;
                 current_faces.push_back(single_face);
-                face.push_back(current_faces);
             }
         }
+        face.push_back(current_faces);
+        cout << "current-face-size " << current_faces.size() << endl;
+        cout << "face-size " << face.size() << endl;
         // faces_deque.push_back(selected_faces);
         // cout << faces_deque.size() << endl;
         // cout << faces_deque.back() << endl;
@@ -90,19 +92,26 @@ bool Face::detect(cv::Mat &color_frame)
         {
             face.pop_front();
         }
-        return 1;
+        if (!current_faces.empty())
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
     else
     {
-        // Frame drop process
-        if (face.empty())
-        {
-            // 只有在人脸队列为空时，才不绘制人脸框
-            draw_face_box = 0;
-            return 0;
-        }
-        vector<SingleFace> last_face = face.back();
-        this->face.push_back(last_face);
+        // // Frame drop process
+        // if (face.empty())
+        // {
+        //     // 只有在人脸队列为空时，才不绘制人脸框
+        //     draw_face_box = 0;
+        //     return 0;
+        // }
+        // vector<SingleFace> last_face = face.back();
+        // this->face.push_back(last_face);
         return 0;
     }
 }
@@ -110,7 +119,6 @@ bool Face::detect(cv::Mat &color_frame)
 bool Face::drawBox(cv::Mat &color_frame)
 {
     // cv::Mat faces = detected_faces;
-    cout << "1" << endl;
     // cv::Mat faces = faces_deque.back();
     vector<SingleFace> face_vector = face.back();
     cv::Mat faces;
@@ -118,6 +126,7 @@ bool Face::drawBox(cv::Mat &color_frame)
     {
         faces.push_back(face_vector.at(i).single_face);
     }
+    cout << "draw-faces-vector" << faces << endl;
     for (int i = 0; i < faces.rows; i++)
     {
         // 画人脸框
@@ -165,6 +174,7 @@ bool Face::drawBox(cv::Mat &color_frame)
         }
         // 画置信度
         cv::putText(color_frame, cv::format("%.4f", faces.at<float>(i, 14)), cv::Point2i(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)) + 15), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0));
+        cout << "draw-face-" << i << endl;
     }
     return 1;
 }

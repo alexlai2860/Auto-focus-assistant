@@ -170,7 +170,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
             last_face_num = __detector->face.at(last_deque_size - 1).size();
         }
 
-        // 队列长度>1时
+        // 队列长度>1时:已经初始化
         if (last_deque_size > 1)
         {
             cout << "1-init" << endl;
@@ -218,7 +218,11 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     }
                 }
                 // 重新初始化掉帧计数器
-                dropInit(face_dropcount);
+                for (int i = 0; i < 50; i++)
+                {
+                    face_dropcount[i] = 0;
+                }
+                cout << "fdc-reinit" << face_dropcount[0] << endl;
                 std::cout << "trackstatus-1" << endl;
             }
 
@@ -341,13 +345,16 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                 }
                 cout << "3-3" << endl;
                 // 将匹配好的center和新识别到的center拼接在一起
-                new_faces.insert(new_faces.end(), new_faces.begin(), new_faces_2.end());
+                new_faces.insert(new_faces.end(), new_faces_2.begin(), new_faces_2.end());
                 std::cout << "trackstatus-3" << endl;
             }
             // 将重新排序的面部储存回face_center
             __detector->face.back() = new_faces;
             // 重置掉帧计数器
-            dropInit(face_dropcount);
+            for (int i = 0; i < 50; i++)
+            {
+                face_dropcount[i] = 0;
+            }
             // 标准判断drawbox状态语句
             if (!__detector->face.empty())
             {
@@ -397,11 +404,14 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
     }
     else
     {
+        // 当面部时间队列不为空(完成初始化)
         if (!__detector->face.empty())
         {
-            for (int i = 0; i < __detector->face.back().size(); i++)
+            cout << "face-back-size1" << __detector->face.back().size() << endl;
+            // 判断是否为进行检测的帧
+            if (control_flag == 1)
             {
-                if (control_flag == 1)
+                for (int i = 0; i < __detector->face.back().size(); i++)
                 {
                     face_dropcount[i]++;
                     if (face_dropcount[i] > max_drop_num)
@@ -411,6 +421,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     }
                 }
             }
+            cout << "face-back-size2" << __detector->face.back().size() << endl;
             cout << "fdc-size" << face_dropcount.size() << endl;
             cout << "fdc" << face_dropcount[0] << endl;
         }
