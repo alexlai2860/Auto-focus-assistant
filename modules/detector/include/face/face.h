@@ -20,13 +20,14 @@ private:
     cv::Ptr<cv::FaceDetectorYN> faceDetector;
     bool isYN_init;
     bool YNinit();
+    int getDepth(const cv::Mat &depth_frame, const cv::Point2i &);
 
 public:
     // bool draw_face_box = 0;
     cv::Mat detected_faces;
     deque<cv::Mat> faces_deque;
 
-    bool virtual detect(cv::Mat &) override;
-    bool virtual drawBox(cv::Mat &) override;
+    bool virtual detect(cv::Mat &, cv::Mat &) override;
+    bool virtual drawBox(cv::Mat &, cv::Mat &) override;
     bool isValidFace(cv::Mat &, int);
 };

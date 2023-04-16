@@ -24,5 +24,10 @@ public:
     template <typename T>
     int maxMapItem(map<int, T> map, int threshold);
     int maxDequeItem(deque<int> &, int threshold);
+    
+    inline float getPointDis(const cv::Point2f &pt_1, const cv::Point2f &pt_2)
+    {
+        return sqrt(pow(pt_1.x - pt_2.x, 2) + pow(pt_1.y - pt_2.y, 2));
+    }
 };
 using logic_ptr = shared_ptr<LogicTools>;

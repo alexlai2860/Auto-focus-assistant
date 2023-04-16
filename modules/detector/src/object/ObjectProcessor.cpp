@@ -14,7 +14,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::dnn;
 
-bool Object::detect(cv::Mat &color_frame)
+bool Object::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     Net net;
     Mat img = color_frame;
@@ -42,7 +42,7 @@ bool Object::detect(cv::Mat &color_frame)
     return 1;
 }
 
-bool Object::drawBox(cv::Mat &color_frame)
+bool Object::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     // 生成随机颜色
     std::vector<Scalar> color;

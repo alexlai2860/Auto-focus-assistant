@@ -97,19 +97,19 @@ void FocusController::rsProcessFrame(int64 &t0)
         cout << "vf" << __face->isValideFace() << endl;
         if (__face->isValideFace())
         {
-            __face->drawBox(color);
+            __face->drawBox(color, depth);
             cout << "face" << endl;
         }
         if (__object->isValideObject())
         {
-            __object->drawBox(color);
+            __object->drawBox(color, depth);
             cout << "obj" << endl;
         }
 
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
-            detected = __face->detect(color_copy);
+            detected = __face->detect(color_copy, depth);
             __detector = __face;
             detect_flag = 1;
         }

@@ -160,6 +160,9 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
     // {
     //     drop_count = 0;
     // }
+    cout << "temp-face-size " << __detector->face.size();
+
+    // TODO:新数据的重新排序 和 状态感知更新 分离解耦
     if (detected)
     {
         // 简易追踪器：队列末尾重新排序
@@ -181,204 +184,301 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
 
             cout << "last_faces:" << last_faces.size() << endl;
             cout << "current_faces:" << current_faces.size() << endl;
-            // vector<cv::Point2f> current_centers;
-            // vector<cv::Point2f> last_centers;
-            // vector<cv::Point2f> new_centers;
-            // for (int i = 0; i < current_faces.size(); i++)
-            // {
-            //     current_centers.push_back(current_faces.at(i).center);
-            // }
-            // for (int i = 0; i < last_faces.size(); i++)
-            // {
-            //     last_centers.push_back(last_faces.at(i).center);
-            // }
 
-            // *****当前一次面部与当前面部数量相同时*****
-            if (last_faces.size() == current_faces.size())
+            // 初始化new_faces
+            int num = MAX(last_faces.size(), current_faces.size());
+            SingleFace empty_face;
+            for (int i = 0; i < num; i++)
             {
-                // 匹配
-                int label = 0;
-                int min_dis = INT_MAX;
-                new_faces = current_faces;
-                cout << "1-1" << endl;
-                for (int i = 0; i < current_faces.size(); i++)
-                {
-                    for (int j = 0; j < last_faces.size(); j++)
-                    {
-                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
-                        {
-                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
-                            label = j; // label更新为欧氏距离最接近的j
-                        }
-                    }
-                    cout << "1-2" << endl;
-                    if (label != i)
-                    {
-                        new_faces.at(label) = current_faces.at(i);
-                    }
-                }
-                // 重新初始化掉帧计数器
-                for (int i = 0; i < 50; i++)
-                {
-                    face_dropcount[i] = 0;
-                }
-                cout << "fdc-reinit" << face_dropcount[0] << endl;
-                std::cout << "trackstatus-1" << endl;
+                new_faces.push_back(empty_face);
             }
-
-            // *****当前一次面部比当前面部数量多时（掉帧）*****
-            if (last_faces.size() > current_faces.size())
+            // 配对last_faces和current_faces
+            for (int i = 0; i < last_faces.size(); i++)
             {
-                // 匹配
-                int label = 0;
-                int min_dis = INT_MAX;
-                vector<int> match_label;
-                new_faces = last_faces;
-                cout << "2-1" << endl;
-                for (int i = 0; i < current_faces.size(); i++)
+                for (int j = 0; j < current_faces.size(); j++)
                 {
-                    for (int j = 0; j < last_faces.size(); j++)
+                    if (isSameFace(last_faces.at(i), current_faces.at(j), __tool))
                     {
-                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
-                        {
-                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
-                            label = j; // label更新为欧氏距离最接近的j
-                        }
+                        new_faces.at(i) = current_faces.at(j);
                     }
-                    if (label != i)
-                    {
-                        new_faces.at(label) = current_faces.at(i);
-                    }
-                    match_label.push_back(label);
                 }
-                cout << "2-2" << endl;
-                // 标记掉帧的序列(so uncivilized):
-                for (int i = 0; i < last_faces.size(); i++)
+            }
+            cout << "stage-1" << endl;
+            // 检查是否存在未能成功配对的last_faces（先做掉帧处理）
+            for (int i = 0; i < last_faces.size(); i++)
+            {
+                if (last_faces.at(i).forward_dis < 0)
                 {
-                    bool is_drop_label = 1;
-                    for (int j = 0; j < match_label.size(); j++)
+                    // 认为出现掉帧
+                    if (new_faces.at(i).backward_dis < 0)
                     {
-                        if (i == match_label.at(j))
-                        {
-                            is_drop_label = 0;
-                        }
-                    }
-                    // 掉帧处理
-                    if (is_drop_label)
-                    {
-                        face_dropcount[i]++;
+                        new_faces.at(i) = last_faces.at(i);
+                        new_faces.at(i).backward_dis = 0;
                     }
                     else
                     {
-                        face_dropcount[i] = 0;
+                        cout << "掉帧且冲突!!" << endl;
+                        cout << "oh,我的上帝,真是见鬼,这真是糟糕透了" << endl;
                     }
-                    if (face_dropcount[i] > max_drop_num)
-                    {
-                        face_dropcount[i] = 0;
-                        auto iter = new_faces.erase(new_faces.begin() + i); // 删除指定元素
-                    }
-                }
-                std::cout << "trackstatus-2" << endl;
-            }
-
-            // *****当前一次面部比当前面部数量少时（新增）*****
-            if (last_faces.size() < current_faces.size())
-            {
-                // 匹配
-                int label = 0;
-                int min_dis = INT_MAX;
-                vector<int> match_label;
-                vector<SingleFace> new_faces_2; // 新识别到的面部中心
-                map<int, int> match_dis;
-                new_faces = last_faces;
-                cout << "3-1" << endl;
-                for (int i = 0; i < last_faces.size(); i++)
-                {
-                    match_dis[i] = 0;
-                }
-                for (int i = 0; i < current_faces.size(); i++)
-                {
-                    for (int j = 0; j < last_faces.size(); j++)
-                    {
-                        if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
-                        {
-                            min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
-                            label = j;
-                        }
-                    }
-                    // 判断该label是否已经使用过
-                    bool isValidLabel = 1;
-                    if (match_label.size() > 0)
-                    {
-                        for (auto lb : match_label)
-                        {
-                            if (lb == label)
-                            {
-                                isValidLabel = 0;
-                            }
-                        }
-                    }
-                    cout << "3-2" << endl;
-                    if (isValidLabel)
-                    {
-                        // 未使用过
-                        new_faces.at(label) = current_faces.at(i);
-                        match_label.push_back(label);
-                        match_dis[label] = min_dis;
-                    }
-                    else
-                    {
-                        // 使用过
-                        // int dis = __detector->getPointDis(current_centers.at(i),last_centers.at(label));
-                        if (min_dis < match_dis[label])
-                        {
-                            // 替换label处的面部
-                            match_dis[label] = min_dis;
-                            new_faces_2.push_back(new_faces.at(label));
-                            new_faces.at(label) = current_faces.at(i);
-                        }
-                        else
-                        {
-                            new_faces_2.push_back(current_faces.at(i));
-                        }
-                    }
-                }
-                cout << "3-3" << endl;
-                // 将匹配好的center和新识别到的center拼接在一起
-                new_faces.insert(new_faces.end(), new_faces_2.begin(), new_faces_2.end());
-                std::cout << "trackstatus-3" << endl;
-            }
-            // 将重新排序的面部储存回face_center
-            __detector->face.back() = new_faces;
-            // 重置掉帧计数器
-            for (int i = 0; i < 50; i++)
-            {
-                face_dropcount[i] = 0;
-            }
-            // 标准判断drawbox状态语句
-            if (!__detector->face.empty())
-            {
-                if (__detector->face.back().empty())
-                {
-                    __detector->draw_face_box = 0;
-                    cout << "empty" << endl;
-                    return 0;
                 }
                 else
                 {
-                    __detector->draw_face_box = 1;
-                    cout << "!empty" << endl;
-                    return 1;
+                    if (new_faces.at(i).backward_dis < 0)
+                    {
+                        // 重置掉帧数
+                        new_faces.at(i).drop_count = 0;
+                    }
+                    else
+                    {
+                        cout << "serious?" << endl;
+                    }
                 }
+            }
+            cout << "stage-2" << endl;
+            // 检查是否存在未能成功配对的current_face（新增）（后做新增处理）
+            for (auto &single_current_face : current_faces)
+            {
+                cout << "stage-2-1" << endl;
+                if (single_current_face.backward_dis < 0)
+                {
+                    // 认为出现新的face
+                    bool uninserted = 1;
+                    for (auto &single_new_face : new_faces)
+                    {
+                        // 随便找个没有前驱节点的newface，赋值
+                        if (single_new_face.backward_dis < 0)
+                        {
+                            single_new_face = single_current_face;
+                            uninserted = 0;
+                            cout << "insert-in-vector:" << single_new_face.single_face << endl;
+                            break;
+                        }
+                    }
+                    cout << "stage-2-2" << endl;
+                    if (uninserted)
+                    {
+                        // 找不到就新增
+                        new_faces.push_back(single_current_face);
+                        cout << "pushback-in-vector:" << single_current_face.single_face << endl;
+                    }
+                }
+            }
+            cout << "stage-3" << endl;
+            // 后处理
+            for (int i = 0; i < new_faces.size(); i++)
+            {
+                cout << "drop_count_" << i << new_faces.at(i).drop_count << endl;
+                if (new_faces.at(i).drop_count > max_drop_num)
+                {
+                    auto iter = new_faces.erase(new_faces.begin() + i); // 删除指定元素
+                }
+            }
+            cout << "stage-4" << endl;
+            cout << "new-faces-size " << new_faces.size() << endl;
+            for (auto face : new_faces)
+            {
+                cout << face.single_face << endl;
+            }
+            // 完成new_faces的处理
+            __detector->face.back() = new_faces;
+            if (!new_faces.empty())
+            {
+                __detector->draw_face_box = 1;
+                return 1;
             }
             else
             {
                 __detector->draw_face_box = 0;
                 return 0;
             }
+
+            // // *****当前一次面部与当前面部数量相同时*****
+            // if (last_faces.size() == current_faces.size())
+            // {
+            //     // 匹配
+            //     int label = 0;
+            //     int min_dis = INT_MAX;
+            //     new_faces = current_faces;
+            //     cout << "1-1" << endl;
+            //     for (int i = 0; i < current_faces.size(); i++)
+            //     {
+            //         for (int j = 0; j < last_faces.size(); j++)
+            //         {
+            //             if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
+            //             {
+            //                 min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
+            //                 label = j; // label更新为欧氏距离最接近的j
+            //             }
+            //         }
+            //         cout << "1-2" << endl;
+            //         if (label != i)
+            //         {
+            //             new_faces.at(label) = current_faces.at(i);
+            //         }
+            //     }
+            //     // 重新初始化掉帧计数器
+            //     for (int i = 0; i < 50; i++)
+            //     {
+            //         face_dropcount[i] = 0;
+            //     }
+            //     cout << "fdc-reinit" << face_dropcount[0] << endl;
+            //     std::cout << "trackstatus-1" << endl;
+            // }
+
+            // // *****当前一次面部比当前面部数量多时（掉帧）*****
+            // if (last_faces.size() > current_faces.size())
+            // {
+            //     // 匹配
+            //     int label = 0;
+            //     int min_dis = INT_MAX;
+            //     vector<int> match_label;
+            //     new_faces = last_faces;
+            //     cout << "2-1" << endl;
+            //     for (int i = 0; i < current_faces.size(); i++)
+            //     {
+            //         for (int j = 0; j < last_faces.size(); j++)
+            //         {
+            //             if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
+            //             {
+            //                 min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
+            //                 label = j; // label更新为欧氏距离最接近的j
+            //             }
+            //         }
+            //         if (label != i)
+            //         {
+            //             new_faces.at(label) = current_faces.at(i);
+            //         }
+            //         match_label.push_back(label);
+            //     }
+            //     cout << "2-2" << endl;
+            //     // 标记掉帧的序列(so uncivilized):
+            //     for (int i = 0; i < last_faces.size(); i++)
+            //     {
+            //         bool is_drop_label = 1;
+            //         for (int j = 0; j < match_label.size(); j++)
+            //         {
+            //             if (i == match_label.at(j))
+            //             {
+            //                 is_drop_label = 0;
+            //             }
+            //         }
+            //         // 掉帧处理
+            //         if (is_drop_label)
+            //         {
+            //             face_dropcount[i]++;
+            //         }
+            //         else
+            //         {
+            //             face_dropcount[i] = 0;
+            //         }
+            //         if (face_dropcount[i] > max_drop_num)
+            //         {
+            //             face_dropcount[i] = 0;
+            //             auto iter = new_faces.erase(new_faces.begin() + i); // 删除指定元素
+            //         }
+            //     }
+            //     std::cout << "trackstatus-2" << endl;
+            // }
+
+            // // *****当前一次面部比当前面部数量少时（新增）*****
+            // if (last_faces.size() < current_faces.size())
+            // {
+            //     // 匹配
+            //     int label = 0;
+            //     int min_dis = INT_MAX;
+            //     vector<int> match_label;
+            //     vector<SingleFace> new_faces_2; // 新识别到的面部中心
+            //     map<int, int> match_dis;
+            //     new_faces = last_faces;
+            //     cout << "3-1" << endl;
+            //     for (int i = 0; i < last_faces.size(); i++)
+            //     {
+            //         match_dis[i] = 0;
+            //     }
+            //     for (int i = 0; i < current_faces.size(); i++)
+            //     {
+            //         for (int j = 0; j < last_faces.size(); j++)
+            //         {
+            //             if (__detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center) < min_dis)
+            //             {
+            //                 min_dis = __detector->getPointDis(current_faces.at(i).center, last_faces.at(j).center);
+            //                 label = j;
+            //             }
+            //         }
+            //         // 判断该label是否已经使用过
+            //         bool isValidLabel = 1;
+            //         if (match_label.size() > 0)
+            //         {
+            //             for (auto lb : match_label)
+            //             {
+            //                 if (lb == label)
+            //                 {
+            //                     isValidLabel = 0;
+            //                 }
+            //             }
+            //         }
+            //         cout << "3-2" << endl;
+            //         if (isValidLabel)
+            //         {
+            //             // 未使用过
+            //             new_faces.at(label) = current_faces.at(i);
+            //             match_label.push_back(label);
+            //             match_dis[label] = min_dis;
+            //         }
+            //         else
+            //         {
+            //             // 使用过
+            //             // int dis = __detector->getPointDis(current_centers.at(i),last_centers.at(label));
+            //             if (min_dis < match_dis[label])
+            //             {
+            //                 // 替换label处的面部
+            //                 match_dis[label] = min_dis;
+            //                 new_faces_2.push_back(new_faces.at(label));
+            //                 new_faces.at(label) = current_faces.at(i);
+            //             }
+            //             else
+            //             {
+            //                 new_faces_2.push_back(current_faces.at(i));
+            //             }
+            //         }
+            //     }
+            //     cout << "3-3" << endl;
+            //     // 将匹配好的center和新识别到的center拼接在一起
+            //     new_faces.insert(new_faces.end(), new_faces_2.begin(), new_faces_2.end());
+            //     std::cout << "trackstatus-3" << endl;
+            // }
+            // // 将重新排序的面部储存回face_center
+            // __detector->face.back() = new_faces;
+            // // 重置掉帧计数器
+            // for (int i = 0; i < 50; i++)
+            // {
+            //     face_dropcount[i] = 0;
+            // }
+            // // 标准判断drawbox状态语句
+            // if (!__detector->face.empty())
+            // {
+            //     if (__detector->face.back().empty())
+            //     {
+            //         __detector->draw_face_box = 0;
+            //         cout << "empty" << endl;
+            //         return 0;
+            //     }
+            //     else
+            //     {
+            //         __detector->draw_face_box = 1;
+            //         cout << "!empty" << endl;
+            //         return 1;
+            //     }
+            // }
+            // else
+            // {
+            //     __detector->draw_face_box = 0;
+            //     return 0;
+            // }
         }
         else
         {
+            // 队列小于或等于1
             // 标准判断drawbox状态语句
             if (!__detector->face.empty())
             {
@@ -404,7 +504,8 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
     }
     else
     {
-        // 当面部时间队列不为空(完成初始化)
+        // 没检测到目标
+        // 当面部时间队列不为空(已经初始化)
         if (!__detector->face.empty())
         {
             cout << "face-back-size1" << __detector->face.back().size() << endl;
@@ -413,17 +514,22 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
             {
                 for (int i = 0; i < __detector->face.back().size(); i++)
                 {
-                    face_dropcount[i]++;
-                    if (face_dropcount[i] > max_drop_num)
+                    __detector->face.back().at(i).drop_count++;
+                    cout << "drop_count2_" << i << __detector->face.back().at(i).drop_count << endl;
+                    if (__detector->face.back().at(i).drop_count > max_drop_num)
                     {
-                        face_dropcount[i] = 0;
                         auto iter = __detector->face.back().erase(__detector->face.back().begin() + i); // 删除指定元素
                     }
+                    // if (face_dropcount[i] > max_drop_num)
+                    // {
+                    //     face_dropcount[i] = 0;
+                    //     auto iter = __detector->face.back().erase(__detector->face.back().begin() + i); // 删除指定元素
+                    // }
                 }
             }
-            cout << "face-back-size2" << __detector->face.back().size() << endl;
-            cout << "fdc-size" << face_dropcount.size() << endl;
-            cout << "fdc" << face_dropcount[0] << endl;
+            // cout << "face-back-size2" << __detector->face.back().size() << endl;
+            // cout << "fdc-size" << face_dropcount.size() << endl;
+            // cout << "fdc" << face_dropcount[0] << endl;
         }
         // 标准判断drawbox状态语句
         if (!__detector->face.empty())
@@ -456,6 +562,128 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
  */
 int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, int control_flag)
 {
+}
+
+/**
+ * @brief
+ *
+ * @param last_face
+ * @param current_face
+ * @return true
+ * @return false
+ */
+bool decider::isSameFace(SingleFace &last_face, SingleFace &current_face, logic_ptr &__tool)
+{
+    cout << "judge-init" << endl;
+    cout << "lst-face" << last_face.single_face << endl;
+    cout << "crt-face" << current_face.single_face << endl;
+
+    bool is_same_face = 0;
+    cv::Rect2i last_face_box(int(last_face.single_face.at<float>(0, 0)), int(last_face.single_face.at<float>(0, 1)),
+                             int(last_face.single_face.at<float>(0, 2)), int(last_face.single_face.at<float>(0, 3)));
+    cv::Rect2i current_face_box(int(current_face.single_face.at<float>(0, 0)), int(current_face.single_face.at<float>(0, 1)),
+                                int(current_face.single_face.at<float>(0, 2)), int(current_face.single_face.at<float>(0, 3)));
+    float area_ratio = float(last_face_box.area()) / float(current_face_box.area());
+    cv::Point2i last_tl = last_face_box.tl();
+    cv::Point2i current_tl = current_face_box.tl();
+    cv::Point2i last_center(last_tl.x + last_face_box.x / 2, last_tl.y + last_face_box.y / 2);
+    cv::Point2i currnet_center(current_tl.x + current_face_box.x / 2, current_tl.y + current_face_box.y / 2);
+
+    cout << "last-center " << last_center << endl;
+    cout << "current-center " << currnet_center << endl;
+
+    float tl_dis = __tool->getPointDis(last_tl, current_tl);
+    float center_dis = __tool->getPointDis(last_center, currnet_center);
+    float last_cam_dis = last_face.cam_dis;
+    float current_came_dis = current_face.cam_dis;
+    cout << "current_dis" << current_came_dis << endl;
+    cout << "last_cam_dis" << last_cam_dis << endl;
+    float dis_ratio = last_cam_dis / current_came_dis;
+
+    // 动态判别参数：x = x0 + b
+    // float dis_ratio_max = 1.45 + (last_face.drop_count + 1) / 25; // +1避免出现0
+    // float dis_ratio_min = 0.65 - (last_face.drop_count + 1) / 50; // 避免小于0
+    float dis_ratio_max = 3;
+    float dis_ratio_min = 0.4; // 暂时关闭dis判别
+    float area_ratio_max = 2 + (last_face.drop_count - 3) / 20;
+    float area_ratio_min = 0.5 - (last_face.drop_count - 3) / 40;
+    float tl_dis_max = MAX(float(last_face_box.width), float(last_face_box.height)) / (1.5 - 0.05 * (last_face.drop_count));
+    float center_dis_max = MAX(float(last_face_box.width), float(last_face_box.height)) / (1.5 - 0.05 * (last_face.drop_count));
+
+    // 判别条件
+    if (dis_ratio < dis_ratio_max && dis_ratio > dis_ratio_min)
+    {
+        if (area_ratio < area_ratio_max && area_ratio > area_ratio_min)
+        {
+            if (tl_dis < tl_dis_max)
+            {
+                if (center_dis < center_dis_max)
+                {
+                    if (last_face.forward_dis < 0)
+                    {
+                        // last不存在后继节点(面部)
+                        if (current_face.backward_dis < 0)
+                        {
+                            // 且current不存在前驱节点，则配对成功
+                            is_same_face = 1;
+                            last_face.forward_dis = center_dis;
+                            last_face.forward_face = &current_face;
+                            current_face.backward_dis = center_dis;
+                            current_face.backward_face = &last_face;
+                        }
+                        else
+                        {
+                            cout << "error!" << endl;
+                            // 小概率，先不管
+                        }
+                    }
+                    else
+                    {
+                        cout << "error!" << endl;
+                        // 小概率，待完善：目标过于密集才会出现
+                        // last存在后继节点：判断
+                        if (last_face.forward_dis > center_dis)
+                        {
+                            // 更新后继节点
+                            is_same_face = 1;
+                            last_face.forward_dis = center_dis;
+                            last_face.forward_face = &current_face;
+                            current_face.backward_dis = center_dis;
+                            current_face.backward_face = &last_face;
+                            // 重置原先后继节点的backward设置为-1
+                            // 注意这里使用指针，要求目标的地址不能改变
+                            last_face.forward_face->backward_dis = -1.f;
+                            last_face.forward_face->backward_face = nullptr;
+                        }
+                        else
+                        {
+                            // 不更新后继节点
+                        }
+                    }
+                }
+                else
+                {
+                    cout << "center_dis_unmatch:" << center_dis << endl;
+                }
+            }
+            else
+            {
+                cout << "tl_dis_unmatch:" << tl_dis << endl;
+            }
+        }
+        else
+        {
+            cout << "area lst" << last_face_box.area() << endl;
+            cout << "area crt" << current_face_box.area() << endl;
+            cout << "area_ratio_unmatch:" << area_ratio << endl;
+        }
+    }
+    else
+    {
+        cout << "dis_ratio_unmatch:" << dis_ratio << endl;
+    }
+    cout << "judge-complete:" << is_same_face << endl;
+    return is_same_face;
 }
 
 /**

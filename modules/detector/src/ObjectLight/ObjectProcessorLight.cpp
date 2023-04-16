@@ -14,7 +14,7 @@ using namespace cv;
 using namespace dnn;
 using namespace std;
 
-bool ObjectLight::detect(cv::Mat &color_frame)
+bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     if (!init)
     {
@@ -28,7 +28,7 @@ bool ObjectLight::detect(cv::Mat &color_frame)
     return 1;
 }
 
-bool ObjectLight::drawBox(cv::Mat &color_frame)
+bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     yolo.drawPred(color_frame);
     return 1;

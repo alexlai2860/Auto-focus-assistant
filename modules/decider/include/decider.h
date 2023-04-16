@@ -28,6 +28,8 @@ protected:
     const string logicFile = "../param/logic.names";
     std::vector<string> logic;
 
+    bool isSameFace(SingleFace &last_face, SingleFace &current_face, logic_ptr &);
+    bool isSameObject(SingleObject &last_object, SingleObject &current_object, logic_ptr &);
     inline void faceDropInit(int i) { face_dropcount.at(i) = 0; };
     inline void objectDropInit(int i) { object_dropcount.at(i) = 0; };
     inline void dropInit(map<int, int> map)

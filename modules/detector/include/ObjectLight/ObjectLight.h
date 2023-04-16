@@ -22,7 +22,7 @@ public:
     vector<int> classIds;
     vector<float> confidences;
     vector<cv::Rect> boxes;
-    
+
     bool init(string modelpath, float objThreshold, float confThreshold, float nmsThreshold);
     bool detect(cv::Mat &srcimg);
     void drawPred(cv::Mat &frame);
@@ -49,6 +49,6 @@ class ObjectLight : public Detector
 public:
     yolo_fast yolo;
     bool init = 0;
-    bool virtual detect(cv::Mat &) override;
-    bool virtual drawBox(cv::Mat &) override;
+    bool virtual detect(cv::Mat &, cv::Mat &) override;
+    bool virtual drawBox(cv::Mat &, cv::Mat &) override;
 };

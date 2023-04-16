@@ -37,7 +37,7 @@ bool Face::YNinit()
  * @return true 识别到人脸
  * @return false 未识别到人脸
  */
-bool Face::detect(cv::Mat &color_frame)
+bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     // cv::Mat &faces = detected_faces;
     cv::Mat faces;
@@ -75,14 +75,19 @@ bool Face::detect(cv::Mat &color_frame)
                 cv::Mat selected_face = faces.rowRange(i, i + 1);
                 new_centers.push_back(center);
                 selected_faces.push_back(selected_face);
-                // 载入face_center
+                // 新建single_face并载入current_faces
                 SingleFace single_face;
                 single_face.center = center;
                 single_face.single_face = selected_face;
+                single_face.cam_dis = getDepth(depth_frame, center);
+                single_face.detected = 1;
                 current_faces.push_back(single_face);
             }
         }
-        face.push_back(current_faces);
+        if (!current_faces.empty())
+        {
+            face.push_back(current_faces);
+        }
         cout << "current-face-size " << current_faces.size() << endl;
         cout << "face-size " << face.size() << endl;
         // faces_deque.push_back(selected_faces);
@@ -116,17 +121,80 @@ bool Face::detect(cv::Mat &color_frame)
     }
 }
 
-bool Face::drawBox(cv::Mat &color_frame)
+int Face::getDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
+{
+    cv::Point2i valid_point = point;
+    int min_dis = INT_MAX;
+    if (depth_frame.at<uint16_t>(valid_point.x, valid_point.y) != 65535)
+    {
+        return depth_frame.at<uint16_t>(valid_point.x, valid_point.y);
+    }
+    else
+    {
+        // 中心点失效：寻找8*8领域内距离最近的点
+        cv::Rect2i center_rect(point.x - 4, point.y - 4, 8, 8);
+        for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
+        {
+            for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
+            {
+                int dis = depth_frame.at<uint16_t>(x, y);
+                if (dis != 65535)
+                {
+                    if (dis < min_dis)
+                    {
+                        min_dis = dis;
+                    }
+                }
+            }
+        }
+        if (min_dis != 65535 && min_dis != INT_MAX)
+        {
+            cout << "8x8-valid" << endl;
+            return min_dis;
+        }
+        else
+        {
+            // 8*8邻域失效：寻找64*64领域内距离最近的点
+            cv::Rect2i center_rect(point.x - 32, point.y - 32, 64, 64);
+            for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
+            {
+                for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
+                {
+                    int dis = depth_frame.at<uint16_t>(x, y);
+                    if (dis != 65535)
+                    {
+                        if (dis < min_dis)
+                        {
+                            min_dis = dis;
+                        }
+                    }
+                }
+            }
+            if (min_dis != 65535 && min_dis != INT_MAX)
+            {
+                cout << "32x32-valid" << endl;
+                return min_dis;
+            }
+            else
+            {
+                cout << "invalid center dis" << endl;
+                return 0;
+            }
+        }
+    }
+}
+
+bool Face::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
     // cv::Mat faces = detected_faces;
     // cv::Mat faces = faces_deque.back();
-    vector<SingleFace> face_vector = face.back();
+    const vector<SingleFace> face_vector = face.back();
     cv::Mat faces;
     for (int i = 0; i < face_vector.size(); i++)
     {
         faces.push_back(face_vector.at(i).single_face);
+        cout << "draw-faces-vector-" << i << ": " << face_vector.at(i).single_face << endl;
     }
-    cout << "draw-faces-vector" << faces << endl;
     for (int i = 0; i < faces.rows; i++)
     {
         // 画人脸框
@@ -189,10 +257,12 @@ bool Face::drawBox(cv::Mat &color_frame)
  */
 bool Face::isValidFace(cv::Mat &faces, int i)
 {
-    // 筛除面积过大/处于ROI区域外的faces
+    // 筛除面积过大/面积过小/处于ROI区域外的faces
     int frame_area = param.RS_height * param.RS_width;
     cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
     cv::Point2i ROI(param.RS_width / 2, param.RS_height / 2);
+    cv::Rect2i face_box(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)),
+                        int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3)));
     int border_x = (param.RS_width - ROI.x) / 2;
     int border_y = (param.RS_height - ROI.y) / 2;
     if (int(faces.at<float>(i, 2)) * int(faces.at<float>(i, 3)) > 0.25 * frame_area)
@@ -204,6 +274,10 @@ bool Face::isValidFace(cv::Mat &faces, int i)
         return 0;
     }
     else if (center.y < param.RS_height - border_y - ROI.y || center.y > param.RS_height - border_y)
+    {
+        return 0;
+    }
+    else if (face_box.area() < 30 * 40)
     {
         return 0;
     }

@@ -20,6 +20,13 @@ class SingleFace
 public:
     cv::Point2f center;
     cv::Mat single_face;
+    SingleFace *forward_face = nullptr;
+    SingleFace *backward_face = nullptr;
+    int drop_count = 0;
+    bool detected;             // 用于区分该面部是真实检测出的/虚拟构建的
+    float cam_dis;             // 到相机的真实距离
+    float forward_dis = -1.f;  // 该帧面部中心点和下一帧对应面部中心点的欧氏距离
+    float backward_dis = -1.f; // 该帧面部中心点和前一帧对应面部中心点的欧氏距离
 };
 
 class SingleObject
@@ -27,6 +34,15 @@ class SingleObject
 public:
     cv::Point2f center;
     cv::Rect single_object_box;
+    SingleObject *forward_object = nullptr;
+    SingleObject *backward_object = nullptr;
+    int drop_count = 0;
+    bool detected;
+    int id;
+    int conf;
+    float cam_dis;             // 到相机的真实距离
+    float forward_dis = -1.f;  // 该帧物体中心点和下一帧对应物体中心点的欧氏距离
+    float backward_dis = -1.f; // 该帧物体中心点和前一帧对应物体中心点的欧氏距离
 };
 
 class Detector
@@ -44,8 +60,8 @@ public:
     int face_label;                     // 锁定的面部在队列中的位置
     int target_label;                   // 锁定的目标在队列中的位置
 
-    virtual bool detect(cv::Mat &) = 0;
-    virtual bool drawBox(cv::Mat &) = 0;
+    virtual bool detect(cv::Mat &, cv::Mat &) = 0;
+    virtual bool drawBox(cv::Mat &, cv::Mat &) = 0;
     inline bool isValideFace() { return draw_face_box; }
     inline bool isValideObject() { return draw_object_box; }
     inline float getPointDis(const cv::Point2f &pt_1, const cv::Point2f &pt_2)
