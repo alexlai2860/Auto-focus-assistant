@@ -40,5 +40,10 @@ Param::Param(const string &param)
     arm["RS_fps"] >> RS_fps;
     arm["width_compensate"] >> width_compensate;
     arm["height_compensate"] >> height_compensate;
+
+    arm["DRAW_BOX_MIN"] >> DRAW_BOX_MIN;
+    arm["DIS_RATIO_MAX"] >> DIS_RATIO_MAX;
+    arm["AREA_RATIO_COEF"] >> AREA_RATIO_COEF;
+    arm["POINT_DIS_COEF"] >> POINT_DIS_COEF;
 };
 struct Param param("../param/param.yml"); // from build folder

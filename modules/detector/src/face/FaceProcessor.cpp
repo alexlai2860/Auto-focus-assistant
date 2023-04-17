@@ -62,6 +62,7 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
     // process
     if (faces.cols > 0)
     {
+        cout << "cols>0:" << faces.cols << endl;
         vector<cv::Point2f> new_centers;
         cv::Mat selected_faces;
         vector<SingleFace> current_faces;
@@ -69,6 +70,7 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
         {
             if (isValidFace(faces, i))
             {
+                cout << "is_valid_face:" << i << endl;
                 draw_face_box = 1;
                 // 计算方框中心
                 cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
@@ -108,6 +110,7 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
     }
     else
     {
+        cout << "faces-cols:" << faces.cols << endl;
         // // Frame drop process
         // if (face.empty())
         // {
@@ -172,7 +175,7 @@ int Face::getDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
             }
             if (min_dis != 65535 && min_dis != INT_MAX)
             {
-                cout << "32x32-valid" << endl;
+                cout << "64x64-valid" << endl;
                 return min_dis;
             }
             else
@@ -277,7 +280,7 @@ bool Face::isValidFace(cv::Mat &faces, int i)
     {
         return 0;
     }
-    else if (face_box.area() < 30 * 40)
+    else if (face_box.area() < param.DRAW_BOX_MIN * (param.DRAW_BOX_MIN + 10))
     {
         return 0;
     }

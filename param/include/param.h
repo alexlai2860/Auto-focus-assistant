@@ -37,6 +37,11 @@ struct Param
     int width_compensate;
     int height_compensate;
 
+    float DRAW_BOX_MIN;
+    float DIS_RATIO_MAX;
+    float AREA_RATIO_COEF;
+    float POINT_DIS_COEF;
+
     string param_path;
 
     Param(const std::string &param);

@@ -90,7 +90,9 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         cv::Mat d16, dColor;
         cv::Mat color = __reader->color;
-        cv::Mat color_copy = color;
+        // cv::Mat color_copy = color;
+        cv::Mat color_copy;
+        color.copyTo(color_copy);
         cv::Mat depth = __reader->depth;
 
         // 绘制目标框
@@ -137,6 +139,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);
         imshow("Color", color);
+        imshow("color-copy", color_copy);
 
         // 计算运行时间
         int key = cv::waitKey(1);
