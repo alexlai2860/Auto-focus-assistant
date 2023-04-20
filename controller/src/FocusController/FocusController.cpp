@@ -111,13 +111,17 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
-            detected = __face->detect(color_copy, depth);
-            __detector = __face;
-            detect_flag = 1;
+            // detected = __face->detect(color_copy, depth);
+            // __detector = __face;
+            detected = __object->detect(color_copy, depth);
+            __detector = __object;
+            // detect_flag = 1;
+            detect_flag = 2;
         }
         else
         {
-            detect_flag = 0;
+            // detect_flag = 0;
+            detect_flag = 3;
         }
 
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
@@ -139,7 +143,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);
         imshow("Color", color);
-        imshow("color-copy", color_copy);
+        // imshow("color-copy", color_copy);
 
         // 计算运行时间
         int key = cv::waitKey(1);

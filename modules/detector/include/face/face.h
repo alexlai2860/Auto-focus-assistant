@@ -20,7 +20,7 @@ private:
     cv::Ptr<cv::FaceDetectorYN> faceDetector;
     bool isYN_init;
     bool YNinit();
-    int getDepth(const cv::Mat &depth_frame, const cv::Point2i &);
+    // int getDepth(const cv::Mat &depth_frame, const cv::Point2i &);
 
 public:
     // bool draw_face_box = 0;

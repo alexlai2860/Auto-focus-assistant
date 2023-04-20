@@ -81,7 +81,7 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
                 SingleFace single_face;
                 single_face.center = center;
                 single_face.single_face = selected_face;
-                single_face.cam_dis = getDepth(depth_frame, center);
+                single_face.cam_dis = depth.getPointDepth(depth_frame, center);
                 single_face.detected = 1;
                 current_faces.push_back(single_face);
             }
@@ -124,68 +124,6 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
     }
 }
 
-int Face::getDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
-{
-    cv::Point2i valid_point = point;
-    int min_dis = INT_MAX;
-    if (depth_frame.at<uint16_t>(valid_point.x, valid_point.y) != 65535)
-    {
-        return depth_frame.at<uint16_t>(valid_point.x, valid_point.y);
-    }
-    else
-    {
-        // 中心点失效：寻找8*8领域内距离最近的点
-        cv::Rect2i center_rect(point.x - 4, point.y - 4, 8, 8);
-        for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
-        {
-            for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
-            {
-                int dis = depth_frame.at<uint16_t>(x, y);
-                if (dis != 65535)
-                {
-                    if (dis < min_dis)
-                    {
-                        min_dis = dis;
-                    }
-                }
-            }
-        }
-        if (min_dis != 65535 && min_dis != INT_MAX)
-        {
-            cout << "8x8-valid" << endl;
-            return min_dis;
-        }
-        else
-        {
-            // 8*8邻域失效：寻找64*64领域内距离最近的点
-            cv::Rect2i center_rect(point.x - 32, point.y - 32, 64, 64);
-            for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
-            {
-                for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
-                {
-                    int dis = depth_frame.at<uint16_t>(x, y);
-                    if (dis != 65535)
-                    {
-                        if (dis < min_dis)
-                        {
-                            min_dis = dis;
-                        }
-                    }
-                }
-            }
-            if (min_dis != 65535 && min_dis != INT_MAX)
-            {
-                cout << "64x64-valid" << endl;
-                return min_dis;
-            }
-            else
-            {
-                cout << "invalid center dis" << endl;
-                return 0;
-            }
-        }
-    }
-}
 
 bool Face::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {

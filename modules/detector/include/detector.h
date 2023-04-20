@@ -39,15 +39,24 @@ public:
     int drop_count = 0;
     bool detected;
     int id;
-    int conf;
+    float conf;
     float cam_dis;             // 到相机的真实距离
     float forward_dis = -1.f;  // 该帧物体中心点和下一帧对应物体中心点的欧氏距离
     float backward_dis = -1.f; // 该帧物体中心点和前一帧对应物体中心点的欧氏距离
 };
 
+class Depth
+{
+public:
+    int getPointDepth(const cv::Mat &, const cv::Point2i &);
+    int getTargetDepth(const cv::Mat &, const cv::Rect2i &);
+};
+
 class Detector
 {
-    // protected:
+protected:
+    Depth depth;
+
 public:
     bool draw_face_box = 0;
     bool draw_object_box = 0;
