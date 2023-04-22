@@ -200,3 +200,18 @@ void SteppingMotor::enable()
     __data->write(3, writeData); // 打开使能
     cv::waitKey(5);
 }
+
+void SteppingMotor::test(int position, int speed)
+{
+    position = 1999;
+    TransferData writeData;
+    uint16_t hex_pos = position;
+    uint8_t pos_h = (uint8_t)(hex_pos >> 8);
+    uint8_t pos_l = (uint8_t)(hex_pos & 0x00FF);
+    cout << "hex_pos" << (int)hex_pos << endl;
+    cout << "pos_h" << (int)pos_h << endl;
+    cout << "pos_l" << (int)pos_l << endl;
+    writeData.pulse_h = pos_h;
+    writeData.pulse_l = pos_l;
+    __data->write(5, writeData);
+}

@@ -1,30 +1,27 @@
 /**
- * @file stepping_motor.h
+ * @file NucluesN.h
  * @author 赖建宇 (lai.jianyu@foxmail.com)
- * @brief 步进电机头文件
+ * @brief Tilta NucluesN reverse engineering
  * @version 1.0
- * @date 2023-03-07
- *
+ * @date 2023-04-23
+ * 
  * @copyright Copyright SCUT RobotLab(c) 2021
- *
+ * 
  */
+
 #pragma once
 
 #include "motor.h"
 #include "MotorData.h"
 
-class SteppingMotor : public Motor
+class NucluesN : public Motor
 {
 protected:
     data_ptr __data = make_shared<Data>();
 
 public:
-    int readPulse();
-    void writePulse(int);
-    void setZero();
-    void enable();
-    void test(int, int);
+    void writePosition(int, int);
 
-    SteppingMotor() = default;
+    NucluesN() = default;
     virtual int init(TransferData &, TransferData &) override;
 };

@@ -33,10 +33,13 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
         {
             for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
             {
-                int dis = depth_frame.at<uint16_t>(x, y);
-                if (dis < min_dis)
+                if (x > 0 && y > 0)
                 {
-                    min_dis = dis;
+                    int dis = depth_frame.at<uint16_t>(x, y);
+                    if (dis < min_dis)
+                    {
+                        min_dis = dis;
+                    }
                 }
             }
         }
@@ -61,8 +64,8 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect)
     cv::Point2i center;
     center.x = rect.x + width / 2;
     center.y = rect.y + height / 2;
-    // cout << "target-height " << height << endl;
-    // cout << "target-width " << width << endl;
+    cout << "target-height " << height << endl;
+    cout << "target-width " << width << endl;
     int point_dis = 0;
     // 建立深度队列
     deque<int> depth_deque;
@@ -85,7 +88,7 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect)
             }
         }
     }
-    // cout << "deque-size " << depth_deque.size() << endl;
+    cout << "deque-size " << depth_deque.size() << endl;
     // 升序排列
     if (!depth_deque.empty())
     {

@@ -45,7 +45,6 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     case 0:
         cout << "case " << 0 << endl;
         situation = facePerceptron(d16, __detector, __dis, __tool, detected, control_flag);
-
         break;
     case 1:
         cout << "case " << 1 << endl;
@@ -128,6 +127,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             // situation=1:锁定队列末尾距离最近的面部
             for (int i = 0; i < __detector->target.back().size(); i++)
             {
+                cout << "deciding-target-back-" << i << endl;
                 // 更新face_dis:从对象中获取
                 // float center_y = __detector->target.back().at(i).center.y;
                 // float center_x = __detector->target.back().at(i).center.x;
@@ -893,77 +893,77 @@ bool decider::isSameObject(SingleObject &last_object, SingleObject &current_obje
     // 判别条件
     // if (dis_ratio < dis_ratio_max && dis_ratio > dis_ratio_min)
     // {
-        if (area_ratio < area_ratio_max && area_ratio > area_ratio_min)
+    if (area_ratio < area_ratio_max && area_ratio > area_ratio_min)
+    {
+        if (tl_dis < tl_dis_max)
         {
-            if (tl_dis < tl_dis_max)
+            if (center_dis < center_dis_max)
             {
-                if (center_dis < center_dis_max)
+                if (last_object.forward_dis < 0)
                 {
-                    if (last_object.forward_dis < 0)
+                    // last不存在后继节点(object)
+                    if (current_object.backward_dis < 0)
                     {
-                        // last不存在后继节点(object)
-                        if (current_object.backward_dis < 0)
-                        {
-                            // 且current不存在前驱节点，则配对成功
-                            is_same_object = 1;
-                            last_object.forward_dis = center_dis;
-                            last_object.forward_object = &current_object;
-                            current_object.backward_dis = center_dis;
-                            current_object.backward_object = &last_object;
-                        }
-                        else
-                        {
-                            // current已经使用过
-                            // 不匹配，返回0
-                            cout << "current has been used" << endl;
-                            is_same_object = 0;
-                            // current_face.backward_dis = -2.f;
-                        }
+                        // 且current不存在前驱节点，则配对成功
+                        is_same_object = 1;
+                        last_object.forward_dis = center_dis;
+                        last_object.forward_object = &current_object;
+                        current_object.backward_dis = center_dis;
+                        current_object.backward_object = &last_object;
                     }
                     else
                     {
-                        // last已经使用过
-                        // 小概率，待完善：目标过于密集才会出现
-                        // 直接删除current_object（认定为是重复的框）
-                        cout << "last has been used" << endl;
-                        // last存在后继节点：判断
+                        // current已经使用过
+                        // 不匹配，返回0
+                        cout << "current has been used" << endl;
                         is_same_object = 0;
-                        current_object.backward_dis = -2.f; // <0 且不同于-1
-                        if (last_object.forward_dis > center_dis)
-                        {
-                            // 更新后继节点
-                            is_same_object = 1;
-                            last_object.forward_dis = center_dis;
-                            last_object.forward_object = &current_object;
-                            current_object.backward_dis = center_dis;
-                            current_object.backward_object = &last_object;
-                            // 重置原先后继节点的backward设置为-1
-                            // 注意这里使用指针，要求目标的地址不能改变
-                            last_object.forward_object->backward_dis = -1.f;
-                            last_object.forward_object->backward_object = nullptr;
-                        }
-                        else
-                        {
-                            // 不更新后继节点
-                        }
+                        // current_face.backward_dis = -2.f;
                     }
                 }
                 else
                 {
-                    cout << "center_dis_unmatch:" << center_dis << endl;
+                    // last已经使用过
+                    // 小概率，待完善：目标过于密集才会出现
+                    // 直接删除current_object（认定为是重复的框）
+                    cout << "last has been used" << endl;
+                    // last存在后继节点：判断
+                    is_same_object = 0;
+                    current_object.backward_dis = -2.f; // <0 且不同于-1
+                    if (last_object.forward_dis > center_dis)
+                    {
+                        // 更新后继节点
+                        is_same_object = 1;
+                        last_object.forward_dis = center_dis;
+                        last_object.forward_object = &current_object;
+                        current_object.backward_dis = center_dis;
+                        current_object.backward_object = &last_object;
+                        // 重置原先后继节点的backward设置为-1
+                        // 注意这里使用指针，要求目标的地址不能改变
+                        last_object.forward_object->backward_dis = -1.f;
+                        last_object.forward_object->backward_object = nullptr;
+                    }
+                    else
+                    {
+                        // 不更新后继节点
+                    }
                 }
             }
             else
             {
-                cout << "tl_dis_unmatch:" << tl_dis << endl;
+                cout << "center_dis_unmatch:" << center_dis << endl;
             }
         }
         else
         {
-            cout << "area lst" << last_object_box.area() << endl;
-            cout << "area crt" << current_object_box.area() << endl;
-            cout << "area_ratio_unmatch:" << area_ratio << endl;
+            cout << "tl_dis_unmatch:" << tl_dis << endl;
         }
+    }
+    else
+    {
+        cout << "area lst" << last_object_box.area() << endl;
+        cout << "area crt" << current_object_box.area() << endl;
+        cout << "area_ratio_unmatch:" << area_ratio << endl;
+    }
     // }
     // else
     // {

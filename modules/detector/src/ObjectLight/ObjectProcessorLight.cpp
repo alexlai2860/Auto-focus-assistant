@@ -28,12 +28,17 @@ bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
     }
     if (yolo.detect(color_frame, depth_frame))
     {
+        cout << "detect-over" << endl;
         // target = yolo.yolo_target;
         target.push_back(yolo.yolo_target.back());
         draw_object_box = 1;
         if (target.size() > 1)
         {
             cout << "target- back-1 -size(after detect)" << target.at(target.size() - 2).size() << endl;
+        }
+        if (target.size() > 10)
+        {
+            target.pop_front();
         }
     }
     return 1;
@@ -167,6 +172,8 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
     confidences.clear();
     classIds.clear();
 
+    cout << "detect-start" << endl;
+
     // generate proposals
     float ratioh = (float)frame.rows / this->inpHeight, ratiow = (float)frame.cols / this->inpWidth;
     int n = 0, q = 0, i = 0, j = 0, nout = this->anchor_num * 5 + this->classes.size(), row_ind = 0;
@@ -197,25 +204,27 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                         float w = powf(pdata[4 * q + 2] * 2.f, 2.f) * anchor_w;           /// w
                         float h = powf(pdata[4 * q + 3] * 2.f, 2.f) * anchor_h;           /// h
 
-                        int left = (cx - 0.5 * w) * ratiow;
-                        int top = (cy - 0.5 * h) * ratioh;
+                        int left = MAX((cx - 0.5 * w) * ratiow, 0);
+                        int top = MAX((cy - 0.5 * h) * ratioh, 0); // 防止小于0报错
 
                         classIds.push_back(classIdPoint.x);
                         confidences.push_back(box_score * max_class_socre);
                         boxes.push_back(Rect(left, top, (int)(w * ratiow), (int)(h * ratioh)));
 
-                        // cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
+                        cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
                         if (boxes.back().area() > param.DRAW_BOX_MIN * param.DRAW_BOX_MIN)
                         {
-                            // cout << "new-box--" << i << endl;
+                            cout << "new-box--" << i << endl;
                             SingleObject single_object;
                             single_object.id = classIdPoint.x;
                             single_object.conf = box_score * max_class_socre;
                             single_object.single_object_box = cv::Rect(left, top, (int)(w * ratiow), (int)(h * ratioh));
                             single_object.cam_dis = depth.getTargetDepth(depth_frame, single_object.single_object_box);
+                            cout << "half-done" << endl;
                             single_object.center = cv::Point2i(left + (int)(w * ratiow) / 2, top + (int)(h * ratioh) / 2);
                             single_object.detected = 1;
                             current_objects.push_back(single_object);
+                            cout << "new-box-added" << endl;
                         }
                     }
                 }
@@ -224,6 +233,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
             }
         }
     }
+    cout << "detect-done" << endl;
     if (!current_objects.empty())
     {
         this->simpleNMS(current_objects);

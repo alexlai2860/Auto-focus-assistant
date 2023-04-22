@@ -53,17 +53,40 @@ struct SendData3
 struct SendData4
 {
     uint8_t add = 0x01;
-    uint8_t byte1 = 0xFD;                // 位置模式控制
+    uint8_t byte1 = 0xFD;         // 位置模式控制
     uint8_t direction_and_speed1; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）
     uint8_t direction_and_speed2;
     uint8_t accelerated_speed = (uint8_t)param.A; // 关闭曲线加减速
-    uint8_t pulse_h;                       // 脉冲数，共三个字节
+    uint8_t pulse_h;                              // 脉冲数，共三个字节
     uint8_t pulse_m;
     uint8_t pulse_l;
     uint8_t ver = 0x6B;
 };
 #pragma pack()
 
+// 视觉发送协议5:铁头原力N-运动指令
+struct SendData5
+{
+    // 全部以hex表示
+    // 示例指令为 :010600010001F7
+    // extreme_right:01060600270EBE
+    // extreme_left:010606000000F3
+    // cal:960604D200048A or :960604D200008E
+    // rec_on:C9060000000130*2
+    // rec_off:C9060000000031*2
+    // uint8_t command[15] = ":010600010001F7";
+    uint8_t start = ':';              // 起始位(:)
+    uint8_t model[2] = {'0', '1'};    // 电机序号(01)
+    uint8_t command[2] = {'0', '6'};  // 指令flag(默认对焦)
+    uint8_t param_h[2] = {'0', '6'};  // 参数h
+    uint8_t param_l[2] = {'0', '0'};  // 参数l
+    uint8_t data_h[2] = {'2', '2'};   // 数据h
+    uint8_t data_l[2] = {'0', 'E'};   // 数据l
+    uint8_t checksum[2] = {'B', 'E'}; // 校验和
+    uint8_t CR = 0x0D;
+    uint8_t LF = 0x0A;
+};
+#pragma pack()
 // enum Region : uint8_t
 // {
 //     Nolmal = 0x00,
@@ -86,8 +109,9 @@ private:
     SendData2 __send_data2;
     SendData3 __send_data3;
     SendData4 __send_data4;
+    SendData5 __send_data5;
     ReceivePulse __receive_data; // 视觉接收数据
-    TransferData __last_data; // 上一帧的传递数据
+    TransferData __last_data;    // 上一帧的传递数据
 
     bool __is_init;    // 串口初始化情况
     SerialPort __port; // 串口对象
@@ -112,6 +136,9 @@ public:
      * @param transfer_data 传递数据
      */
     void write(int mode, const TransferData &transfer_data);
+
+    uint8_t Ascii2Hex(const uint8_t data_h, const uint8_t data_l);
+    vector<uint8_t> Hex2Ascii(const uint8_t &data);
 };
 
 using data_ptr = shared_ptr<Data>;

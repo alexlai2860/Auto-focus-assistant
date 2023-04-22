@@ -128,7 +128,8 @@ void FocusController::rsProcessFrame(int64 &t0)
         DIS = __decider->decide(d16, color, __reader, __detector, __dis, __logic, detected, detect_flag, preserve);
 
         // 读取当前脉冲值
-        int current_pulse = __motor->readPulse();
+        // int current_pulse = __motor->readPulse();
+        int current_pulse = 0;
 
         // 计算目标脉冲值-方案一:使用四次函数拟合，五次函数不稳定，A暂时废弃
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
@@ -138,7 +139,8 @@ void FocusController::rsProcessFrame(int64 &t0)
         cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
-        __motor->writePulse((target_pulse - current_pulse));
+        // __motor->writePulse((target_pulse - current_pulse));
+        __motor->test(0,0);
 
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);

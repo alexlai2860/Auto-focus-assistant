@@ -15,6 +15,85 @@
 using namespace std;
 
 /**
+ * @brief ASCII转hex
+ *
+ * @param data {'F','7'}
+ * @return uint8_t 0xF7
+ */
+uint8_t Data::Ascii2Hex(const uint8_t data_h, const uint8_t data_l)
+{
+    uint8_t output;
+    uint8_t output_h;
+    uint8_t output_l;
+    cout << "h" << (int)data_h << endl;
+    cout << "l" << (int)data_l << endl;
+
+    if ((int)data_h >= 65)
+    {
+        output_h = (int)data_h - 65 + 10;
+    }
+    else
+    {
+        output_h = (int)data_h - 48;
+    }
+
+    if ((int)data_l >= 65)
+    {
+        output_l = (int)data_l - 65 + 10;
+    }
+    else
+    {
+        output_l = (int)data_l - 48;
+    }
+
+    cout << "oph" << (int)output_h << endl;
+    cout << "opl" << (int)output_l << endl;
+    output = output_h << 4 | output_l;
+    return output;
+}
+
+/**
+ * @brief
+ *
+ * @param data
+ * @return vector<uint8_t>
+ */
+vector<uint8_t> Data::Hex2Ascii(const uint8_t &data)
+{
+    vector<uint8_t> output;
+    uint8_t output_h;
+    uint8_t output_l;
+    uint8_t data_h = data >> 4;
+    uint8_t data_l = data - (data_h << 4);
+
+    cout << "data_h" << (int)data_h << endl;
+    cout << "data_h" << (int)data_l << endl;
+    if ((int)data_h > 9)
+    {
+        output_h = (int)data_h - 10 + 65;
+    }
+    else
+    {
+        output_h = (int)data_h + 48;
+    }
+
+    if ((int)data_l > 9)
+    {
+        output_l = (int)data_l - 10 + 65;
+    }
+    else
+    {
+        output_l = (int)data_l + 48;
+    }
+    cout << "oph" << (int)output_h << endl;
+    cout << "opl" << (int)output_l << endl;
+
+    output.push_back(output_h);
+    output.push_back(output_l);
+    return output;
+}
+
+/**
  * @brief 读取串口
  *
  * @param head 头帧 通信地址 默认为0x01
@@ -78,9 +157,41 @@ void Data::write(int mode, const TransferData &transfer_data)
         __send_data4.pulse_m = transfer_data.pulse_m;
         __send_data4.pulse_l = transfer_data.pulse_l;
         __port.writeStruct<SendData4>(__send_data4);
-        // cout << hex << unsigned(__send_data4.add) << " " << unsigned(__send_data4.byte1) << " " << unsigned(__send_data4.direction_and_speed) << " " << unsigned(__send_data4.accelerated_speed) << " " <<
-        //             unsigned(__send_data4.pulse_h) << " " << unsigned(__send_data4.pulse_l) << " " << unsigned(__send_data4.ver) << endl;
+        // cout << hex << unsigned(__send_data4.add) << " " << unsigned(__send_data4.byte1) << " " << unsigned(__send_data4.direction_and_speed1) << " "
+        //      << unsigned(__send_data4.direction_and_speed2) << " " << unsigned(__send_data4.accelerated_speed) << " " << unsigned(__send_data4.pulse_h)
+        //      << " " << unsigned(__send_data4.pulse_l) << " " << unsigned(__send_data4.ver) << endl;
         break;
+    }
+    case 5:
+    {
+        // 转化data
+        vector<uint8_t> data_h = Hex2Ascii(transfer_data.pulse_h);
+        __send_data5.data_h[0] = data_h.at(0);
+        __send_data5.data_h[1] = data_h.at(1);
+        vector<uint8_t> data_l = Hex2Ascii(transfer_data.pulse_l);
+        __send_data5.data_l[0] = data_l.at(0);
+        __send_data5.data_l[1] = data_l.at(1);
+
+        // 计算checksum
+        uint8_t Command = Ascii2Hex(__send_data5.command[0], __send_data5.command[1]);
+        uint8_t paramH = Ascii2Hex(__send_data5.param_h[0], __send_data5.param_h[1]);
+        uint8_t paramL = Ascii2Hex(__send_data5.param_l[0], __send_data5.param_l[1]);
+        uint8_t dataH = Ascii2Hex(__send_data5.data_h[0], __send_data5.data_h[1]);
+        uint8_t dataL = Ascii2Hex(__send_data5.data_l[0], __send_data5.data_l[1]);
+        cout << (int)Command << endl;
+        cout << (int)paramH << endl;
+        cout << (int)paramL << endl;
+        cout << (int)dataH << endl;
+        cout << (int)dataL << endl;
+        uint8_t checksum = (char)(256 - 1 - (Command + paramH + paramL + dataH + dataL));
+        cout << (int)checksum << endl;
+
+        // 提取checksum
+        vector<uint8_t> checksum_vec = Hex2Ascii(checksum);
+        __send_data5.checksum[0] = checksum_vec.at(0);
+        __send_data5.checksum[1] = checksum_vec.at(1);
+        cout << (int)__send_data5.checksum[0] << (int)__send_data5.checksum[1] << endl;
+        __port.writeStruct<SendData5>(__send_data5);
     }
     default:
         break;
