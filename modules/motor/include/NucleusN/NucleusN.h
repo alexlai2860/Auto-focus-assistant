@@ -1,5 +1,5 @@
 /**
- * @file NucluesN.h
+ * @file NucleusN.h
  * @author 赖建宇 (lai.jianyu@foxmail.com)
  * @brief Tilta NucluesN reverse engineering
  * @version 1.0
@@ -14,14 +14,19 @@
 #include "motor.h"
 #include "MotorData.h"
 
-class NucluesN : public Motor
+class NucleusN : public Motor
 {
 protected:
     data_ptr __data = make_shared<Data>();
+    vector<TransferData> read_datas;
 
 public:
-    void writePosition(int, int);
+    virtual void write(int, int) override;
+    virtual int read() override;
+    void setZero();
+    void enable();
+    void test(int, int);
 
-    NucluesN() = default;
+    NucleusN() = default;
     virtual int init(TransferData &, TransferData &) override;
 };

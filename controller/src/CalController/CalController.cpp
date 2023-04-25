@@ -214,7 +214,7 @@ void CalController::astraCalibration(int lens_num, int64 &t0)
     //             points.push_back(center);
 
     //             int center_dis = dis.disCalculate(0, d16, points);
-    //             int current_pulse = __motor->readPulse(data);
+    //             int current_pulse = __motor->read(data);
 
     //             cv::putText(colorFrame.frame, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
     //             // cout << "center_dis : " << center_dis << endl;

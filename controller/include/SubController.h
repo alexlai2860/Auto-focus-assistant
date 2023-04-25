@@ -21,6 +21,7 @@
 #include "param.h"
 #include "LensParam.h"
 #include "SteppingMotor.h"
+#include "NucleusN.h"
 // #include "decider.h"
 #include "calibrator.h"
 

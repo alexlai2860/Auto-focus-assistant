@@ -105,7 +105,12 @@ int SteppingMotor::init(TransferData &readData, TransferData &writeData)
     return 0;
 }
 
-int SteppingMotor::readPulse()
+/**
+ * @brief read函数在步进电机中，返回读取到的当前脉冲值
+ * 
+ * @return int 
+ */
+int SteppingMotor::read()
 {
     TransferData readData, writeData;
     int32_t pulse = 4000000;
@@ -132,7 +137,7 @@ int SteppingMotor::readPulse()
     return signed(pulse);
 }
 
-void SteppingMotor::writePulse(int pulse_num)
+void SteppingMotor::write(int pulse_num, int none)
 {
     TransferData writeData, readData;
     // writeData.command2 = 0x01;

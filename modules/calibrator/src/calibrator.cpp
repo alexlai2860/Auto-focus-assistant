@@ -26,7 +26,7 @@ bool Calibrator::calibrate(int lens_num, dis_ptr &__dis, motor_ptr &__motor, rs2
 
     int center_dis = int(1000 * depth.get_distance(param.RS_width / 2, param.RS_height / 2));
     __dis->disCalculate(center_dis, d16, points);
-    int current_pulse = __motor->readPulse();
+    int current_pulse = __motor->read();
 
     cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
     cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);
@@ -356,7 +356,7 @@ cv::Mat Calibrator::polyFit(vector<cv::Point2f> &points, int n, int lens_num)
     //             points.push_back(center);
 
     //             int center_dis = dis.disCalculate(0, d16, points);
-    //             int current_pulse = __motor->readPulse(data);
+    //             int current_pulse = __motor->read(data);
 
     //             cv::putText(colorFrame.frame, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
     //             // cout << "center_dis : " << center_dis << endl;

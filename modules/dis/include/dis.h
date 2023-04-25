@@ -57,7 +57,7 @@ using dis_ptr = shared_ptr<Dis>;
 // {
 // public:
 //     int init(Data &, TransferData &, TransferData &);
-//     int readPulse(Data &);
-//     void writePulse(int, Data &);
+//     int read(Data &);
+//     void write(int, Data &);
 //     void setZero(Data &);
 // };

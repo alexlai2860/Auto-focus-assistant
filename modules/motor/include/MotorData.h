@@ -71,9 +71,6 @@ struct SendData5
     // 示例指令为 :010600010001F7
     // extreme_right:01060600270EBE
     // extreme_left:010606000000F3
-    // cal:960604D200048A or :960604D200008E
-    // rec_on:C9060000000130*2
-    // rec_off:C9060000000031*2
     // uint8_t command[15] = ":010600010001F7";
     uint8_t start = ':';              // 起始位(:)
     uint8_t model[2] = {'0', '1'};    // 电机序号(01)
@@ -87,11 +84,38 @@ struct SendData5
     uint8_t LF = 0x0A;
 };
 #pragma pack()
-// enum Region : uint8_t
-// {
-//     Nolmal = 0x00,
-//     Static = 0x01
-// };
+
+// 视觉发送协议5:铁头原力N-校准指令
+struct SendData6
+{
+    // cal:960604D200048A or :960604D200008E
+    // long_press::3F0600010001B9
+    // uint8_t nucleus_cal[15] = {':', '9', '6', '0', '6', '0', '4', 'D', '2', '0', '0', '0', '4', '8', 'A'};
+    uint8_t nucleus_cal[15] = {':', '3', 'F', '0', '6', '0', '0', '0', '1', '0', '0', '0', '1', 'B', '9'};
+    uint8_t CR = 0x0D;
+    uint8_t LF = 0x0A;
+};
+#pragma pack()
+
+// 视觉发送协议5:铁头原力N-录制开始指令
+struct SendData7
+{
+    // rec_on:C9060000000130*2
+    uint8_t nucleus_rec_on[15] = {};
+    uint8_t CR = 0x0D;
+    uint8_t LF = 0x0A;
+};
+#pragma pack()
+
+// 视觉发送协议5:铁头原力N-录制结束指令
+struct SendData8
+{
+    // rec_off:C9060000000031*2
+    uint8_t nucleus_rec_off[15] = {};
+    uint8_t CR = 0x0D;
+    uint8_t LF = 0x0A;
+};
+#pragma pack()
 
 // 视觉接收协议
 struct ReceivePulse
@@ -99,7 +123,13 @@ struct ReceivePulse
     uint8_t read_pulse[4]; // 注意这里不能用int8_t
 };
 #pragma pack()
-// __attribute__((packed));
+
+// 视觉接收协议-NucleusN
+struct ReceiveNucleusN
+{
+    uint8_t read_data[14]; // 从0x3A开始，到0x0D结束
+};
+#pragma pack()
 
 // stepping motor data
 class Data
@@ -110,8 +140,13 @@ private:
     SendData3 __send_data3;
     SendData4 __send_data4;
     SendData5 __send_data5;
+    SendData6 __send_data6;
+    // SendData7 __send_data7;
+    // SendData8 __send_data8;
+
     ReceivePulse __receive_data; // 视觉接收数据
-    TransferData __last_data;    // 上一帧的传递数据
+    ReceiveNucleusN __receive_nucleusn_data;
+    TransferData __last_data; // 上一帧的传递数据
 
     bool __is_init;    // 串口初始化情况
     SerialPort __port; // 串口对象
@@ -129,6 +164,7 @@ public:
      * @param tail 尾帧
      */
     TransferData read(uint8_t head, uint8_t tail);
+    TransferData readNucleusN(uint8_t head, uint8_t tail);
 
     /**
      * @brief 写入串口

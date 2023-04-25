@@ -41,41 +41,104 @@ void SerialPort::open()
 {
     this->is_open = false;
 
-    DIR *dir = nullptr;
+    DIR *dir1 = nullptr;
+    DIR *dir2 = nullptr;
     struct dirent *dire = nullptr;
+    struct dirent *dire1 = nullptr;
+    struct dirent *dire2 = nullptr;
     string file_name;
+    string tilta_motor;
+    string tilta_hand_unit;
     const char dir_path[] = "/dev/";
-    if ((dir = opendir(dir_path)) != nullptr)
+    if ((dir1 = opendir(dir_path)) != nullptr)
     {
-        while ((dire = readdir(dir)) != nullptr)
+        cout << "1" << endl;
+        while ((dire1 = readdir(dir1)) != nullptr)
         {
-            if (strstr(dire->d_name, "ttyUSB") != nullptr)
+            // tilta
+            if (strstr(dire1->d_name, "hand_unit") != nullptr)
             {
-                file_name = dire->d_name;
+                tilta_hand_unit = dire1->d_name;
+                // cout << "hand-unit-name:" << tilta_hand_unit << endl;
                 break;
             }
         }
-        closedir(dir);
+        closedir(dir1);
+    }
+    if ((dir2 = opendir(dir_path)) != nullptr)
+    {
+        cout << "2" << endl;
+        while ((dire2 = readdir(dir2)) != nullptr)
+        {
+            // tilta
+            if (strstr(dire2->d_name, "nucleusn_motor") != nullptr)
+            {
+                tilta_motor = dire2->d_name;
+                // cout << "motor-name:" << tilta_motor << endl;
+                break;
+            }
+        }
+        closedir(dir2);
     }
 
-    if (file_name.empty())
+    // // stepping motor
+    // if (file_name.empty())
+    // {
+    //     cout << "找不到串口" << endl;
+    //     return;
+    // }
+    // else
+    //     file_name = dir_path + file_name;
+
+    // tilta
+    if (tilta_motor.empty())
     {
-        cout << "找不到串口" << endl;
+        cout << "找不到原力N电机" << endl;
+        return;
+    }
+    else if (tilta_hand_unit.empty())
+    {
+        cout << "找不到原力N手柄" << endl;
         return;
     }
     else
-        file_name = dir_path + file_name;
+    {
+        tilta_motor = dir_path + tilta_motor;
+        tilta_hand_unit = dir_path + tilta_hand_unit;
+    }
 
-    cout << "正在打开串口 " << file_name << endl;
-    fd = ::open(file_name.c_str(), O_RDWR | O_NOCTTY | O_NDELAY); // 非堵塞情况
+    // cout << "正在打开串口 " << file_name << endl;
+    cout << "正在打开电机 " << tilta_motor << endl;
+    cout << "正在打开手柄 " << tilta_hand_unit << endl;
 
-    if (fd == -1)
+    // fd = ::open(file_name.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);        // 非堵塞情况，steppingmotor
+    fd1 = ::open(tilta_motor.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);     // tilta电机
+    fd2 = ::open(tilta_hand_unit.c_str(), O_RDWR | O_NOCTTY | O_NDELAY); // tilta手柄
+
+    // // stepping motor
+    // if (fd == -1)
+    // {
+    //     perror("\033[31m串口打开失败");
+    //     printf("\033[0m");
+    //     return;
+    // }
+    // tcgetattr(fd, &option);
+
+    // tilta
+    if (fd1 == -1)
     {
         perror("\033[31m串口打开失败");
         printf("\033[0m");
         return;
     }
-    tcgetattr(fd, &option);
+    tcgetattr(fd1, &option);
+    if (fd2 == -1)
+    {
+        perror("\033[31m串口打开失败");
+        printf("\033[0m");
+        return;
+    }
+    tcgetattr(fd2, &option);
 
     // 修改所获得的参数
     option.c_iflag = 0;                 // 原始输入模式
@@ -92,7 +155,9 @@ void SerialPort::open()
     cfsetispeed(&option, baud_rate); // 设置输出波特率
 
     // 设置新属性，TCSANOW：所有改变立即生效
-    tcsetattr(fd, TCSANOW, &option);
+    // tcsetattr(fd, TCSANOW, &option);
+    tcsetattr(fd1, TCSANOW, &option);
+    tcsetattr(fd2, TCSANOW, &option);
 
     this->is_open = true;
 }
@@ -104,8 +169,14 @@ SerialPort::~SerialPort()
 
 void SerialPort::close()
 {
+    // if (this->is_open)
+    //     ::close(fd);
+
     if (this->is_open)
-        ::close(fd);
+        ::close(fd1);
+    if (this->is_open)
+        ::close(fd2);
+
     this->is_open = false;
 }
 
@@ -117,12 +188,15 @@ void SerialPort::close()
  */
 ssize_t SerialPort::write(void *data, size_t len)
 {
-    // cout << "数据长度" << len << endl;
+    cout << "数据长度" << len << endl;
     ssize_t len_result = -1;
     if (is_open)
     {
-        tcflush(fd, TCOFLUSH); // 清空，防止数据累积在缓存区
-        len_result = ::write(fd, data, len);
+        // tcflush(fd, TCOFLUSH); // 清空，防止数据累积在缓存区
+        // len_result = ::write(fd, data, len);
+
+        tcflush(fd1, TCOFLUSH); // 清空，防止数据累积在缓存区
+        len_result = ::write(fd1, data, len);
     }
 
     if (len_result != static_cast<ssize_t>(len))
@@ -150,8 +224,11 @@ ssize_t SerialPort::read(void *data, size_t len)
 
     if (is_open)
     {
-        len_result = ::read(fd, data, len);
-        tcflush(fd, TCIFLUSH);
+        // len_result = ::read(fd, data, len);
+        // tcflush(fd, TCIFLUSH);
+
+        len_result = ::read(fd2, data, len);
+        tcflush(fd2, TCIFLUSH);
     }
 
     if (len_result == -1)

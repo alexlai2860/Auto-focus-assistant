@@ -29,7 +29,7 @@ public:
 
   /**
    * @brief 从串口读取结构体
-   * 
+   *
    * @tparam T 读取到结构体的类型
    * @param head 头帧
    * @param tail 尾帧
@@ -47,7 +47,7 @@ public:
     {
       if (read_buffer[i] == head && read_buffer[i + SIZE + 1] == tail)
       {
-        //TODO 引发 GCC 警告: -Wstrict-aliasing
+        // TODO 引发 GCC 警告: -Wstrict-aliasing
         vec_t.push_back(*(reinterpret_cast<T *>(&read_buffer[i + 1])));
       }
     }
@@ -56,7 +56,7 @@ public:
 
   /**
    * @brief 结构体写入串口
-   * 
+   *
    * @tparam T 写入结构体的类型
    * @param data_struct 要写入的结构体
    * @return 是否写入成功
@@ -70,6 +70,8 @@ public:
 
 private:
   int fd;
+  int fd1; // for NucleusN motor
+  int fd2; // for tilta hand unit
   struct termios option;
   bool is_open = false;
   int baud_rate;

@@ -19,8 +19,8 @@ protected:
 
 public:
     Motor() = default;
-    virtual int readPulse() = 0;
-    virtual void writePulse(int) = 0;
+    virtual int read() = 0;
+    virtual void write(int,int) = 0;
     virtual void setZero() = 0;
     virtual void enable() = 0;
     virtual void test(int,int) = 0;

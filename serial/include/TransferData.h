@@ -23,6 +23,7 @@ public:
     uint8_t command2;
 
     uint8_t read1[4] = {0x00, 0x00, 0x00, 0x00};
+    uint8_t read2[14];
 
     uint8_t byte1 = 0xFD;         // 默认使用位置模式控制
     uint8_t direction_and_speed1; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）

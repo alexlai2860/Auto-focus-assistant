@@ -19,8 +19,8 @@ protected:
     data_ptr __data = make_shared<Data>();
 
 public:
-    int readPulse();
-    void writePulse(int);
+    int read();
+    void write(int, int);
     void setZero();
     void enable();
     void test(int, int);

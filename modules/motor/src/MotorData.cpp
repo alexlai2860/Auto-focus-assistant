@@ -94,7 +94,7 @@ vector<uint8_t> Data::Hex2Ascii(const uint8_t &data)
 }
 
 /**
- * @brief 读取串口
+ * @brief 读取串口()
  *
  * @param head 头帧 通信地址 默认为0x01
  * @param tail 尾帧 固定校验为0x6B
@@ -118,6 +118,33 @@ TransferData Data::read(uint8_t head, uint8_t tail)
     }
     return __last_data;
 }
+
+/**
+ * @brief 读取串口(NucleusN 控制手柄)
+ *
+ * @param head 头帧 冒号 默认为0x3A
+ * @param tail 尾帧 固定校验为0x0D
+ */
+TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
+{
+    // 接收数据
+    vector<ReceiveNucleusN> data = __port.readStruct<ReceiveNucleusN>(head, tail);
+    // 判空
+    if (!data.empty())
+    {
+        __receive_nucleusn_data = data.back();
+        // 整合得到传递数据
+        TransferData transfer_data;
+        for (int i = 0; i < 14; i++)
+        {
+            transfer_data.read2[i] = data.back().read_data[i];
+        }
+        // 更新信息数据
+        __last_data = transfer_data;
+    }
+    return __last_data;
+}
+
 
 /**
  * @brief 写入串口115200
@@ -164,7 +191,8 @@ void Data::write(int mode, const TransferData &transfer_data)
     }
     case 5:
     {
-        // 转化data
+        // 驱动NucleusN
+        // 转化data为ASCII
         vector<uint8_t> data_h = Hex2Ascii(transfer_data.pulse_h);
         __send_data5.data_h[0] = data_h.at(0);
         __send_data5.data_h[1] = data_h.at(1);
@@ -192,6 +220,13 @@ void Data::write(int mode, const TransferData &transfer_data)
         __send_data5.checksum[1] = checksum_vec.at(1);
         cout << (int)__send_data5.checksum[0] << (int)__send_data5.checksum[1] << endl;
         __port.writeStruct<SendData5>(__send_data5);
+        break;
+    }
+    case 6:
+    {
+        // NucleusN 电机行程校准
+        __port.writeStruct<SendData6>(__send_data6);
+        break;
     }
     default:
         break;
