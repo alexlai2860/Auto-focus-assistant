@@ -56,7 +56,7 @@ void SerialPort::open()
         while ((dire1 = readdir(dir1)) != nullptr)
         {
             // tilta
-            if (strstr(dire1->d_name, "hand_unit") != nullptr)
+            if (strstr(dire1->d_name, "ttyUSB") != nullptr)
             {
                 tilta_hand_unit = dire1->d_name;
                 // cout << "hand-unit-name:" << tilta_hand_unit << endl;
@@ -65,21 +65,21 @@ void SerialPort::open()
         }
         closedir(dir1);
     }
-    if ((dir2 = opendir(dir_path)) != nullptr)
-    {
-        cout << "2" << endl;
-        while ((dire2 = readdir(dir2)) != nullptr)
-        {
-            // tilta
-            if (strstr(dire2->d_name, "nucleusn_motor") != nullptr)
-            {
-                tilta_motor = dire2->d_name;
-                // cout << "motor-name:" << tilta_motor << endl;
-                break;
-            }
-        }
-        closedir(dir2);
-    }
+    // if ((dir2 = opendir(dir_path)) != nullptr)
+    // {
+    //     cout << "2" << endl;
+    //     while ((dire2 = readdir(dir2)) != nullptr)
+    //     {
+    //         // tilta
+    //         if (strstr(dire2->d_name, "nucleusn_motor") != nullptr)
+    //         {
+    //             tilta_motor = dire2->d_name;
+    //             // cout << "motor-name:" << tilta_motor << endl;
+    //             break;
+    //         }
+    //     }
+    //     closedir(dir2);
+    // }
 
     // // stepping motor
     // if (file_name.empty())
@@ -91,28 +91,28 @@ void SerialPort::open()
     //     file_name = dir_path + file_name;
 
     // tilta
-    if (tilta_motor.empty())
-    {
-        cout << "找不到原力N电机" << endl;
-        return;
-    }
-    else if (tilta_hand_unit.empty())
+    // if (tilta_motor.empty())
+    // {
+    //     cout << "找不到原力N电机" << endl;
+    //     return;
+    // }
+    if (tilta_hand_unit.empty())
     {
         cout << "找不到原力N手柄" << endl;
         return;
     }
     else
     {
-        tilta_motor = dir_path + tilta_motor;
+        // tilta_motor = dir_path + tilta_motor;
         tilta_hand_unit = dir_path + tilta_hand_unit;
     }
 
     // cout << "正在打开串口 " << file_name << endl;
-    cout << "正在打开电机 " << tilta_motor << endl;
+    // cout << "正在打开电机 " << tilta_motor << endl;
     cout << "正在打开手柄 " << tilta_hand_unit << endl;
 
     // fd = ::open(file_name.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);        // 非堵塞情况，steppingmotor
-    fd1 = ::open(tilta_motor.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);     // tilta电机
+    // fd1 = ::open(tilta_motor.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);     // tilta电机
     fd2 = ::open(tilta_hand_unit.c_str(), O_RDWR | O_NOCTTY | O_NDELAY); // tilta手柄
 
     // // stepping motor
@@ -125,13 +125,13 @@ void SerialPort::open()
     // tcgetattr(fd, &option);
 
     // tilta
-    if (fd1 == -1)
-    {
-        perror("\033[31m串口打开失败");
-        printf("\033[0m");
-        return;
-    }
-    tcgetattr(fd1, &option);
+    // if (fd1 == -1)
+    // {
+    //     perror("\033[31m串口打开失败");
+    //     printf("\033[0m");
+    //     return;
+    // }
+    // tcgetattr(fd1, &option);
     if (fd2 == -1)
     {
         perror("\033[31m串口打开失败");
@@ -156,7 +156,7 @@ void SerialPort::open()
 
     // 设置新属性，TCSANOW：所有改变立即生效
     // tcsetattr(fd, TCSANOW, &option);
-    tcsetattr(fd1, TCSANOW, &option);
+    // tcsetattr(fd1, TCSANOW, &option);
     tcsetattr(fd2, TCSANOW, &option);
 
     this->is_open = true;
@@ -172,8 +172,8 @@ void SerialPort::close()
     // if (this->is_open)
     //     ::close(fd);
 
-    if (this->is_open)
-        ::close(fd1);
+    // if (this->is_open)
+    //     ::close(fd1);
     if (this->is_open)
         ::close(fd2);
 
@@ -195,8 +195,10 @@ ssize_t SerialPort::write(void *data, size_t len)
         // tcflush(fd, TCOFLUSH); // 清空，防止数据累积在缓存区
         // len_result = ::write(fd, data, len);
 
-        tcflush(fd1, TCOFLUSH); // 清空，防止数据累积在缓存区
-        len_result = ::write(fd1, data, len);
+        // tcflush(fd1, TCOFLUSH); // 清空，防止数据累积在缓存区
+        // len_result = ::write(fd1, data, len);
+        tcflush(fd2, TCOFLUSH); // 清空，防止数据累积在缓存区
+        len_result = ::write(fd2, data, len);
     }
 
     if (len_result != static_cast<ssize_t>(len))

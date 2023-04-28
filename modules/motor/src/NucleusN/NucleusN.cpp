@@ -90,9 +90,7 @@ int NucleusN::read()
     {
         cout << "read_valid:";
         // for (int i = 0; i < 14; i++)
-        // {
         //     cout << hex << read_data.read2[i];
-        // }
         cout << endl;
     }
 
@@ -117,7 +115,39 @@ int NucleusN::read()
             return -5;
         }
     }
-    return 0;
+    if (read_data.read2[0] == '9')
+    {
+        if (read_data.read2[1] == '6')
+        {
+            // cal指令
+            return -1;
+        }
+    }
+    if (read_data.read2[0] == '3')
+    {
+        if (read_data.read2[1] == 'F')
+        {
+            // longcal指令
+            return -2;
+        }
+    }
+    if (read_data.read2[0] == 'C')
+    {
+        if (read_data.read2[1] == '9')
+        {
+            if (read_data.read2[11] == '1')
+            {
+                // recon指令
+                return -3;
+            }
+            if (read_data.read2[11] == '0')
+            {
+                // recoff指令
+                return -4;
+            }
+        }
+    }
+    return -5;
 }
 
 void NucleusN::setZero() {}

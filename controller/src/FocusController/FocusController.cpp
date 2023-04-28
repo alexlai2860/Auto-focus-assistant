@@ -86,8 +86,8 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         int DIS = 0;
         int detect_flag = 0;
+        int preserve = 0;
         bool detected = 0;
-        bool preserve = 0;
 
         cv::Mat d16, dColor;
         cv::Mat color = __reader->color;
@@ -97,6 +97,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         cv::Mat depth = __reader->depth;
 
         // 绘制目标框
+        cout << "********** DRAW-BOX **********" << endl;
         cout << "vf" << __face->isValideFace() << endl;
         if (__face->isValideFace())
         {
@@ -109,6 +110,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             cout << "obj" << endl;
         }
 
+        cout << "********** DETECT **********" << endl;
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
@@ -125,8 +127,13 @@ void FocusController::rsProcessFrame(int64 &t0)
             detect_flag = 3;
         }
 
+        cout << "********** READ **********" << endl;
+        int result = __motor->read();
+        cout << "read-result:" << result << endl;
+
+        cout << "********** DECIDE **********" << endl;
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
-        DIS = __decider->decide(d16, color, __reader, __detector, __dis, __logic, detected, detect_flag, preserve);
+        DIS = __decider->decide(d16, color, __reader, __detector, __dis, __logic, detected, detect_flag, result);
 
         // 读取当前脉冲值
         // int current_pulse = __motor->read();
@@ -141,8 +148,7 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
-        int result = __motor->read();
-        cout << "read-result" << result << endl;
+        cout << "********** WRITE **********" << endl;
         __motor->write(result, 0);
 
         // 输出彩色图和深度图

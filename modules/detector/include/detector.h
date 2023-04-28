@@ -49,7 +49,7 @@ class Depth
 {
 public:
     int getPointDepth(const cv::Mat &, const cv::Point2i &);
-    int getTargetDepth(const cv::Mat &, const cv::Rect2i &);
+    int getTargetDepth(const cv::Mat &, const cv::Rect2i &, const int type);
 };
 
 class Detector

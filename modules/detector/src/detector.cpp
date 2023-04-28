@@ -22,20 +22,29 @@ using namespace std;
  */
 int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
 {
-    cv::Point2i valid_point = point;
+    // cv::Point2i valid_point = point;
+    // return depth_frame.at<uint16_t>(point.y, point.x); // 这里是反过来的...
     int min_dis = 65535;
-    int scale = 1;
-    while (min_dis == 65535 && min_dis != 0)
+    int scale = 2;
+    bool is_valid_point = 0;
+    while (!is_valid_point)
     {
-        int length = 2 * scale;
-        cv::Rect2i center_rect(point.x - length / 2, point.y - length / 2, length, length);
+        if (scale >= 16)
+        {
+            // length >= 31,依然找不到有明确距离的点(黑洞)
+            cout << "POINT_DIS_INVALID!" << point << endl;
+            return 25000;
+        }
+        int length = 2 * scale - 1; // length = 3/7/11/15/...
+        int half_lenght = (length - 1) / 2;
+        cv::Rect2i center_rect(point.x - half_lenght, point.y - half_lenght, length, length);
         for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
         {
             for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
             {
                 if (x > 0 && y > 0)
                 {
-                    int dis = depth_frame.at<uint16_t>(x, y);
+                    int dis = depth_frame.at<uint16_t>(y, x);
                     if (dis < min_dis)
                     {
                         min_dis = dis;
@@ -43,7 +52,12 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
                 }
             }
         }
-        scale *= 2;
+        scale += 2;
+        if (min_dis != 0 && min_dis < 60000)
+        {
+            is_valid_point = 1;
+            break;
+        }
     }
     // cout << "valid-length - " << scale << endl;
     return min_dis;
@@ -56,24 +70,34 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
  * @param rect
  * @return int
  */
-int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect)
+int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, const int type)
 {
     int depth = 25000; // 默认对焦在25m，基本为无穷远
     int height = rect.height;
     int width = rect.width;
-    cv::Point2i center;
-    center.x = rect.x + width / 2;
-    center.y = rect.y + height / 2;
+    int location = 0;
+    float wh_ratio = (float)width / (float)height;
+    if (type == 0)
+    {
+        // 基于人体框的长宽比，盲猜头部的位置:
+        float k = 0.5;
+        height = k * wh_ratio * height;
+    }
+    // cv::Point2i center;
+    // center.x = rect.x + (width / 2);
+    // center.y = rect.y + (height / 2);
     cout << "target-height " << height << endl;
     cout << "target-width " << width << endl;
     int point_dis = 0;
     // 建立深度队列
     deque<int> depth_deque;
+    int invalid_point_num = 0;
+    int valid_point_num = 0;
     // 自动设置步长，确保采样点大于10*10
     int stride = MIN(height, width) / 10;
     // cout << "stride " << stride << endl;
     // 模仿相机对焦点的操作
-    // 每 stride*stride 像素进行一次采样，降低计算压力（伪池化）
+    // 每 stride*stride 像素进行一次采样，降低计算压力（伪池化?）
     for (int i = rect.x; i < rect.x + width; i += stride)
     {
         for (int j = rect.y; j < rect.y + height; j += stride)
@@ -84,10 +108,17 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect)
             // cout << "point-dis:" << point_dis << endl;
             if (point_dis != 0 && point_dis < 25000)
             {
+                // invalid的点和无穷远点不计入
                 depth_deque.push_back(point_dis);
+                valid_point_num++;
+            }
+            else
+            {
+                invalid_point_num++;
             }
         }
     }
+    cout << "valid-point-rate" << (float)valid_point_num / (float)(invalid_point_num + valid_point_num) << endl;
     cout << "deque-size " << depth_deque.size() << endl;
     // 升序排列
     if (!depth_deque.empty())
@@ -97,13 +128,19 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect)
     else
     {
         // cout << "invalid-target : dis error" << endl;
-        depth_deque.push_back(25000);
+        // depth_deque.push_back(25000);
+        return 25000;
     }
     // 对depth_vector进行统计
     // 也许可以试试k-means？
     // 暂时取中值，有待改进
-    int medium = depth_deque.size() / 2;
-    // return depth_deque.at(medium);
-    int temp_depth = getPointDepth(depth_frame, center);
-    return temp_depth;
+    location = depth_deque.size() / 2;
+    if (type == 0)
+    {
+        // 此时背景面积较大，倾向于选择较近的点
+        location = depth_deque.size() / 8;
+    }
+    return depth_deque.at(location);
+    // int temp_depth = getPointDepth(depth_frame, center);
+    // return temp_depth;
 }

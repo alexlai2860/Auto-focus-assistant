@@ -25,7 +25,7 @@ using namespace std;
  * @param control_flag 0:face/1:object
  * @return int
  */
-int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, bool preserve)
+int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, int position)
 {
     int DIS;
     int situation;
@@ -37,8 +37,18 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     }
 
     cout << "detected? " << detected << endl;
+    cout << "position? " << position << endl;
     cout << "face-size-1 ? " << __detector->face.size() << endl;
     cout << "target-size-1 ? " << __detector->target.size() << endl;
+
+    // if (position < 0)
+    // {
+
+    // }
+    // else
+    // {
+
+    // }
 
     switch (control_flag)
     {
@@ -58,6 +68,9 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         cout << "case " << 3 << endl;
         situation = objectPerceptron(d16, __detector, __dis, __tool, detected, control_flag);
         break;
+    case 4:
+        cout << "case " << 3 << endl;
+        situation = 0;
     default:
         situation = 0;
         break;
@@ -72,6 +85,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
     case 0:
     {
+        // 掉帧处理/无目标检测
         // situation=0:进入掉帧处理
         this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
         if (param.DROP_PROCESS_MODE == 1 && param.cam_module == REALSENSE)
@@ -86,18 +100,10 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
         if (param.cam_module == REALSENSE)
         {
-            DIS = 20000; // 面部距离限制
+            DIS = 25000; // 面部距离限制
             // situation=1:锁定队列末尾距离最近的面部
             for (int i = 0; i < __detector->face.back().size(); i++)
             {
-                // 更新face_dis:从对象中获取
-                // float center_y = __detector->face.back().at(i).center.y;
-                // float center_x = __detector->face.back().at(i).center.x;
-                // if (param.INVERT_ON)
-                // {
-                //     center_y = param.RS_height - __detector->face.back().at(i).center.y;
-                // }
-                // int face_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(center_x, center_y));
                 int face_dis = __detector->face.back().at(i).cam_dis;
                 // 对realsense相机来说，discalculate并不承担计算距离的功能
                 // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
@@ -123,25 +129,19 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
         if (param.cam_module == REALSENSE)
         {
-            DIS = 20000; // 面部距离限制
-            // situation=1:锁定队列末尾距离最近的面部
+            DIS = 25000; // 目标距离限制
+            // situation=1:锁定队列末尾距离最近的目标
             for (int i = 0; i < __detector->target.back().size(); i++)
             {
                 cout << "deciding-target-back-" << i << endl;
-                // 更新face_dis:从对象中获取
-                // float center_y = __detector->target.back().at(i).center.y;
-                // float center_x = __detector->target.back().at(i).center.x;
-                // if (param.INVERT_ON)
-                // {
-                //     center_y = param.RS_height - __detector->target.back().at(i).center.y;
-                // }
-                // int face_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(center_x, center_y));
+                cout << "target-back-size-" << __detector->target.back().size() << endl;
+                
                 int target_dis = __detector->target.back().at(i).cam_dis;
                 // 对realsense相机来说，discalculate并不承担计算距离的功能
                 // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
                 deque<cv::Point2f> empty;
                 int current_dis = __dis->disCalculate(target_dis, d16, empty);
-                // 锁定距离最近的面部
+                // 锁定距离最近的目标
                 if (current_dis < DIS)
                 {
                     DIS = current_dis;

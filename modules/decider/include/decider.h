@@ -39,7 +39,7 @@ protected:
     };
 
 public:
-    int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, bool);
+    int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, int);
     int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int disInterPolater(int &);

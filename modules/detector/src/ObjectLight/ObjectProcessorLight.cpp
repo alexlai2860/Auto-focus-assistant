@@ -40,8 +40,12 @@ bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
         {
             target.pop_front();
         }
+        return 1;
     }
-    return 1;
+    else
+    {
+        return 0;
+    }
 }
 
 bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
@@ -214,17 +218,21 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                         cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
                         if (boxes.back().area() > param.DRAW_BOX_MIN * param.DRAW_BOX_MIN)
                         {
-                            cout << "new-box--" << i << endl;
-                            SingleObject single_object;
-                            single_object.id = classIdPoint.x;
-                            single_object.conf = box_score * max_class_socre;
-                            single_object.single_object_box = cv::Rect(left, top, (int)(w * ratiow), (int)(h * ratioh));
-                            single_object.cam_dis = depth.getTargetDepth(depth_frame, single_object.single_object_box);
-                            cout << "half-done" << endl;
-                            single_object.center = cv::Point2i(left + (int)(w * ratiow) / 2, top + (int)(h * ratioh) / 2);
-                            single_object.detected = 1;
-                            current_objects.push_back(single_object);
-                            cout << "new-box-added" << endl;
+                            // if (classIdPoint.x == 0)
+                            // {
+                                // 强制过滤目标(临时)
+                                cout << "new-box--" << i << endl;
+                                SingleObject single_object;
+                                single_object.id = classIdPoint.x;
+                                single_object.conf = box_score * max_class_socre;
+                                single_object.single_object_box = cv::Rect(left, top, (int)(w * ratiow), (int)(h * ratioh));
+                                single_object.cam_dis = depth.getTargetDepth(depth_frame, single_object.single_object_box, classIdPoint.x);
+                                cout << "half-done" << endl;
+                                single_object.center = cv::Point2i(left + (int)(w * ratiow) / 2, top + (int)(h * ratioh) / 2);
+                                single_object.detected = 1;
+                                current_objects.push_back(single_object);
+                                cout << "new-box-added" << endl;
+                            // }
                         }
                     }
                 }
