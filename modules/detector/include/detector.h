@@ -33,14 +33,17 @@ class SingleObject
 {
 public:
     cv::Point2f center;
+    cv::Rect single_face_in_object; // (if possible)
     cv::Rect single_object_box;
     SingleObject *forward_object = nullptr;
     SingleObject *backward_object = nullptr;
     int drop_count = 0;
+    int init_trigger = 0; // 连续识别到目标才能触发对焦动作，避免误识别导致抽搐
     bool detected;
     int id;
     float conf;
     float cam_dis;             // 到相机的真实距离
+    float face_dis;            // (if possible)
     float forward_dis = -1.f;  // 该帧物体中心点和下一帧对应物体中心点的欧氏距离
     float backward_dis = -1.f; // 该帧物体中心点和前一帧对应物体中心点的欧氏距离
 };
@@ -62,10 +65,10 @@ public:
     bool draw_object_box = 0;
     bool draw_human_box = 0;
 
-    deque<vector<SingleFace>> face;     // 面部中心的时间队列
-    deque<vector<SingleObject>> target; // 目标框的时间队列
-    deque<vector<int>> target_id;       // 目标框的ID队列
-    deque<vector<float>> target_conf;   // 目标框的置信度队列
+    deque<vector<SingleFace>> face;     // 面部的时间队列
+    deque<vector<SingleObject>> target; // 目标的时间队列
+    deque<vector<int>> target_id;       // 目标的ID队列
+    deque<vector<float>> target_conf;   // 目标的置信度队列
     int face_label;                     // 锁定的面部在队列中的位置
     int target_label;                   // 锁定的目标在队列中的位置
 

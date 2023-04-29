@@ -50,6 +50,9 @@ bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
 
 bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
+    // cout<<"target-size"<<target.size()<<endl;
+    // cout<<"target-back-size"<<target.back().size()<<endl;
+
     const vector<SingleObject> object_vector = target.back();
     for (int i = 0; i < object_vector.size(); i++)
     {
@@ -68,6 +71,12 @@ bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
         top = max(top, labelSize.height);
         // rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
         putText(color_frame, label, target_box.tl(), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0), 1);
+
+        if (!object_vector.at(i).single_face_in_object.empty())
+        {
+            cv::Rect2i face_box = object_vector.at(i).single_face_in_object;
+            rectangle(color_frame, face_box.tl(), cv::Point2i(face_box.x + face_box.width, face_box.y + face_box.height), Scalar(0, 255, 255), 3);
+        }
 
         cout << "draw-objects-vector-" << i << ":" << target_box << endl;
     }
@@ -218,8 +227,8 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                         cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
                         if (boxes.back().area() > param.DRAW_BOX_MIN * param.DRAW_BOX_MIN)
                         {
-                            // if (classIdPoint.x == 0)
-                            // {
+                            if (classIdPoint.x == 0 && box_score * max_class_socre > 0.4)
+                            {
                                 // 强制过滤目标(临时)
                                 cout << "new-box--" << i << endl;
                                 SingleObject single_object;
@@ -232,7 +241,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                                 single_object.detected = 1;
                                 current_objects.push_back(single_object);
                                 cout << "new-box-added" << endl;
-                            // }
+                            }
                         }
                     }
                 }

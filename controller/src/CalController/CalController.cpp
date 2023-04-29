@@ -18,7 +18,8 @@ using namespace std;
 int CalController::init(int64 &t0, int num)
 {
     TransferData readData, writeData;
-    __motor = make_shared<SteppingMotor>();
+    // __motor = make_shared<SteppingMotor>();
+    __motor = make_shared<NucleusN>();
     __logic = make_shared<LogicTools>();
 
     // 区分当前镜头，并初始化电机位置
@@ -67,7 +68,8 @@ void CalController::rsCalibration(int lens_num, int64 &t0)
         __reader->read();
         rs2::depth_frame depth = __reader->rsDepthFrames.back();
         cv::Mat color = __reader->color;
-        if (__cal->calibrate(lens_num, __dis, __motor, depth, color))
+        // if (__cal->calibrate(lens_num, __dis, __motor, depth, color))
+        if (__cal->nucleusCalibrate(lens_num, __dis, __motor, depth, color))
         {
             break;
         }

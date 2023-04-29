@@ -37,9 +37,10 @@ protected:
         for (int i = 0; i < 50; i++)
             map[i] = 0;
     };
+    int situationJudger(int, int, detector_ptr &, detector_ptr &);
 
 public:
-    int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, int);
+    int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, int);
     int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int disInterPolater(int &);

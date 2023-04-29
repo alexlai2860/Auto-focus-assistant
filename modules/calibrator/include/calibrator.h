@@ -20,12 +20,13 @@ class Calibrator
 protected:
     vector<cv::Mat> function;
     vector<cv::Point2f> cal_points;
+    int last_pulse;
 
     // motor_ptr __motor = make_shared<SteppingMotor>();
 
 public:
     bool calibrate(int, dis_ptr &, motor_ptr &, rs2::depth_frame &, cv::Mat &);
-
+    bool nucleusCalibrate(int, dis_ptr &, motor_ptr &, rs2::depth_frame &, cv::Mat &);
     cv::Mat polyFit(vector<cv::Point2f> &, int, int);
     // void astraCalibration(int, Dis &, int64 &);
     // int calibratorInit(int64 &, motor_ptr &);

@@ -25,8 +25,8 @@ uint8_t Data::Ascii2Hex(const uint8_t data_h, const uint8_t data_l)
     uint8_t output;
     uint8_t output_h;
     uint8_t output_l;
-    cout << "h" << (int)data_h << endl;
-    cout << "l" << (int)data_l << endl;
+    // cout << "h" << (int)data_h << endl;
+    // cout << "l" << (int)data_l << endl;
 
     if ((int)data_h >= 65)
     {
@@ -46,8 +46,8 @@ uint8_t Data::Ascii2Hex(const uint8_t data_h, const uint8_t data_l)
         output_l = (int)data_l - 48;
     }
 
-    cout << "oph" << (int)output_h << endl;
-    cout << "opl" << (int)output_l << endl;
+    // cout << "oph" << (int)output_h << endl;
+    // cout << "opl" << (int)output_l << endl;
     output = output_h << 4 | output_l;
     return output;
 }
@@ -66,8 +66,8 @@ vector<uint8_t> Data::Hex2Ascii(const uint8_t &data)
     uint8_t data_h = data >> 4;
     uint8_t data_l = data - (data_h << 4);
 
-    cout << "data_h" << (int)data_h << endl;
-    cout << "data_h" << (int)data_l << endl;
+    // cout << "data_h" << (int)data_h << endl;
+    // cout << "data_h" << (int)data_l << endl;
     if ((int)data_h > 9)
     {
         output_h = (int)data_h - 10 + 65;
@@ -85,8 +85,8 @@ vector<uint8_t> Data::Hex2Ascii(const uint8_t &data)
     {
         output_l = (int)data_l + 48;
     }
-    cout << "oph" << (int)output_h << endl;
-    cout << "opl" << (int)output_l << endl;
+    // cout << "oph" << (int)output_h << endl;
+    // cout << "opl" << (int)output_l << endl;
 
     output.push_back(output_h);
     output.push_back(output_l);
@@ -206,19 +206,19 @@ void Data::write(int mode, const TransferData &transfer_data)
         uint8_t paramL = Ascii2Hex(__send_data5.param_l[0], __send_data5.param_l[1]);
         uint8_t dataH = Ascii2Hex(__send_data5.data_h[0], __send_data5.data_h[1]);
         uint8_t dataL = Ascii2Hex(__send_data5.data_l[0], __send_data5.data_l[1]);
-        cout << (int)Command << endl;
-        cout << (int)paramH << endl;
-        cout << (int)paramL << endl;
-        cout << (int)dataH << endl;
-        cout << (int)dataL << endl;
+        // cout << (int)Command << endl;
+        // cout << (int)paramH << endl;
+        // cout << (int)paramL << endl;
+        // cout << (int)dataH << endl;
+        // cout << (int)dataL << endl;
         uint8_t checksum = (char)(256 - 1 - (Command + paramH + paramL + dataH + dataL));
-        cout << (int)checksum << endl;
+        // cout << (int)checksum << endl;
 
         // 提取checksum
         vector<uint8_t> checksum_vec = Hex2Ascii(checksum);
         __send_data5.checksum[0] = checksum_vec.at(0);
         __send_data5.checksum[1] = checksum_vec.at(1);
-        cout << (int)__send_data5.checksum[0] << (int)__send_data5.checksum[1] << endl;
+        // cout << (int)__send_data5.checksum[0] << (int)__send_data5.checksum[1] << endl;
         __port.writeStruct<SendData5>(__send_data5);
         break;
     }

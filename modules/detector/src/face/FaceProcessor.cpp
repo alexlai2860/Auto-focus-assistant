@@ -22,7 +22,7 @@ bool Face::YNinit()
     }
     if (param.cam_module == REALSENSE)
     {
-        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.9);
+        faceDetector = cv::FaceDetectorYN::create(onnx_path, "", cv::Size(param.RS_width, param.RS_height), 0.85);
     }
     isYN_init = 1;
     return 1;

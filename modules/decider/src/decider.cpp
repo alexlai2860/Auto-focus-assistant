@@ -22,13 +22,19 @@ using namespace std;
  * @param __dis
  * @param __reader
  * @param __tool
- * @param control_flag 0:face/1:object
+ * @param control_flag 0:对应face检测
+ *                     1:对应object检测
+ *                     2:不检测的帧
+ *                     3/4:直接进入掉帧处理
  * @return int
  */
-int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, int position)
+int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__face, detector_ptr &__object,
+                    dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, int read_result)
 {
     int DIS;
     int situation;
+    int situation_face;
+    int situation_object;
     ifstream ifs(this->logicFile.c_str());
     string line;
     while (getline(ifs, line))
@@ -37,9 +43,9 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     }
 
     cout << "detected? " << detected << endl;
-    cout << "position? " << position << endl;
-    cout << "face-size-1 ? " << __detector->face.size() << endl;
-    cout << "target-size-1 ? " << __detector->target.size() << endl;
+    cout << "read_result? " << read_result << endl;
+    cout << "face-size-1 ? " << __face->face.size() << endl;
+    cout << "target-size-1 ? " << __object->target.size() << endl;
 
     // if (position < 0)
     // {
@@ -54,30 +60,39 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
     case 0:
         cout << "case " << 0 << endl;
-        situation = facePerceptron(d16, __detector, __dis, __tool, detected, control_flag);
+        situation_face = facePerceptron(d16, __face, __dis, __tool, detected, control_flag);
+        situation_object = objectPerceptron(d16, __object, __dis, __tool, 0, 2);
+        situation = situationJudger(situation_face, situation_object, __face, __object);
         break;
     case 1:
         cout << "case " << 1 << endl;
-        situation = facePerceptron(d16, __detector, __dis, __tool, detected, control_flag);
+        situation_object = objectPerceptron(d16, __object, __dis, __tool, detected, control_flag);
+        situation_face = facePerceptron(d16, __face, __dis, __tool, 0, 2);
+        situation = situationJudger(situation_face, situation_object, __face, __object);
+        cout << "obj-face-overall situation" << situation_object << situation_face << situation << endl;
         break;
     case 2:
         cout << "case " << 2 << endl;
-        situation = objectPerceptron(d16, __detector, __dis, __tool, detected, control_flag);
+        situation_face = facePerceptron(d16, __face, __dis, __tool, 0, 2);
+        situation_object = objectPerceptron(d16, __object, __dis, __tool, 0, 2);
+        situation = situationJudger(situation_face, situation_object, __face, __object);
         break;
     case 3:
         cout << "case " << 3 << endl;
-        situation = objectPerceptron(d16, __detector, __dis, __tool, detected, control_flag);
+        situation = 0;
+        // situation = objectPerceptron(d16, __object, __dis, __tool, detected, control_flag);
         break;
     case 4:
         cout << "case " << 3 << endl;
         situation = 0;
+        break;
     default:
         situation = 0;
         break;
     }
 
-    cout << "face-size-2 ? " << __detector->face.size() << endl;
-    cout << "target-size-2 ? " << __detector->target.size() << endl;
+    cout << "face-size-2 ? " << __face->face.size() << endl;
+    cout << "target-size-2 ? " << __object->target.size() << endl;
     cout << "situation? " << situation << endl;
 
     // 对判断得到的状态进行决策
@@ -93,60 +108,78 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
         DIS = __dis->target_dis.back();
-        __detector->face.clear();
+        __face->face.clear();
+        __object->target.clear();
         break;
     }
+    // case 1:
+    // {
+    //     if (param.cam_module == REALSENSE)
+    //     {
+    //         DIS = 25000; // 面部距离限制
+    //         // situation=1:锁定队列末尾距离最近的面部
+    //         for (int i = 0; i < __face->face.back().size(); i++)
+    //         {
+    //             int face_dis = __face->face.back().at(i).cam_dis;
+    //             // 对realsense相机来说，discalculate并不承担计算距离的功能
+    //             // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+    //             deque<cv::Point2f> empty;
+    //             int current_dis = __dis->disCalculate(face_dis, d16, empty);
+    //             // 锁定距离最近的面部
+    //             if (current_dis < DIS)
+    //             {
+    //                 DIS = current_dis;
+    //                 __face->face_label = i;
+    //             }
+    //         }
+    //         break;
+    //     }
+    //     else
+    //     {
+    //         deque<cv::Point2f> empty;
+    //         DIS = __dis->disCalculate(1, d16, empty);
+    //         break;
+    //     }
+    // }
     case 1:
-    {
-        if (param.cam_module == REALSENSE)
-        {
-            DIS = 25000; // 面部距离限制
-            // situation=1:锁定队列末尾距离最近的面部
-            for (int i = 0; i < __detector->face.back().size(); i++)
-            {
-                int face_dis = __detector->face.back().at(i).cam_dis;
-                // 对realsense相机来说，discalculate并不承担计算距离的功能
-                // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-                deque<cv::Point2f> empty;
-                int current_dis = __dis->disCalculate(face_dis, d16, empty);
-                // 锁定距离最近的面部
-                if (current_dis < DIS)
-                {
-                    DIS = current_dis;
-                    __detector->face_label = i;
-                }
-            }
-            break;
-        }
-        else
-        {
-            deque<cv::Point2f> empty;
-            DIS = __dis->disCalculate(1, d16, empty);
-            break;
-        }
-    }
-    case 2:
     {
         if (param.cam_module == REALSENSE)
         {
             DIS = 25000; // 目标距离限制
             // situation=1:锁定队列末尾距离最近的目标
-            for (int i = 0; i < __detector->target.back().size(); i++)
+            for (int i = 0; i < __object->target.back().size(); i++)
             {
                 cout << "deciding-target-back-" << i << endl;
-                cout << "target-back-size-" << __detector->target.back().size() << endl;
-                
-                int target_dis = __detector->target.back().at(i).cam_dis;
-                // 对realsense相机来说，discalculate并不承担计算距离的功能
+                cout << "target-back-size-" << __object->target.back().size() << endl;
+                int target_dis = __object->target.back().at(i).cam_dis;
+                int face_dis = 0;
+                int dis = target_dis;
+                if (!__object->target.back().at(i).single_face_in_object.empty())
+                {
+                    face_dis = __object->target.back().at(i).face_dis;
+                }
+                // cout << "deciding-1" << endl;
+                float dis_ratio = (float)face_dis / (float)target_dis;
+                int delta_dis = abs(face_dis - target_dis);
+                if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
+                {
+                    if (delta_dis < 500)
+                    {
+                        // 认定为面部距离可靠
+                        dis = face_dis;
+                    }
+                }
+                // cout << "deciding-2" << endl;
                 // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
                 deque<cv::Point2f> empty;
-                int current_dis = __dis->disCalculate(target_dis, d16, empty);
+                int current_dis = __dis->disCalculate(dis, d16, empty);
                 // 锁定距离最近的目标
                 if (current_dis < DIS)
                 {
                     DIS = current_dis;
-                    __detector->target_label = i;
+                    __object->target_label = i;
                 }
+                // cout << "deciding-3" << endl;
             }
             break;
         }
@@ -162,26 +195,33 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         break;
     }
 
+    // 距离信息判断和绘制
     if (DIS != 0)
     {
         if (DIS < 30000)
         {
             if (situation == 1)
             {
-                if (!__detector->face.empty())
+                if (!__object->target.empty())
                 {
-                    cv::circle(color, __detector->face.back().at(__detector->face_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                    cv::circle(color, __object->target.back().at(__object->target_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
                 }
                 cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+
+                // if (!__face->face.empty())
+                // {
+                //     cv::circle(color, __face->face.back().at(__face->face_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                // }
+                // cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             }
-            else if (situation == 2)
-            {
-                if (!__detector->target.empty())
-                {
-                    cv::circle(color, __detector->target.back().at(__detector->target_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
-                }
-                cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-            }
+            // else if (situation == 2)
+            // {
+            //     if (!__object->target.empty())
+            //     {
+            //         cv::circle(color, __object->target.back().at(__object->target_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+            //     }
+            //     cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            // }
         }
         else
         {
@@ -194,7 +234,81 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         DIS = 1000;
         cout << "ERROR!-距离队列异常" << endl;
     }
+    cout << "decide-done" << endl;
     return DIS;
+}
+
+/**
+ * @brief 综合状态判别器，计划以目标识别为主，面部识别为辅
+ *
+ * @param face_situation
+ * @param object_situation
+ * @param __face
+ * @param __object
+ * @return int
+ */
+int decider::situationJudger(int face_situation, int object_situation, detector_ptr &__face, detector_ptr &__object)
+{
+    // 匹配面部和人体/目标
+    int overall_situation = 0;
+    if (face_situation == 1 && object_situation == 2)
+    {
+        // face和object都检测到
+        for (int i = 0; i < __face->face.back().size(); i++)
+        {
+            cv::Mat current_face;
+            current_face = __face->face.back().at(i).single_face;
+            float current_face_dis = __face->face.back().at(i).cam_dis;
+            cv::Rect2i current_face_rect(int(current_face.at<float>(i, 0)), int(current_face.at<float>(i, 1)),
+                                         int(current_face.at<float>(i, 2)), int(current_face.at<float>(i, 3)));
+
+            cv::Point2i tl = current_face_rect.tl();
+            cv::Point2i tr(current_face_rect.x + current_face_rect.width, current_face_rect.y);
+            cv::Point2i dl(current_face_rect.x, current_face_rect.y + current_face_rect.height);
+            cv::Point2i dr(current_face_rect.x + current_face_rect.width, current_face_rect.y + current_face_rect.height);
+            cv::Point2i center(current_face_rect.x + (current_face_rect.width / 2), current_face_rect.y + (current_face_rect.height / 2));
+
+            for (int j = 0; j < __object->target.back().size(); j++)
+            {
+                bool matched_face = 0;
+                bool tl_inside = __object->target.back().at(j).single_object_box.contains(tl);
+                bool tr_inside = __object->target.back().at(j).single_object_box.contains(tr);
+                bool dl_inside = __object->target.back().at(j).single_object_box.contains(dl);
+                bool dr_inside = __object->target.back().at(j).single_object_box.contains(dr);
+                bool center_inside = __object->target.back().at(j).single_object_box.contains(center);
+                matched_face = tl_inside || tr_inside || dl_inside || dr_inside;
+                if (matched_face)
+                {
+                    if (__object->target.back().at(j).single_face_in_object.empty())
+                    {
+                        __object->target.back().at(j).face_dis = current_face_dis;
+                        __object->target.back().at(j).single_face_in_object = current_face_rect;
+                    }
+                    else
+                    {
+                        // 若不为空，则进一步比较是否满足center_inside
+                        if (center_inside)
+                        {
+                            __object->target.back().at(j).face_dis = current_face_dis;
+                            __object->target.back().at(j).single_face_in_object = current_face_rect;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        overall_situation = 1;
+    }
+    else if (object_situation == 2)
+    {
+        // 只检测到object，未检测到face
+        overall_situation = 1;
+    }
+    else
+    {
+        overall_situation = 0;
+    }
+    return overall_situation;
 }
 
 /**
@@ -411,7 +525,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
         {
             cout << "face-back-size1 " << __detector->face.back().size() << endl;
             // 判断是否为进行检测的帧
-            if (control_flag == 1)
+            if (control_flag == 2)
             {
                 for (int i = 0; i < __detector->face.back().size(); i++)
                 {
@@ -570,7 +684,8 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                 cout << "stage-2-1" << endl;
                 if (single_current_object.backward_dis < 0)
                 {
-                    // 认为出现新的face
+                    // 认为single_current_object为新的face
+                    // single_current_object.init_trigger++;
                     bool uninserted = 1;
                     for (auto &single_new_object : new_objects)
                     {
@@ -622,6 +737,8 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
             {
                 cout << object.single_object_box << endl;
             }
+            // init_trigger处理
+
             // 完成new_faces的处理
             __detector->target.back() = new_objects_copy;
             if (!new_objects_copy.empty())
@@ -1056,21 +1173,43 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
 int decider::disInterPolater(int &dis)
 {
     int target_pulse = 0;
-
-    if (dis < 500)
+    int closest_pulse;
+    // 通过正方向，反推最近距离脉冲
+    if ((lens_param.B - lens_param.A) < 0)
     {
-        // 最近对焦0.5m
-        target_pulse = 0;
+        closest_pulse = 9999;
     }
-    else if (dis < lens_param.INIT_DIS)
+    else
+    {
+        closest_pulse = 0;
+    }
+
+    if (dis < lens_param.INIT_DIS)
     {
         // 小于最近对焦距离，设为0
-        target_pulse = 0;
+        // target_pulse = 0;
+        // target_pulse = lens_param.A;
+        target_pulse = closest_pulse;
+    }
+    else if (dis < 500 && dis > lens_param.INIT_DIS)
+    {
+        // 最近对焦0.5m
+        // target_pulse = 0;
+        // target_pulse = lens_param.A;
+        target_pulse = closest_pulse + (lens_param.A - closest_pulse) * (dis - lens_param.INIT_DIS) / (500 - lens_param.INIT_DIS);
     }
     else if (dis < 1500 && dis >= lens_param.INIT_DIS)
     {
         // todo:这里貌似有bug(更新：已经修复bug)
-        target_pulse = lens_param.A + (lens_param.B - lens_param.A) * (dis - lens_param.INIT_DIS) / (1500 - lens_param.INIT_DIS);
+        if (lens_param.INIT_DIS > 0.5)
+        {
+            // 此时lens_param.A应该为接近9999/0
+            target_pulse = lens_param.A + (lens_param.B - lens_param.A) * (dis - lens_param.INIT_DIS) / (1500 - lens_param.INIT_DIS);
+        }
+        else
+        {
+            target_pulse = lens_param.A + (lens_param.B - lens_param.A) * (dis - 500) / 1000;
+        }
     }
     else if (dis < 2500 && dis >= 1500)
     {

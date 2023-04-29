@@ -29,6 +29,8 @@ protected:
     detector_ptr __object;
     detector_ptr __detector;
 
+    bool face_trigger;
+
 public:
     int init(int64 &, int) override;
     void astraProcessFrame(int64 &);

@@ -28,6 +28,7 @@ int FocusController::init(int64 &t0, int lens_num)
     // __motor = make_shared<SteppingMotor>();
     __motor = make_shared<NucleusN>();
     __logic = make_shared<LogicTools>();
+    // __motor->init(writeData, writeData);
     // __decider = make_shared<decider>();
 
     // 每次循环：先读取当前电机位置
@@ -99,11 +100,12 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 绘制目标框
         cout << "********** DRAW-BOX **********" << endl;
         cout << "vf" << __face->isValideFace() << endl;
-        if (__face->isValideFace())
-        {
-            __face->drawBox(color, depth);
-            cout << "face" << endl;
-        }
+        cout << "vo" << __object->isValideObject() << endl;
+        // if (__face->isValideFace())
+        // {
+        //     __face->drawBox(color, depth);
+        //     cout << "face" << endl;
+        // }
         if (__object->isValideObject())
         {
             __object->drawBox(color, depth);
@@ -119,12 +121,20 @@ void FocusController::rsProcessFrame(int64 &t0)
             detected = __object->detect(color_copy, depth);
             __detector = __object;
             // detect_flag = 1;
-            detect_flag = 2;
+            detect_flag = 1;
+            face_trigger = 1;
         }
         else
         {
-            // detect_flag = 0;
-            detect_flag = 3;
+            // 目标检测后搭配一次面部检测
+            if (face_trigger)
+            {
+                detected = __face->detect(color_copy, depth);
+                __detector = __face;
+                face_trigger = 0;
+                detect_flag = 0;
+            }
+            detect_flag = 2;
         }
 
         cout << "********** READ **********" << endl;
@@ -133,7 +143,7 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         cout << "********** DECIDE **********" << endl;
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
-        DIS = __decider->decide(d16, color, __reader, __detector, __dis, __logic, detected, detect_flag, result);
+        DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, result);
 
         // 读取当前脉冲值
         // int current_pulse = __motor->read();
@@ -149,7 +159,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
-        __motor->write(result, 0);
+        __motor->write(target_pulse, 0);
 
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);
