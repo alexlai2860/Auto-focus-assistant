@@ -31,6 +31,7 @@ bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
         cout << "detect-over" << endl;
         // target = yolo.yolo_target;
         target.push_back(yolo.yolo_target.back());
+        cout << "target_size:" << target.size() << endl;
         draw_object_box = 1;
         if (target.size() > 1)
         {
@@ -56,29 +57,32 @@ bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
     const vector<SingleObject> object_vector = target.back();
     for (int i = 0; i < object_vector.size(); i++)
     {
-        cv::Rect target_box = object_vector.at(i).single_object_box;
-        // Draw a rectangle displaying the bounding box
-        rectangle(color_frame, target_box.tl(), cv::Point2i(target_box.x + target_box.width, target_box.y + target_box.height), Scalar(0, 0, 255), 3);
-
-        // Get the label for the class name and its confidence
-        string label = format("%.2f", object_vector.at(i).conf);
-        label = format("%.2f", object_vector.at(i).cam_dis) + ":" + label;
-
-        // Display the label at the top of the bounding box
-        int baseLine;
-        Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-        int top = target_box.tl().y;
-        top = max(top, labelSize.height);
-        // rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
-        putText(color_frame, label, target_box.tl(), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0), 1);
-
-        if (!object_vector.at(i).single_face_in_object.empty())
+        if (object_vector.at(i).init_trigger == -1)
         {
-            cv::Rect2i face_box = object_vector.at(i).single_face_in_object;
-            rectangle(color_frame, face_box.tl(), cv::Point2i(face_box.x + face_box.width, face_box.y + face_box.height), Scalar(0, 255, 255), 3);
-        }
+            cv::Rect target_box = object_vector.at(i).single_object_box;
+            // Draw a rectangle displaying the bounding box
+            rectangle(color_frame, target_box.tl(), cv::Point2i(target_box.x + target_box.width, target_box.y + target_box.height), Scalar(0, 0, 255), 3);
 
-        cout << "draw-objects-vector-" << i << ":" << target_box << endl;
+            // Get the label for the class name and its confidence
+            string label = format("%.2f", object_vector.at(i).conf);
+            label = format("%.2f", object_vector.at(i).cam_dis) + ":" + label;
+
+            // Display the label at the top of the bounding box
+            int baseLine;
+            Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+            int top = target_box.tl().y;
+            top = max(top, labelSize.height);
+            // rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
+            putText(color_frame, label, target_box.tl(), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0), 1);
+
+            if (!object_vector.at(i).single_face_in_object.empty())
+            {
+                cv::Rect2i face_box = object_vector.at(i).single_face_in_object;
+                rectangle(color_frame, face_box.tl(), cv::Point2i(face_box.x + face_box.width, face_box.y + face_box.height), Scalar(0, 255, 255), 3);
+            }
+
+            cout << "draw-objects-vector-" << i << ":" << target_box << endl;
+        }
     }
 
     // yolo.drawPred(color_frame, depth_frame);
@@ -257,6 +261,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
         yolo_target.push_back(current_objects);
     }
     cout << "new-box-detect-size:" << current_objects.size() << endl;
+    cout << "yolo_target_size:" << yolo_target.size() << endl;
     cout << "new-box-add-done" << endl;
     if (yolo_target.size() >= param.FACE_DEQUE)
     {

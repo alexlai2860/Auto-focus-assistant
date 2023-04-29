@@ -109,7 +109,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         }
         DIS = __dis->target_dis.back();
         __face->face.clear();
-        __object->target.clear();
+        // __object->target.clear();
         break;
     }
     // case 1:
@@ -149,37 +149,40 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             // situation=1:锁定队列末尾距离最近的目标
             for (int i = 0; i < __object->target.back().size(); i++)
             {
-                cout << "deciding-target-back-" << i << endl;
-                cout << "target-back-size-" << __object->target.back().size() << endl;
-                int target_dis = __object->target.back().at(i).cam_dis;
-                int face_dis = 0;
-                int dis = target_dis;
-                if (!__object->target.back().at(i).single_face_in_object.empty())
+                if (__object->target.back().at(i).init_trigger == -1)
                 {
-                    face_dis = __object->target.back().at(i).face_dis;
-                }
-                // cout << "deciding-1" << endl;
-                float dis_ratio = (float)face_dis / (float)target_dis;
-                int delta_dis = abs(face_dis - target_dis);
-                if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
-                {
-                    if (delta_dis < 500)
+                    cout << "deciding-target-back-" << i << endl;
+                    cout << "target-back-size-" << __object->target.back().size() << endl;
+                    int target_dis = __object->target.back().at(i).cam_dis;
+                    int face_dis = 0;
+                    int dis = target_dis;
+                    if (!__object->target.back().at(i).single_face_in_object.empty())
                     {
-                        // 认定为面部距离可靠
-                        dis = face_dis;
+                        face_dis = __object->target.back().at(i).face_dis;
                     }
+                    // cout << "deciding-1" << endl;
+                    float dis_ratio = (float)face_dis / (float)target_dis;
+                    int delta_dis = abs(face_dis - target_dis);
+                    if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
+                    {
+                        if (delta_dis < 500)
+                        {
+                            // 认定为面部距离可靠
+                            dis = face_dis;
+                        }
+                    }
+                    // cout << "deciding-2" << endl;
+                    // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+                    deque<cv::Point2f> empty;
+                    int current_dis = __dis->disCalculate(dis, d16, empty);
+                    // 锁定距离最近的目标
+                    if (current_dis < DIS)
+                    {
+                        DIS = current_dis;
+                        __object->target_label = i;
+                    }
+                    // cout << "deciding-3" << endl;
                 }
-                // cout << "deciding-2" << endl;
-                // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-                deque<cv::Point2f> empty;
-                int current_dis = __dis->disCalculate(dis, d16, empty);
-                // 锁定距离最近的目标
-                if (current_dis < DIS)
-                {
-                    DIS = current_dis;
-                    __object->target_label = i;
-                }
-                // cout << "deciding-3" << endl;
             }
             break;
         }
@@ -270,30 +273,33 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
 
             for (int j = 0; j < __object->target.back().size(); j++)
             {
-                bool matched_face = 0;
-                bool tl_inside = __object->target.back().at(j).single_object_box.contains(tl);
-                bool tr_inside = __object->target.back().at(j).single_object_box.contains(tr);
-                bool dl_inside = __object->target.back().at(j).single_object_box.contains(dl);
-                bool dr_inside = __object->target.back().at(j).single_object_box.contains(dr);
-                bool center_inside = __object->target.back().at(j).single_object_box.contains(center);
-                matched_face = tl_inside || tr_inside || dl_inside || dr_inside;
-                if (matched_face)
+                if (__object->target.back().at(j).init_trigger == -1)
                 {
-                    if (__object->target.back().at(j).single_face_in_object.empty())
+                    bool matched_face = 0;
+                    bool tl_inside = __object->target.back().at(j).single_object_box.contains(tl);
+                    bool tr_inside = __object->target.back().at(j).single_object_box.contains(tr);
+                    bool dl_inside = __object->target.back().at(j).single_object_box.contains(dl);
+                    bool dr_inside = __object->target.back().at(j).single_object_box.contains(dr);
+                    bool center_inside = __object->target.back().at(j).single_object_box.contains(center);
+                    matched_face = tl_inside || tr_inside || dl_inside || dr_inside;
+                    if (matched_face)
                     {
-                        __object->target.back().at(j).face_dis = current_face_dis;
-                        __object->target.back().at(j).single_face_in_object = current_face_rect;
-                    }
-                    else
-                    {
-                        // 若不为空，则进一步比较是否满足center_inside
-                        if (center_inside)
+                        if (__object->target.back().at(j).single_face_in_object.empty())
                         {
                             __object->target.back().at(j).face_dis = current_face_dis;
                             __object->target.back().at(j).single_face_in_object = current_face_rect;
                         }
+                        else
+                        {
+                            // 若不为空，则进一步比较是否满足center_inside
+                            if (center_inside)
+                            {
+                                __object->target.back().at(j).face_dis = current_face_dis;
+                                __object->target.back().at(j).single_face_in_object = current_face_rect;
+                            }
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
@@ -525,7 +531,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
         {
             cout << "face-back-size1 " << __detector->face.back().size() << endl;
             // 判断是否为进行检测的帧
-            if (control_flag == 2)
+            if (control_flag == 0)
             {
                 for (int i = 0; i < __detector->face.back().size(); i++)
                 {
@@ -628,6 +634,13 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                     if (isSameObject(last_objects.at(i), current_objects.at(j), __tool))
                     {
                         new_objects.at(i) = current_objects.at(j);
+                        new_objects.at(i).init_trigger = last_objects.at(i).init_trigger;
+                        if (last_objects.at(i).init_trigger != -1)
+                        {
+                            new_objects.at(i).init_trigger++;
+                        }
+                        cout << "last_init_trigger_" << i << ":" << last_objects.at(i).init_trigger << endl;
+                        cout << "init_trigger_" << i << ":" << new_objects.at(i).init_trigger << endl;
                     }
                 }
             }
@@ -655,6 +668,10 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                         new_objects.at(i) = last_objects.at(i);
                         new_objects.at(i).backward_dis = 0;
                         new_objects.at(i).drop_count++;
+                        if (new_objects.at(i).init_trigger != -1)
+                        {
+                            new_objects.at(i).init_trigger = 0;
+                        }
                     }
                     else
                     {
@@ -685,11 +702,14 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                 if (single_current_object.backward_dis < 0)
                 {
                     // 认为single_current_object为新的face
-                    // single_current_object.init_trigger++;
+                    if (single_current_object.init_trigger != -1)
+                    {
+                        single_current_object.init_trigger++;
+                    }
                     bool uninserted = 1;
                     for (auto &single_new_object : new_objects)
                     {
-                        // 随便找个没有前驱节点的newface，赋值
+                        // 随便找个没有前驱节点的newobject，赋值
                         if (single_new_object.backward_dis < 0)
                         {
                             single_new_object = single_current_object;
@@ -738,10 +758,20 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                 cout << object.single_object_box << endl;
             }
             // init_trigger处理
-
+            bool exist_triggered_object = 0;
+            for (auto &object : new_objects_copy)
+            {
+                cout << "TRIGGER:" << object.init_trigger << endl;
+                if (object.init_trigger >= 4 || object.init_trigger == -1)
+                {
+                    // 允许触发
+                    object.init_trigger = -1;
+                    exist_triggered_object = 1;
+                }
+            }
             // 完成new_faces的处理
             __detector->target.back() = new_objects_copy;
-            if (!new_objects_copy.empty())
+            if (!new_objects_copy.empty() && exist_triggered_object)
             {
                 __detector->draw_object_box = 1;
                 return 2;
@@ -766,9 +796,13 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
                 }
                 else
                 {
-                    __detector->draw_object_box = 1;
+                    // 避免误识别，等队列长了再显示和对焦
+                    // __detector->draw_object_box = 1;
+                    // cout << "!empty" << endl;
+                    // return 2;
+                    __detector->draw_object_box = 0;
                     cout << "!empty" << endl;
-                    return 2;
+                    return 0;
                 }
             }
             else
@@ -786,10 +820,14 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
         {
             cout << "face-back-size1 " << __detector->target.back().size() << endl;
             // 判断是否为进行检测的帧
-            if (control_flag == 2)
+            if (control_flag == 1)
             {
                 for (int i = 0; i < __detector->target.back().size(); i++)
                 {
+                    if (__detector->target.back().at(i).init_trigger != -1)
+                    {
+                        __detector->target.back().at(i).init_trigger = 0;
+                    }
                     __detector->target.back().at(i).drop_count++;
                     cout << "drop_count2_" << i << __detector->target.back().at(i).drop_count << endl;
                     if (__detector->target.back().at(i).drop_count > max_drop_num)
@@ -807,17 +845,35 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
         // 标准判断drawbox状态语句
         if (!__detector->target.empty())
         {
-            if (__detector->target.back().empty())
+            if (!__detector->target.back().empty())
+            {
+                bool exist_triggered_object = 0;
+                for (auto target : __detector->target.back())
+                {
+                    cout << "init-trigger:" << target.init_trigger << endl;
+                    if (target.init_trigger == -1)
+                    {
+                        exist_triggered_object = 1;
+                    }
+                }
+                if (exist_triggered_object)
+                {
+                    __detector->draw_object_box = 1;
+                    cout << "!empty & exist_triggered" << endl;
+                    return 2;
+                }
+                else
+                {
+                    __detector->draw_object_box = 0;
+                    cout << "!empty but all untriggered" << endl;
+                    return 0;
+                }
+            }
+            else
             {
                 __detector->draw_object_box = 0;
                 cout << "empty" << endl;
                 return 0;
-            }
-            else
-            {
-                __detector->draw_object_box = 1;
-                cout << "!empty" << endl;
-                return 2;
             }
         }
         else
