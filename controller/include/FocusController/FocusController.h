@@ -30,6 +30,9 @@ protected:
     detector_ptr __detector;
 
     bool face_trigger;
+    bool MF_trigger = 0;
+    int MF_init_result = -1;
+    int last_target_pulse;
 
 public:
     int init(int64 &, int) override;

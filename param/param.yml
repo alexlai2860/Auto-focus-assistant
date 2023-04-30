@@ -11,6 +11,8 @@ FACE_DEQUE: 10
 MOVE_JUDGE: 25
 # 允许的最小框边长
 DRAW_BOX_MIN: 30
+# 视场角(焦段/mm)
+LENS_LENGTH: 35
 
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值
@@ -35,6 +37,10 @@ WAIT_TIME: 4
 SPEED: 20
 # 电机加速度(0-255)
 A: 255
+# 距离滤波:kalman-process
+KALMAN_PROCESS: 0.01
+# 距离滤波:kalman-measure(0.01:FAST/0.02:NORMAL/0.04:SLOW)
+KALMAN_MEASURE: 0.02
 
 # ****************深度相机相关*************
 # 相机型号(0:astra/1:realsense)

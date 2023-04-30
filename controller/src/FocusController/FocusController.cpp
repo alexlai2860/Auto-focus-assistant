@@ -99,20 +99,31 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         // 绘制目标框
         cout << "********** DRAW-BOX **********" << endl;
-        cout << "vf" << __face->isValideFace() << endl;
-        cout << "vo" << __object->isValideObject() << endl;
-        // if (__face->isValideFace())
-        // {
-        //     __face->drawBox(color, depth);
-        //     cout << "face" << endl;
-        // }
-        if (__object->isValideObject())
+        if (!MF_trigger)
         {
-            __object->drawBox(color, depth);
-            cout << "obj" << endl;
+            cout << "vf" << __face->isValideFace() << endl;
+            cout << "vo" << __object->isValideObject() << endl;
+            if (__object->isValideObject())
+            {
+                __object->drawBox(color, depth);
+                cout << "obj" << endl;
+            }
+        }
+        float zoom_rate;
+        if ((float)param.LENS_LENGTH > 24.f)
+        {
+            zoom_rate = (float)param.LENS_LENGTH / 24.f;
+            int ROI_height = (float)param.RS_height / zoom_rate;
+            int ROI_width = (float)param.RS_width / zoom_rate;
+            int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+            int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+            cv::Rect2i ROI(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
+            cv::rectangle(color, ROI, cv::Scalar(0, 255, 0), 3);
         }
 
         cout << "********** DETECT **********" << endl;
+        // if (!MF_trigger)
+        // {
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
@@ -136,12 +147,26 @@ void FocusController::rsProcessFrame(int64 &t0)
             }
             detect_flag = 2;
         }
+        // }
 
         cout << "********** READ **********" << endl;
         int result = __motor->read();
         cout << "read-result:" << result << endl;
+        cv::putText(color, cv::format("%d", result), cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        if (result == -3 && !MF_trigger)
+        {
+            // rec_on:触发手动模式
+            MF_trigger = 1;
+        }
+        else if (result == -4)
+        {
+            // rec_off:关闭手动模式
+            MF_trigger = 0;
+        }
 
         cout << "********** DECIDE **********" << endl;
+        // if (!MF_trigger)
+        // {
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
         DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, result);
 
@@ -154,12 +179,31 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         // 计算目标脉冲值-方案二:使用插值法
         int target_pulse = __decider->disInterPolater(DIS);
-        cv::putText(color, cv::format("%d", target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        last_target_pulse = target_pulse;
+        // }
+        cv::putText(color, cv::format("%d", last_target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
-        __motor->write(target_pulse, 0);
+        if (MF_trigger)
+        {
+            if (result >= 0 && result <= 9999)
+            {
+                if (result > (MF_init_result + 10) || result < (MF_init_result - 10))
+                {
+                    __motor->write(result, 0);
+                }
+            }
+        }
+        else
+        {
+            if (result >= 0 && result <= 9999)
+            {
+                MF_init_result = result;
+            }
+            __motor->write(last_target_pulse, 0);
+        }
 
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);

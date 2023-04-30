@@ -21,6 +21,10 @@ class decider
 protected:
     bool isDropInit = 0;
     bool detect_init = 1;
+    bool tracked = 0;     // 是否正在追踪目标
+    bool wheel_moved = 0; // 控制手柄滚轮是否转动
+    int last_label;
+    deque<int> read_result_deque;
     int detect_count;
     map<int, int> face_dropcount;
     map<int, int> object_dropcount;

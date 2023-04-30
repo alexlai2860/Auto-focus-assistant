@@ -17,7 +17,7 @@ using namespace std;
 Dis::Dis()
 {
     __is_filter_init = false;
-    dis_filter = KalmanFilter22(0.01, 0.01);
+    dis_filter = KalmanFilter22(param.KALMAN_PROCESS, param.KALMAN_MEASURE);
     dis_filter.setH(cv::Matx22f::eye());
 }
 

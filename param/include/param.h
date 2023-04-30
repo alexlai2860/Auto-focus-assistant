@@ -23,6 +23,8 @@ struct Param
     int WAIT_TIME;
     int SPEED;
     int A;
+    float KALMAN_PROCESS;
+    float KALMAN_MEASURE;
     int MAX_DROP_FRAME;
     int DROP_PROCESS_MODE;
 
@@ -41,6 +43,7 @@ struct Param
     float DIS_RATIO_MAX;
     float AREA_RATIO_COEF;
     float POINT_DIS_COEF;
+    int LENS_LENGTH;
 
     string param_path;
 

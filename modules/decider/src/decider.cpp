@@ -31,7 +31,7 @@ using namespace std;
 int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__face, detector_ptr &__object,
                     dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, int read_result)
 {
-    int DIS;
+    int DIS, DIS2;
     int situation;
     int situation_face;
     int situation_object;
@@ -46,15 +46,6 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     cout << "read_result? " << read_result << endl;
     cout << "face-size-1 ? " << __face->face.size() << endl;
     cout << "target-size-1 ? " << __object->target.size() << endl;
-
-    // if (position < 0)
-    // {
-
-    // }
-    // else
-    // {
-
-    // }
 
     switch (control_flag)
     {
@@ -83,7 +74,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         // situation = objectPerceptron(d16, __object, __dis, __tool, detected, control_flag);
         break;
     case 4:
-        cout << "case " << 3 << endl;
+        cout << "case " << 4 << endl;
         situation = 0;
         break;
     default:
@@ -112,41 +103,38 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         // __object->target.clear();
         break;
     }
-    // case 1:
-    // {
-    //     if (param.cam_module == REALSENSE)
-    //     {
-    //         DIS = 25000; // 面部距离限制
-    //         // situation=1:锁定队列末尾距离最近的面部
-    //         for (int i = 0; i < __face->face.back().size(); i++)
-    //         {
-    //             int face_dis = __face->face.back().at(i).cam_dis;
-    //             // 对realsense相机来说，discalculate并不承担计算距离的功能
-    //             // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
-    //             deque<cv::Point2f> empty;
-    //             int current_dis = __dis->disCalculate(face_dis, d16, empty);
-    //             // 锁定距离最近的面部
-    //             if (current_dis < DIS)
-    //             {
-    //                 DIS = current_dis;
-    //                 __face->face_label = i;
-    //             }
-    //         }
-    //         break;
-    //     }
-    //     else
-    //     {
-    //         deque<cv::Point2f> empty;
-    //         DIS = __dis->disCalculate(1, d16, empty);
-    //         break;
-    //     }
-    // }
     case 1:
     {
         if (param.cam_module == REALSENSE)
         {
-            DIS = 25000; // 目标距离限制
+            DIS = 25000;  // 目标距离限制
+            DIS2 = 25000; // 目标距离限制
+            // 首先判断滚轮有没有动
+            int total_result;
+            read_result_deque.push_back(read_result);
+            if (read_result_deque.size() > 5)
+            {
+                read_result_deque.pop_front();
+            }
+            for (auto result : read_result_deque)
+            {
+                total_result += result;
+            }
+            int avg_result = total_result / read_result_deque.size();
+            if (abs(avg_result - read_result) > 8)
+            {
+                // 均值和最新值差大于8，认为滚轮出现滚动
+                cout << "DELTA-RESULT:" << abs(avg_result - read_result) << endl;
+                this->wheel_moved = 1;
+            }
+            else
+            {
+                cout << "DELTA-RESULT:" << abs(avg_result - read_result) << endl;
+                this->wheel_moved = 0;
+            }
             // situation=1:锁定队列末尾距离最近的目标
+            // 更新控制手柄策略
+
             for (int i = 0; i < __object->target.back().size(); i++)
             {
                 if (__object->target.back().at(i).init_trigger == -1)
@@ -175,11 +163,45 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
                     deque<cv::Point2f> empty;
                     int current_dis = __dis->disCalculate(dis, d16, empty);
-                    // 锁定距离最近的目标
-                    if (current_dis < DIS)
+                    // 控制手柄策略
+                    if (read_result == 0)
                     {
-                        DIS = current_dis;
-                        __object->target_label = i;
+                        // 手柄策略1:对焦在最近的物体上
+                        if (current_dis < DIS)
+                        {
+                            DIS = current_dis;
+                            __object->target_label = i;
+                        }
+                    }
+                    else if (read_result <= 9990 && read_result > 0)
+                    {
+                        // 手柄策略2:根据距离选择
+                        // 如果滚轮有移动
+                        if (wheel_moved)
+                        {
+                            // 切换目标:找到和滚轮指示距离最近的目标
+                            // 暂时不进行非线性映射
+                            if (abs(current_dis - read_result) < DIS2)
+                            {
+                                DIS2 = abs(current_dis - read_result);
+                                __object->target_label = i;
+                                last_label = i;
+                            }
+                        }
+                        else if (__object->target.back().size() > last_label)
+                        {
+                            // 锁定目标
+                            __object->target_label = last_label;
+                        }
+                        else
+                        {
+                            // 丢失锁定目标:对焦最近的object
+                            if (current_dis < DIS)
+                            {
+                                DIS = current_dis;
+                                __object->target_label = i;
+                            }
+                        }
                     }
                     // cout << "deciding-3" << endl;
                 }

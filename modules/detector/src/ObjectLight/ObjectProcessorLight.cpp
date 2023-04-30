@@ -177,6 +177,36 @@ void yolo_fast::drawSinglePred(int classId, float conf, int left, int top, int r
     putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 255, 0), 1);
 }
 
+/**
+ * @brief 视野判断函数（不严谨）
+ *
+ * @param __object
+ * @return true
+ * @return false
+ */
+bool yolo_fast::insideROI(cv::Point2f &center)
+{
+    if ((float)param.LENS_LENGTH > 24.f)
+    {
+        float zoom_rate;
+        zoom_rate = (float)param.LENS_LENGTH / 24.f;
+        int ROI_height = (float)param.RS_height / zoom_rate;
+        int ROI_width = (float)param.RS_width / zoom_rate;
+        int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+        int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+        cv::Rect2i ROI(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
+        if (ROI.contains(center))
+        {
+            return 1;
+        }
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
 bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
 {
     Mat blob;
@@ -243,8 +273,15 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                                 cout << "half-done" << endl;
                                 single_object.center = cv::Point2i(left + (int)(w * ratiow) / 2, top + (int)(h * ratioh) / 2);
                                 single_object.detected = 1;
-                                current_objects.push_back(single_object);
-                                cout << "new-box-added" << endl;
+                                if (insideROI(single_object.center))
+                                {
+                                    current_objects.push_back(single_object);
+                                    cout << "new-box-added" << endl;
+                                }
+                                else
+                                {
+                                    cout << "outside-ROI" << endl;
+                                }
                             }
                         }
                     }

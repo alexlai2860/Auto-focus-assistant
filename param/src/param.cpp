@@ -27,6 +27,9 @@ Param::Param(const string &param)
     arm["WAIT_TIME"] >> WAIT_TIME;
     arm["SPEED"] >> SPEED;
     arm["A"] >> A;
+    arm["KALMAN_PROCESS"] >> KALMAN_PROCESS;
+    arm["KALMAN_MEASURE"] >> KALMAN_MEASURE;
+
     arm["MAX_DROP_FRAME"] >> MAX_DROP_FRAME;
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
 
@@ -45,5 +48,6 @@ Param::Param(const string &param)
     arm["DIS_RATIO_MAX"] >> DIS_RATIO_MAX;
     arm["AREA_RATIO_COEF"] >> AREA_RATIO_COEF;
     arm["POINT_DIS_COEF"] >> POINT_DIS_COEF;
+    arm["LENS_LENGTH"] >> LENS_LENGTH;
 };
 struct Param param("../param/param.yml"); // from build folder
