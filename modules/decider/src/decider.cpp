@@ -54,6 +54,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         situation_face = facePerceptron(d16, __face, __dis, __tool, detected, control_flag);
         situation_object = objectPerceptron(d16, __object, __dis, __tool, 0, 2);
         situation = situationJudger(situation_face, situation_object, __face, __object);
+        cout << "obj-face-overall situation" << situation_object << situation_face << situation << endl;
         break;
     case 1:
         cout << "case " << 1 << endl;
@@ -67,6 +68,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         situation_face = facePerceptron(d16, __face, __dis, __tool, 0, 2);
         situation_object = objectPerceptron(d16, __object, __dis, __tool, 0, 2);
         situation = situationJudger(situation_face, situation_object, __face, __object);
+        cout << "obj-face-overall situation" << situation_object << situation_face << situation << endl;
         break;
     case 3:
         cout << "case " << 3 << endl;
@@ -110,7 +112,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             DIS = 25000;  // 目标距离限制
             DIS2 = 25000; // 目标距离限制
             // 首先判断滚轮有没有动
-            int total_result;
+            int total_result = 0;
             read_result_deque.push_back(read_result);
             if (read_result_deque.size() > 5)
             {
@@ -121,6 +123,8 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                 total_result += result;
             }
             int avg_result = total_result / read_result_deque.size();
+            cout << "TOTAL_RESULT" << total_result << endl;
+            cout << "AVG_RESULT" << avg_result << endl;
             if (abs(avg_result - read_result) > 8)
             {
                 // 均值和最新值差大于8，认为滚轮出现滚动
@@ -346,20 +350,16 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
  */
 int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, int control_flag)
 {
+    cout << "-----FACE_PERCEPTRON-----" << endl;
     // 复杂的判断过程(待简化)
     int situation = 0;
-    int max_drop_num = param.MAX_DROP_FRAME;
+    int max_drop_num = param.MAX_DROP_FRAME_FACE;
     if (!isDropInit)
     {
         dropInit(face_dropcount);
         isDropInit = 1;
         cout << "dropinit" << endl;
     }
-    // 掉帧控制
-    // if ()
-    // {
-    //     drop_count = 0;
-    // }
     cout << "temp-face-size " << __detector->face.size() << endl;
 
     // TODO:新数据的重新排序 和 状态感知更新 分离解耦
@@ -602,9 +602,10 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
  */
 int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__dis, logic_ptr &__tool, bool detected, int control_flag)
 {
+    cout << "-----OBJECT_PERCEPTRON-----" << endl;
     // 复杂的判断过程(待简化)
     int situation = 0;
-    int max_drop_num = param.MAX_DROP_FRAME;
+    int max_drop_num = param.MAX_DROP_FRAME_OBJECT;
     if (!isDropInit)
     {
         dropInit(face_dropcount);

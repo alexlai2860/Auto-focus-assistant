@@ -25,7 +25,9 @@ struct Param
     int A;
     float KALMAN_PROCESS;
     float KALMAN_MEASURE;
-    int MAX_DROP_FRAME;
+
+    int MAX_DROP_FRAME_OBJECT;
+    int MAX_DROP_FRAME_FACE;
     int DROP_PROCESS_MODE;
 
     int cam_module;

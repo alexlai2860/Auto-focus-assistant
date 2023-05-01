@@ -1,7 +1,9 @@
 # Auto Focus Assistant
 
 ## 辅助对焦系统(原型机)<br>
-##### this is an experiment using a depth camera to control a stepping motor, aiming to drive the focus ring and achieve auto focus.<br>
+#### this is an experiment using a depth camera to control a stepping motor, aiming to drive the focus ring and achieve auto focus.<br>
+
+#### 注意:本项目基于GPL3.0协议开源，依据协议要求，后续基于此代码的项目需保持GPL3.0开源<br>
 
 ### 主要原理<br>
 本项目属于主动式对焦系统<br>
@@ -93,10 +95,28 @@ mkdir build
 cd build
 cmake ..
 make
+```
+若编译成功，则可以进一步执行程序<br>
+```
 ./AF_assistant
 ```
-(请安装好深度相机和步进电机，检查齿轮配合情况，最后上电并进行上述步骤)<br>
-若电机成功初始化，驱动板应处于不使能状态，此时将对焦环旋转至最近处，随后输入1并按下回车<br>
+运行程序后，会提示是否找到原力N<br>
+如果出现以下提示:<br>
+```
+找不到原力N
+```
+请检查接线，并重新启动程序<br>
+若能够找到原力N，则可以进一步选择是否执行自动校准(换镜头后必须校准，其他随意)<br>
+```
+即将执行自动校准,输入1确认,输入2跳过:
+```
+(理论上可以支持无限位镜头手动校准，后续有空就加)<br>
+校准完成或跳过后，可以选择镜头型号（1～5）,如果需要新增镜头，则按0<br>
+```
+请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认
+```
+以直接执行对焦功能为例，输入镜头编号(如2),回车即系统开始运行<br>
+
 
 #### 控制逻辑<br>
 + NucleusN手柄控制逻辑 & 决策器控制逻辑

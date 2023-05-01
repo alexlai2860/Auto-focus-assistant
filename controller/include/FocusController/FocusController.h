@@ -34,6 +34,11 @@ protected:
     int MF_init_result = -1;
     int last_target_pulse;
 
+    cv::Mat reprojected_depth;
+    cv::Mat mixed_output;
+    void depthReProjection(cv::Mat &depth, int, int);
+    void colorDepthMix(cv::Mat &depth, cv::Mat &color);
+
 public:
     int init(int64 &, int) override;
     void astraProcessFrame(int64 &);

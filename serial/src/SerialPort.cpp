@@ -98,7 +98,7 @@ void SerialPort::open()
     // }
     if (tilta_hand_unit.empty())
     {
-        cout << "找不到原力N手柄" << endl;
+        cout << "找不到原力N" << endl;
         return;
     }
     else

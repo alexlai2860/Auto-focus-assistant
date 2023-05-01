@@ -30,7 +30,8 @@ Param::Param(const string &param)
     arm["KALMAN_PROCESS"] >> KALMAN_PROCESS;
     arm["KALMAN_MEASURE"] >> KALMAN_MEASURE;
 
-    arm["MAX_DROP_FRAME"] >> MAX_DROP_FRAME;
+    arm["MAX_DROP_FRAME_FACE"] >> MAX_DROP_FRAME_FACE;
+    arm["MAX_DROP_FRAME_OBJECT"] >> MAX_DROP_FRAME_OBJECT;
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
 
     arm["cam_module"] >> cam_module;

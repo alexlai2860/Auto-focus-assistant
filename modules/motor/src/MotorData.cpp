@@ -132,6 +132,11 @@ TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
     // 判空
     if (!data.empty())
     {
+        // for (auto d : data)
+        // {
+        //     cout << "********FULL-DATA*********" << endl;
+        //     cout << d.read_data << endl;
+        // }
         __receive_nucleusn_data = data.back();
         // 整合得到传递数据
         TransferData transfer_data;
@@ -142,9 +147,10 @@ TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
         // 更新信息数据
         __last_data = transfer_data;
     }
+    // cout << "********LAST-DATA*********" << endl;
+    // cout << __last_data.read2 << endl;
     return __last_data;
 }
-
 
 /**
  * @brief 写入串口115200

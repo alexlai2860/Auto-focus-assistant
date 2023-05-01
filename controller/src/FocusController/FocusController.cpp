@@ -56,6 +56,83 @@ int FocusController::init(int64 &t0, int lens_num)
 }
 
 /**
+ * @brief 深度图重投影至波形图
+ *
+ * @param depth
+ * @param af_dis
+ * @param mf_dis
+ */
+void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
+{
+    // rows:480 cols:848
+    cout << "0000" << endl;
+    cout << depth.rows << endl;
+    cout << depth.cols << endl;
+    cv::Mat reproject(depth.rows, depth.cols, CV_8UC1, cv::Scalar(0)); // 单通道,大小同depth
+    float scale = (float)depth.rows / (float)(8 * 1000);               // 最远显示为8m
+    cout << "scale" << scale << endl;
+    for (int i = 0; i < reproject.cols; i++)
+    {
+        for (int j = 0; j < reproject.rows; j++)
+        {
+            int dis = depth.at<uint16_t>(j, i);
+            // cout << "2222" << endl;
+            if (dis < 8000)
+            {
+                if (reproject.at<uint8_t>((int)(scale * dis), i) <= 255)
+                {
+                    // cout << "3333" << endl;
+                    // cout << (int)(scale * dis) << endl;
+                    // cout << "?!?" << (int)reproject.at<uint8_t>((int)(scale * dis), i) << endl;
+                    reproject.at<uint8_t>((int)(scale * dis), i) += 4;
+                }
+            }
+        }
+    }
+    cout << "TYPE1" << reproject.type() << endl;
+    cv::cvtColor(reproject, reproject, cv::COLOR_GRAY2RGB);
+    cout << "TYPE2" << reproject.type() << endl;
+    if (af_dis > 0 && af_dis < 8000)
+    {
+        int position = af_dis * scale;
+        cv::Point2i start_point(0, position);
+        cv::Point2i end_point(param.RS_width, position);
+        cv::line(reproject, start_point, end_point, cv::Scalar(0, 0, 255), 3);
+    }
+
+    cout << "4444" << endl;
+    cv::flip(reproject, reproject, 0);
+    reprojected_depth = reproject;
+    cv::imshow("reproject", reprojected_depth);
+}
+
+void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
+{
+    cv::Mat resized_depth;
+    cv::Mat resized_depth_large(1080, 1920, CV_8UC3, cv::Scalar(0, 0, 0));
+    cv::Mat resized_color;
+    cv::Mat mix_img;
+    cv::namedWindow("mix_output", 0);
+    cv::setWindowProperty("mix_output", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
+    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080));
+    cv::resize(color, resized_color, cv::Size(1920, 1080));
+    int delta_cols = resized_color.cols - resized_depth.cols;
+    for (int i = delta_cols; i < resized_color.cols; i++)
+    {
+        for (int j = 0; j < resized_color.rows; j++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.5 +
+                                                       resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.5;
+            }
+        }
+    }
+    // cv::addWeighted(resized_depth_large, 0.3, resized_color, 0.7, 0, mix_img); // 0.5+0.5=1,0.3+0.7=1
+    cv::imshow("mix_output", resized_color);
+}
+
+/**
  * @brief Realsense相机 帧处理函数
  *
  * @param face
@@ -108,6 +185,13 @@ void FocusController::rsProcessFrame(int64 &t0)
                 __object->drawBox(color, depth);
                 cout << "obj" << endl;
             }
+            string AF = "AF-mode";
+            cv::putText(color, AF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        }
+        else
+        {
+            string MF = "MF-mode";
+            cv::putText(color, MF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
         float zoom_rate;
         if ((float)param.LENS_LENGTH > 24.f)
@@ -145,7 +229,10 @@ void FocusController::rsProcessFrame(int64 &t0)
                 face_trigger = 0;
                 detect_flag = 0;
             }
-            detect_flag = 2;
+            else
+            {
+                detect_flag = 2;
+            }
         }
         // }
 
@@ -165,8 +252,6 @@ void FocusController::rsProcessFrame(int64 &t0)
         }
 
         cout << "********** DECIDE **********" << endl;
-        // if (!MF_trigger)
-        // {
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
         DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, result);
 
@@ -180,9 +265,8 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 计算目标脉冲值-方案二:使用插值法
         int target_pulse = __decider->disInterPolater(DIS);
         last_target_pulse = target_pulse;
-        // }
         cv::putText(color, cv::format("%d", last_target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-
+        depthReProjection(depth, DIS, 0);
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
@@ -208,6 +292,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);
         imshow("Color", color);
+        colorDepthMix(reprojected_depth, color);
         // imshow("color-copy", color_copy);
 
         // 计算运行时间
