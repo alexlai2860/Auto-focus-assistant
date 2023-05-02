@@ -65,9 +65,6 @@ int FocusController::init(int64 &t0, int lens_num)
 void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
 {
     // rows:480 cols:848
-    cout << "0000" << endl;
-    cout << depth.rows << endl;
-    cout << depth.cols << endl;
     cv::Mat reproject(depth.rows, depth.cols, CV_8UC1, cv::Scalar(0)); // 单通道,大小同depth
     float scale = (float)depth.rows / (float)(8 * 1000);               // 最远显示为8m
     cout << "scale" << scale << endl;
@@ -76,34 +73,34 @@ void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
         for (int j = 0; j < reproject.rows; j++)
         {
             int dis = depth.at<uint16_t>(j, i);
-            // cout << "2222" << endl;
             if (dis < 8000)
             {
                 if (reproject.at<uint8_t>((int)(scale * dis), i) <= 255)
                 {
-                    // cout << "3333" << endl;
-                    // cout << (int)(scale * dis) << endl;
-                    // cout << "?!?" << (int)reproject.at<uint8_t>((int)(scale * dis), i) << endl;
-                    reproject.at<uint8_t>((int)(scale * dis), i) += 3;
+                    reproject.at<uint8_t>((int)(scale * dis), i) += 8;
                 }
             }
         }
     }
-    cout << "TYPE1" << reproject.type() << endl;
     cv::cvtColor(reproject, reproject, cv::COLOR_GRAY2RGB);
-    cout << "TYPE2" << reproject.type() << endl;
     if (af_dis > 0 && af_dis < 8000)
     {
         int position = af_dis * scale;
         cv::Point2i start_point(0, position);
         cv::Point2i end_point(param.RS_width, position);
-        cv::line(reproject, start_point, end_point, cv::Scalar(0, 0, 255), 3);
+        cv::line(reproject, start_point, end_point, cv::Scalar(0, 200, 0), 2);
+    }
+    if (mf_dis > 0 && mf_dis < 8000)
+    {
+        int position = mf_dis * scale;
+        cv::Point2i start_point(0, position);
+        cv::Point2i end_point(param.RS_width, position);
+        cv::line(reproject, start_point, end_point, cv::Scalar(0, 0, 200), 2);
     }
 
-    cout << "4444" << endl;
     cv::flip(reproject, reproject, 0);
     reprojected_depth = reproject;
-    cv::imshow("reproject", reprojected_depth);
+    // cv::imshow("reproject", reprojected_depth);
 }
 
 void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
@@ -114,7 +111,7 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
     cv::Mat mix_img;
     cv::namedWindow("mix_output", 0);
     cv::setWindowProperty("mix_output", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080),0,0,cv::INTER_AREA);
+    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080), 0, 0, cv::INTER_AREA);
     cv::resize(color, resized_color, cv::Size(1920, 1080));
     int delta_cols = resized_color.cols - resized_depth.cols;
     for (int i = delta_cols; i < resized_color.cols; i++)
@@ -134,8 +131,8 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
                 }
                 if (empty_pixel)
                 {
-                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.35 +
-                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.65;
+                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.2 +
+                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.8;
                 }
                 else
                 {
@@ -283,7 +280,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         int target_pulse = __decider->disInterPolater(DIS);
         last_target_pulse = target_pulse;
         cv::putText(color, cv::format("%d", last_target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        
+
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
@@ -297,7 +294,7 @@ void FocusController::rsProcessFrame(int64 &t0)
                 }
             }
             // 不能直接套interPolater，是反函数
-            // depthReProjection(depth, __decider->disInterPolater(result), 0);
+            // depthReProjection(depth, __decider->pulseInterPolater(result), 0);
         }
         else
         {
@@ -306,8 +303,8 @@ void FocusController::rsProcessFrame(int64 &t0)
                 MF_init_result = result;
             }
             __motor->write(last_target_pulse, 0);
-            depthReProjection(depth, DIS, 0);
         }
+        depthReProjection(depth, DIS, __decider->pulseInterPolater(result));
 
         // 输出彩色图和深度图
         imshow("Depth", depth * 10);

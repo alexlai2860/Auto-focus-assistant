@@ -37,7 +37,8 @@ public:
     cv::Rect single_object_box;
     SingleObject *forward_object = nullptr;
     SingleObject *backward_object = nullptr;
-    int drop_count = 0;
+    Dis dis;              // 距离滤波器
+    int drop_count = 0;   // 掉帧计数器
     int init_trigger = 0; // 连续识别到目标才能触发对焦动作，避免误识别导致抽搐
     bool detected;
     int id;

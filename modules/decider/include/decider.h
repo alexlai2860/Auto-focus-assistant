@@ -47,7 +47,8 @@ public:
     int decide(cv::Mat &, cv::Mat &, reader_ptr &, detector_ptr &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int, int);
     int objectPerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
-    int disInterPolater(int &);
+    int disInterPolater(int &);   // dis2pulse
+    int pulseInterPolater(int &); // pulse2dis
     void dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &);
 };
 

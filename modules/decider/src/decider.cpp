@@ -145,9 +145,11 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                 {
                     cout << "deciding-target-back-" << i << endl;
                     cout << "target-back-size-" << __object->target.back().size() << endl;
+                    // 先求出目标的dis
                     int target_dis = __object->target.back().at(i).cam_dis;
                     int face_dis = 0;
                     int dis = target_dis;
+                    // 再判断目标是否包含面部，是否需要用面部距离代替目标距离
                     if (!__object->target.back().at(i).single_face_in_object.empty())
                     {
                         face_dis = __object->target.back().at(i).face_dis;
@@ -163,10 +165,13 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                             dis = face_dis;
                         }
                     }
-                    // cout << "deciding-2" << endl;
-                    // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
+                    // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理、
+                    // 不同object对应不同的距离滤波器
                     deque<cv::Point2f> empty;
-                    int current_dis = __dis->disCalculate(dis, d16, empty);
+                    int current_dis = __object->target.back().at(i).dis.disCalculate(dis, d16, empty);
+                    // int current_dis = dis;
+                    cv::putText(color, cv::format("%d", (int)__object->target.back().size()), cv::Point2i(15, 220), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                    cv::putText(color, cv::format("%d", current_dis), cv::Point2i(15, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
                     // 控制手柄策略
                     if (read_result == 0)
                     {
@@ -1323,4 +1328,92 @@ int decider::disInterPolater(int &dis)
         target_pulse = lens_param.G;
     }
     return target_pulse;
+}
+
+/**
+ * @brief 内插法计算目标脉冲
+ *
+ * @param dis
+ * @return int
+ */
+int decider::pulseInterPolater(int &pulse)
+{
+    int target_dis = 0;
+    int closest_pulse;
+    bool position_direction; // 0:decrease/1:increase
+    // 通过正方向，反推最近距离脉冲
+    if ((lens_param.B - lens_param.A) < 0)
+    {
+        closest_pulse = 9999;
+        position_direction = 0;
+    }
+    else
+    {
+        closest_pulse = 0;
+        position_direction = 1;
+    }
+
+    deque<int> cal_pulse_deque; // 降序队列
+    float compensate_deque[7];  // 补偿数组(用于快速计算距离，其实用个lut更好)
+    if (!position_direction)
+    {
+        float compensate_deque[7] = {0.5, 0.5, 0.5, 1., 2., 3., 19.};
+        cal_pulse_deque.push_back(lens_param.A);
+        cal_pulse_deque.push_back(lens_param.B);
+        cal_pulse_deque.push_back(lens_param.C);
+        cal_pulse_deque.push_back(lens_param.D);
+        cal_pulse_deque.push_back(lens_param.E);
+        cal_pulse_deque.push_back(lens_param.F);
+        cal_pulse_deque.push_back(lens_param.G);
+    }
+    else
+    {
+        float compensate_deque[7] = {19., 3., 2., 1., 0.5, 0.5, 0.5};
+        cal_pulse_deque.push_back(lens_param.G);
+        cal_pulse_deque.push_back(lens_param.F);
+        cal_pulse_deque.push_back(lens_param.E);
+        cal_pulse_deque.push_back(lens_param.D);
+        cal_pulse_deque.push_back(lens_param.C);
+        cal_pulse_deque.push_back(lens_param.B);
+        cal_pulse_deque.push_back(lens_param.A);
+    }
+
+    for (int i = 0; i < cal_pulse_deque.size(); i++)
+    {
+        if (pulse >= cal_pulse_deque.at(i))
+        {
+            if (i > 0)
+            {
+                int dis1 = (i + compensate_deque[i]) * 1000;
+                int pulse1 = cal_pulse_deque.at(i);
+                int dis2 = (i - 1 + compensate_deque[i - 1]) * 1000;
+                int pulse2 = cal_pulse_deque.at(i - 1);
+                cv::Point2i point1(pulse1, dis1);
+                cv::Point2i point2(pulse2, dis2);
+                // 拟合直线
+                float line_k, line_b;
+                line_k = (float)(dis2 - dis1) / (float)(pulse2 - pulse1);
+                line_b = dis1 - line_k * pulse1;
+                cout << "line_k" << line_k << endl;
+                cout << "line_b" << line_b << endl;
+                // 求目标距离
+                target_dis = line_k * pulse + line_b;
+                cout << "target-dis" << target_dis << endl;
+                break;
+            }
+            else
+            {
+                if (!position_direction)
+                {
+                    target_dis = 0;
+                }
+                else
+                {
+                    target_dis = 25000;
+                }
+            }
+        }
+    }
+
+    return target_dis;
 }
