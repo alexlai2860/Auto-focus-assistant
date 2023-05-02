@@ -183,23 +183,30 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                         // 如果滚轮有移动
                         if (wheel_moved)
                         {
+                            cv::putText(color, "wheel-moving", cv::Point2i(15, 160), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                            cv::putText(color, cv::format("%d", (current_dis - read_result)), cv::Point2i(15, 190), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                             // 切换目标:找到和滚轮指示距离最近的目标
                             // 暂时不进行非线性映射
                             if (abs(current_dis - read_result) < DIS2)
                             {
+                                // DIS2用于距离差值比较，DIS用于记录真实距离
                                 DIS2 = abs(current_dis - read_result);
                                 __object->target_label = i;
+                                DIS = current_dis;
                                 last_label = i;
                             }
                         }
                         else if (__object->target.back().size() > last_label)
                         {
                             // 锁定目标
+                            cv::putText(color, "tracking", cv::Point2i(15, 160), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                             __object->target_label = last_label;
+                            DIS = __object->target.back().at(__object->target_label).cam_dis;
                         }
                         else
                         {
                             // 丢失锁定目标:对焦最近的object
+                            cv::putText(color, "nearest", cv::Point2i(15, 160), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                             if (current_dis < DIS)
                             {
                                 DIS = current_dis;
@@ -233,7 +240,8 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             {
                 if (!__object->target.empty())
                 {
-                    cv::circle(color, __object->target.back().at(__object->target_label).center, 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
+                    cv::circle(color, __object->target.back().at(__object->target_label).center, 4, cv::Scalar(50, 205, 50), 5); // 用红色圆点表示对焦位置
+                    // cv::rectangle(color, __object->target.back().at(__object->target_label).single_object_box, cv::Scalar(255, 255, 0), 3);
                 }
                 cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 

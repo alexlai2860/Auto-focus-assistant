@@ -84,7 +84,7 @@ void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
                     // cout << "3333" << endl;
                     // cout << (int)(scale * dis) << endl;
                     // cout << "?!?" << (int)reproject.at<uint8_t>((int)(scale * dis), i) << endl;
-                    reproject.at<uint8_t>((int)(scale * dis), i) += 4;
+                    reproject.at<uint8_t>((int)(scale * dis), i) += 3;
                 }
             }
         }
@@ -114,7 +114,7 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
     cv::Mat mix_img;
     cv::namedWindow("mix_output", 0);
     cv::setWindowProperty("mix_output", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080));
+    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080),0,0,cv::INTER_AREA);
     cv::resize(color, resized_color, cv::Size(1920, 1080));
     int delta_cols = resized_color.cols - resized_depth.cols;
     for (int i = delta_cols; i < resized_color.cols; i++)
@@ -123,8 +123,25 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
         {
             for (int k = 0; k < 3; k++)
             {
-                resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.5 +
-                                                       resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.5;
+                bool empty_pixel = 1;
+                for (int x = 0; x < 3; x++)
+                {
+                    if (resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] != 0)
+                    {
+                        empty_pixel = 0;
+                        break;
+                    }
+                }
+                if (empty_pixel)
+                {
+                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.35 +
+                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.65;
+                }
+                else
+                {
+                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.2 +
+                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.8;
+                }
             }
         }
     }
@@ -202,7 +219,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             int ROI_tl_x = (param.RS_width - ROI_width) / 2;
             int ROI_tl_y = (param.RS_height - ROI_height) / 2;
             cv::Rect2i ROI(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
-            cv::rectangle(color, ROI, cv::Scalar(0, 255, 0), 3);
+            cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
         }
 
         cout << "********** DETECT **********" << endl;
@@ -266,7 +283,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         int target_pulse = __decider->disInterPolater(DIS);
         last_target_pulse = target_pulse;
         cv::putText(color, cv::format("%d", last_target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        depthReProjection(depth, DIS, 0);
+        
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
@@ -279,6 +296,8 @@ void FocusController::rsProcessFrame(int64 &t0)
                     __motor->write(result, 0);
                 }
             }
+            // 不能直接套interPolater，是反函数
+            // depthReProjection(depth, __decider->disInterPolater(result), 0);
         }
         else
         {
@@ -287,6 +306,7 @@ void FocusController::rsProcessFrame(int64 &t0)
                 MF_init_result = result;
             }
             __motor->write(last_target_pulse, 0);
+            depthReProjection(depth, DIS, 0);
         }
 
         // 输出彩色图和深度图

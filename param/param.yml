@@ -10,9 +10,9 @@ FACE_DEQUE: 10
 # 移动判别(mm)
 MOVE_JUDGE: 25
 # 允许的最小框边长
-DRAW_BOX_MIN: 30
-# 视场角(焦段/mm)
-LENS_LENGTH: 35
+DRAW_BOX_MIN: 20
+# 视场角(焦段/mm)(大于24会开启视角限缩)
+LENS_LENGTH: 30
 
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值

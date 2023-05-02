@@ -32,6 +32,11 @@ bool ObjectLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
         // target = yolo.yolo_target;
         target.push_back(yolo.yolo_target.back());
         cout << "target_size:" << target.size() << endl;
+        // for (auto target : target.back())
+        // {
+        //     cv::rectangle(color_frame, target.single_object_box, cv::Scalar(255, 0, 0));
+        // }
+        // cv::imshow("tamp", color_frame);
         draw_object_box = 1;
         if (target.size() > 1)
         {
@@ -91,7 +96,9 @@ bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 
 void yolo_fast::simpleNMS(vector<SingleObject> &current_object)
 {
-    int overlap_threshold = 0.3;
+    cout << "current-object-in" << current_object.size() << endl;
+    float overlap_threshold = 0.25;
+    // 置信度降序排列
     sort(current_object.begin(), current_object.end(), [&](SingleObject s1, SingleObject s2)
          { return s1.conf > s2.conf; });
     // 2.先求出所有bbox自己的大小
@@ -100,6 +107,7 @@ void yolo_fast::simpleNMS(vector<SingleObject> &current_object)
     {
         area[i] = current_object.at(i).single_object_box.area();
     }
+    cout << "area" << area.size() << endl;
     // 3.循环
     for (int i = 0; i < current_object.size(); ++i)
     {
@@ -115,11 +123,15 @@ void yolo_fast::simpleNMS(vector<SingleObject> &current_object)
             float width = std::max(right - left + 1, 0.f);
             float height = std::max(bottom - top + 1, 0.f);
             float u_area = height * width;
-            float iou = (u_area) / (area[i] + area[j] - u_area);
+            // float iou = (u_area) / (area[i] + area[j] - u_area);
+            // cout << "IOU-1" << iou << endl;
+            float iou = (u_area) / (float)(object_i.area() + object_j.area() - u_area);
+            cout << "IOU:" << i << " " << j << " " << iou << endl;
+
             if (iou >= overlap_threshold)
             {
                 current_object.erase(current_object.begin() + j);
-                area.erase(area.begin() + j);
+                // area.erase(area.begin() + j);
             }
             else
             {
@@ -127,6 +139,7 @@ void yolo_fast::simpleNMS(vector<SingleObject> &current_object)
             }
         }
     }
+    cout << "current-object-out" << current_object.size() << endl;
 }
 
 bool yolo_fast::init(string modelpath, float obj_Threshold, float conf_Threshold, float nms_Threshold)
@@ -261,7 +274,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                         cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
                         if (boxes.back().area() > param.DRAW_BOX_MIN * param.DRAW_BOX_MIN)
                         {
-                            if (classIdPoint.x == 0 && box_score * max_class_socre > 0.4)
+                            if (classIdPoint.x == 0 && box_score * max_class_socre > 0.3)
                             {
                                 // 强制过滤目标(临时)
                                 cout << "new-box--" << i << endl;
@@ -276,7 +289,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                                 if (insideROI(single_object.center))
                                 {
                                     current_objects.push_back(single_object);
-                                    cout << "new-box-added" << endl;
+                                    cout << "new-box-added:" << current_objects.size() << endl;
                                 }
                                 else
                                 {
