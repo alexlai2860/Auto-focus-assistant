@@ -31,7 +31,7 @@ using namespace std;
 int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector_ptr &__face, detector_ptr &__object,
                     dis_ptr &__dis, logic_ptr &__tool, bool detected, const int control_flag, int read_result)
 {
-    int DIS, DIS2;
+    int DIS, DIS2, DIS3;
     int situation;
     int situation_face;
     int situation_object;
@@ -111,6 +111,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         {
             DIS = 25000;  // 目标距离限制
             DIS2 = 25000; // 目标距离限制
+            DIS3 = 500;
             // 首先判断滚轮有没有动
             int total_result = 0;
             read_result_deque.push_back(read_result);
@@ -152,6 +153,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     // 再判断目标是否包含面部，是否需要用面部距离代替目标距离
                     if (!__object->target.back().at(i).single_face_in_object.empty())
                     {
+                        cout << "face_exist" << endl;
                         face_dis = __object->target.back().at(i).face_dis;
                     }
                     // cout << "deciding-1" << endl;
@@ -163,6 +165,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                         {
                             // 认定为面部距离可靠
                             dis = face_dis;
+                            cout << "face-dis-valid" << endl;
                         }
                     }
                     // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理、
@@ -172,6 +175,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     // int current_dis = dis;
                     cv::putText(color, cv::format("%d", (int)__object->target.back().size()), cv::Point2i(15, 220), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
                     cv::putText(color, cv::format("%d", current_dis), cv::Point2i(15, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                    cout << "control-handle-decide-start" << endl;
                     // 控制手柄策略
                     if (read_result == 0)
                     {
@@ -217,6 +221,15 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                                 DIS = current_dis;
                                 __object->target_label = i;
                             }
+                        }
+                    }
+                    else
+                    {
+                        // 对焦在最远的物体上
+                        if (current_dis > DIS3)
+                        {
+                            DIS3 = current_dis;
+                            __object->target_label = i;
                         }
                     }
                     // cout << "deciding-3" << endl;
@@ -1233,9 +1246,9 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
             int img_height = param.RS_height;
             int current_dis = 0;
             int min_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
-            for (int i = 0.4 * img_width + param.width_compensate; i <= 0.6 * img_width + param.width_compensate && i >= 0.4 * img_width + param.width_compensate; i++)
+            for (int i = 0.3 * img_width + param.width_compensate; i <= 0.7 * img_width + param.width_compensate; i++)
             {
-                for (int j = 0.4 * img_height + param.height_compensate; j <= 0.6 * img_height + param.height_compensate && j >= 0.4 * img_height + param.height_compensate; j++)
+                for (int j = 0.3 * img_height + param.height_compensate; j <= 0.7 * img_height + param.height_compensate; j++)
                 {
                     // cout << "i:" << i << " j:" << j << endl;
                     current_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(i, j));

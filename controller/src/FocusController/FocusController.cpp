@@ -65,19 +65,20 @@ int FocusController::init(int64 &t0, int lens_num)
 void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
 {
     // rows:480 cols:848
-    cv::Mat reproject(depth.rows, depth.cols, CV_8UC1, cv::Scalar(0)); // 单通道,大小同depth
-    float scale = (float)depth.rows / (float)(8 * 1000);               // 最远显示为8m
+    cv::Mat reproject(depth.rows, (depth.cols / 4), CV_8UC1, cv::Scalar(0)); // 单通道,大小同depth
+    float scale = (float)depth.rows / (float)(8 * 1000);                     // 最远显示为8m
     cout << "scale" << scale << endl;
-    for (int i = 0; i < reproject.cols; i++)
+    for (int i = 0; i < depth.cols; i += 4)
     {
-        for (int j = 0; j < reproject.rows; j++)
+        for (int j = 0; j < depth.rows; j++)
         {
             int dis = depth.at<uint16_t>(j, i);
             if (dis < 8000)
             {
-                if (reproject.at<uint8_t>((int)(scale * dis), i) <= 255)
+                // cout << "i:" << i << endl;
+                if (reproject.at<uint8_t>((int)(scale * dis), i / 4) <= 255)
                 {
-                    reproject.at<uint8_t>((int)(scale * dis), i) += 8;
+                    reproject.at<uint8_t>((int)(scale * dis), i / 4) += 8;
                 }
             }
         }
@@ -87,14 +88,14 @@ void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
     {
         int position = af_dis * scale;
         cv::Point2i start_point(0, position);
-        cv::Point2i end_point(param.RS_width, position);
+        cv::Point2i end_point(param.RS_width / 4, position);
         cv::line(reproject, start_point, end_point, cv::Scalar(0, 200, 0), 2);
     }
     if (mf_dis > 0 && mf_dis < 8000)
     {
         int position = mf_dis * scale;
         cv::Point2i start_point(0, position);
-        cv::Point2i end_point(param.RS_width, position);
+        cv::Point2i end_point(param.RS_width / 4, position);
         cv::line(reproject, start_point, end_point, cv::Scalar(0, 0, 200), 2);
     }
 
@@ -105,43 +106,30 @@ void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
 
 void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
 {
-    cv::Mat resized_depth;
-    cv::Mat resized_depth_large(1080, 1920, CV_8UC3, cv::Scalar(0, 0, 0));
-    cv::Mat resized_color;
-    cv::Mat mix_img;
+    cv::Mat resized_depth = reprojected_depth;
+    cv::Mat resized_color = color;
     cv::namedWindow("mix_output", 0);
     cv::setWindowProperty("mix_output", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
-    cv::resize(reprojected_depth, resized_depth, cv::Size(480, 1080), 0, 0, cv::INTER_AREA);
-    cv::resize(color, resized_color, cv::Size(1920, 1080));
     int delta_cols = resized_color.cols - resized_depth.cols;
-    for (int i = delta_cols; i < resized_color.cols; i++)
+    // for (int i = delta_cols; i < resized_color.cols; i++)
+    // {
+    //     for (int j = 0; j < resized_color.rows; j++)
+    //     {
+    //         resized_color.at<cv::Vec3b>(j, i) = resized_depth.at<cv::Vec3b>(j, i - delta_cols) * 1;
+    //     }
+    // }
+
+    for (int i = 0; i < resized_color.rows; i++)
     {
-        for (int j = 0; j < resized_color.rows; j++)
+        cv::Vec3b *data1 = resized_color.ptr<cv::Vec3b>(i);
+        cv::Vec3b *data2 = resized_depth.ptr<cv::Vec3b>(i);
+        for (int j = delta_cols; j < resized_color.cols; j++)
         {
-            for (int k = 0; k < 3; k++)
-            {
-                bool empty_pixel = 1;
-                for (int x = 0; x < 3; x++)
-                {
-                    if (resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] != 0)
-                    {
-                        empty_pixel = 0;
-                        break;
-                    }
-                }
-                if (empty_pixel)
-                {
-                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.2 +
-                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.8;
-                }
-                else
-                {
-                    resized_color.at<cv::Vec3b>(j, i)[k] = resized_color.at<cv::Vec3b>(j, i)[k] * 0.2 +
-                                                           resized_depth.at<cv::Vec3b>(j, i - delta_cols)[k] * 0.8;
-                }
-            }
+            data1[j] = data2[j - delta_cols];
         }
     }
+
+    cv::resize(resized_color, resized_color, cv::Size(1920, 1080));
     // cv::addWeighted(resized_depth_large, 0.3, resized_color, 0.7, 0, mix_img); // 0.5+0.5=1,0.3+0.7=1
     cv::imshow("mix_output", resized_color);
 }
@@ -160,6 +148,9 @@ void FocusController::rsProcessFrame(int64 &t0)
     int round = 0;
     int fps = param.FPS; // support 1,2,3,5,6,10,15,30
     int detect_rate = 30 / fps;
+    int real_fps = 0;
+    int fps_counter = 0;
+    float runtime_counter = 0;
     __reader = make_shared<RsReader>();
     __decider = make_shared<decider>();
     __face = make_shared<Face>();
@@ -219,12 +210,16 @@ void FocusController::rsProcessFrame(int64 &t0)
             cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
         }
 
+        float run_time0 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
+        cout << "run time draw-box = " << run_time0 << " ms" << endl;
+
         cout << "********** DETECT **********" << endl;
         // if (!MF_trigger)
         // {
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
+            int64 t2 = cv::getTickCount();
             // detected = __face->detect(color_copy, depth);
             // __detector = __face;
             detected = __object->detect(color_copy, depth);
@@ -232,6 +227,8 @@ void FocusController::rsProcessFrame(int64 &t0)
             // detect_flag = 1;
             detect_flag = 1;
             face_trigger = 1;
+            float run_time1 = 1000 * ((cv::getTickCount() - t2) / cv::getTickFrequency());
+            cout << "run time obj-detect = " << run_time1 << " ms" << endl;
         }
         else
         {
@@ -239,6 +236,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             if (face_trigger)
             {
                 detected = __face->detect(color_copy, depth);
+                // detected = 0;
                 __detector = __face;
                 face_trigger = 0;
                 detect_flag = 0;
@@ -264,11 +262,39 @@ void FocusController::rsProcessFrame(int64 &t0)
             // rec_off:关闭手动模式
             MF_trigger = 0;
         }
+        // if (result == -3 || result == -4)
+        // {
+        //     // rec按键按下:切换手动和自动
+        //     if (MF_trigger == 1)
+        //     {
+        //         MF_trigger = 0;
+        //     }
+        //     else
+        //     {
+        //         MF_trigger = 1;
+        //     }
+        // }
+        // 暂停运行(低功耗)
+        if (result == -2)
+        {
+            while (1)
+            {
+                cv::waitKey(2000);
+                int result2 = __motor->read();
+                if (result2 == -3 || result2 == -4)
+                {
+                    break;
+                }
+            }
+        }
 
         cout << "********** DECIDE **********" << endl;
+        int64 t3 = cv::getTickCount();
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
         DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, result);
 
+        float run_time2 = 1000 * ((cv::getTickCount() - t3) / cv::getTickFrequency());
+        cout << "run time decide = " << run_time2 << " ms" << endl;
         // 读取当前脉冲值
         // int current_pulse = __motor->read();
         int current_pulse = 0;
@@ -284,6 +310,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
+        int64 t4 = cv::getTickCount();
         if (MF_trigger)
         {
             if (result >= 0 && result <= 9999)
@@ -304,17 +331,29 @@ void FocusController::rsProcessFrame(int64 &t0)
             }
             __motor->write(last_target_pulse, 0);
         }
+        cv::putText(color, cv::format("%d", real_fps), cv::Point2i(15, 400), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         depthReProjection(depth, DIS, __decider->pulseInterPolater(result));
 
         // 输出彩色图和深度图
-        imshow("Depth", depth * 10);
-        imshow("Color", color);
+        // imshow("Depth", depth * 10);
+        // imshow("Color", color);
         colorDepthMix(reprojected_depth, color);
+        float run_time3 = 1000 * ((cv::getTickCount() - t4) / cv::getTickFrequency());
+        cout << "run time reproject = " << run_time3 << " ms" << endl;
         // imshow("color-copy", color_copy);
 
         // 计算运行时间
         int key = cv::waitKey(1);
         float run_time = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
+        fps_counter++;
+        runtime_counter += run_time;
+        if (runtime_counter >= 1000.)
+        {
+            real_fps = fps_counter;
+            fps_counter = 0;
+            runtime_counter = 0;
+        }
+        cout << "real_fps" << real_fps << endl;
         cout << "run time = " << run_time << " ms" << endl;
     }
 }
