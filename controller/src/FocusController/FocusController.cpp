@@ -68,15 +68,33 @@ void FocusController::depthReProjection(cv::Mat &depth, int af_dis, int mf_dis)
     cv::Mat reproject(depth.rows, (depth.cols / 4), CV_8UC1, cv::Scalar(0)); // 单通道,大小同depth
     float scale = (float)depth.rows / (float)(8 * 1000);                     // 最远显示为8m
     cout << "scale" << scale << endl;
-    for (int i = 0; i < depth.cols; i += 4)
+
+    // for (int i = 0; i < depth.cols; i += 4)
+    // {
+    //     for (int j = 0; j < depth.rows; j++)
+    //     {
+    //         int dis = depth.at<uint16_t>(j, i);
+    //         if (dis < 8000)
+    //         {
+    //             // cout << "i:" << i << endl;
+    //             if (reproject.at<uint8_t>((int)(scale * dis), i / 4) <= 255)
+    //             {
+    //                 reproject.at<uint8_t>((int)(scale * dis), i / 4) += 8;
+    //             }
+    //         }
+    //     }
+    // }
+
+    for (int j = 0; j < depth.rows; j++)
     {
-        for (int j = 0; j < depth.rows; j++)
+        uint16_t *row_j = depth.ptr<uint16_t>(j);
+        for (int i = 0; i < depth.cols; i += 4)
         {
-            int dis = depth.at<uint16_t>(j, i);
+            int dis = row_j[i];
             if (dis < 8000)
             {
                 // cout << "i:" << i << endl;
-                if (reproject.at<uint8_t>((int)(scale * dis), i / 4) <= 255)
+                if (reproject.at<uint8_t>((int)(scale * dis), i / 4) <= 247)
                 {
                     reproject.at<uint8_t>((int)(scale * dis), i / 4) += 8;
                 }
@@ -156,6 +174,20 @@ void FocusController::rsProcessFrame(int64 &t0)
     __face = make_shared<Face>();
     __object = make_shared<ObjectLight>();
 
+    // ROI计算
+    float zoom_rate;
+    cv::Rect2i ROI;
+    if ((float)param.LENS_LENGTH > 24.f)
+    {
+        zoom_rate = (float)param.LENS_LENGTH / 24.f;
+        int ROI_height = (float)param.RS_height / zoom_rate;
+        int ROI_width = (float)param.RS_width / zoom_rate;
+        int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+        int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+        cv::Rect2i ROI_cal(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
+        ROI = ROI_cal;
+    }
+
     // 相机初始化
     __reader->camInit();
 
@@ -198,17 +230,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             string MF = "MF-mode";
             cv::putText(color, MF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
-        float zoom_rate;
-        if ((float)param.LENS_LENGTH > 24.f)
-        {
-            zoom_rate = (float)param.LENS_LENGTH / 24.f;
-            int ROI_height = (float)param.RS_height / zoom_rate;
-            int ROI_width = (float)param.RS_width / zoom_rate;
-            int ROI_tl_x = (param.RS_width - ROI_width) / 2;
-            int ROI_tl_y = (param.RS_height - ROI_height) / 2;
-            cv::Rect2i ROI(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
-            cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
-        }
+        cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
 
         float run_time0 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
         cout << "run time draw-box = " << run_time0 << " ms" << endl;

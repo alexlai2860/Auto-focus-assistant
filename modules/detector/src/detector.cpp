@@ -38,13 +38,15 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
         int length = 2 * scale - 1; // length = 3/7/11/15/...
         int half_lenght = (length - 1) / 2;
         cv::Rect2i center_rect(point.x - half_lenght, point.y - half_lenght, length, length);
-        for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
+        for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
         {
-            for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
+            const uint16_t* data_y = depth_frame.ptr<uint16_t>(y);
+            for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
             {
                 if (x > 0 && y > 0)
                 {
-                    int dis = depth_frame.at<uint16_t>(y, x);
+                    // int dis = depth_frame.at<uint16_t>(y, x);
+                    int dis = data_y[x];
                     if (dis < min_dis)
                     {
                         min_dis = dis;
