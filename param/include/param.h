@@ -29,6 +29,8 @@ struct Param
     int MAX_DROP_FRAME_OBJECT;
     int MAX_DROP_FRAME_FACE;
     int DROP_PROCESS_MODE;
+    int FACE_INIT_LIMIT;
+    int TARGET_INIT_LIMIT;
 
     int cam_module;
     bool INVERT_ON;

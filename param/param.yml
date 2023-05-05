@@ -21,6 +21,11 @@ MAX_DROP_FRAME_OBJECT: 10
 MAX_DROP_FRAME_FACE: 6
 # 掉帧后的处理模式(1:中心点对焦/2:中心区域对焦)
 DROP_PROCESS_MODE: 2
+# 面部确认限制(需要连续识别多少帧才允许新建面部)
+FACE_INIT_LIMIT: 3
+# 目标确认限制(需要连续识别多少帧才允许新建目标)
+TARGET_INIT_LIMIT: 4
+
 
 # ****************目标匹配逻辑相关*************
 # 面部实际距离之比的最大值(越大越宽松)

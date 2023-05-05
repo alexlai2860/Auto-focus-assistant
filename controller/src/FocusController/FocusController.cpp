@@ -196,6 +196,7 @@ void FocusController::rsProcessFrame(int64 &t0)
 
     while (key != 27)
     {
+        cout << "********** INIT **********" << endl;
         int64 t1 = cv::getTickCount();
         __reader->read();
 
@@ -206,10 +207,13 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         cv::Mat d16, dColor;
         cv::Mat color = __reader->color;
+        cv::Mat depth = __reader->depth;
         // cv::Mat color_copy = color;
         cv::Mat color_copy;
         color.copyTo(color_copy);
-        cv::Mat depth = __reader->depth;
+
+        float run_time0 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
+        cout << "run time before draw-box = " << run_time0 << " ms" << endl;
 
         // 绘制目标框
         cout << "********** DRAW-BOX **********" << endl;
@@ -222,6 +226,8 @@ void FocusController::rsProcessFrame(int64 &t0)
                 __object->drawBox(color, depth);
                 cout << "obj" << endl;
             }
+            float run_time0_1 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
+            cout << "run time draw-box 1 = " << run_time0_1 << " ms" << endl;
             string AF = "AF-mode";
             cv::putText(color, AF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
@@ -232,8 +238,8 @@ void FocusController::rsProcessFrame(int64 &t0)
         }
         cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
 
-        float run_time0 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
-        cout << "run time draw-box = " << run_time0 << " ms" << endl;
+        float run_time0_2 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
+        cout << "run time draw-box 2 = " << run_time0_2 << " ms" << endl;
 
         cout << "********** DETECT **********" << endl;
         // if (!MF_trigger)

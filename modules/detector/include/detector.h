@@ -23,6 +23,7 @@ public:
     SingleFace *forward_face = nullptr;
     SingleFace *backward_face = nullptr;
     int drop_count = 0;
+    int face_init_trigger = 0; // 同object的trigger,都加入strict-in策略
     bool detected;             // 用于区分该面部是真实检测出的/虚拟构建的
     float cam_dis;             // 到相机的真实距离
     float forward_dis = -1.f;  // 该帧面部中心点和下一帧对应面部中心点的欧氏距离

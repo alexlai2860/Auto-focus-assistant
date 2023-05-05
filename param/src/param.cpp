@@ -33,6 +33,8 @@ Param::Param(const string &param)
     arm["MAX_DROP_FRAME_FACE"] >> MAX_DROP_FRAME_FACE;
     arm["MAX_DROP_FRAME_OBJECT"] >> MAX_DROP_FRAME_OBJECT;
     arm["DROP_PROCESS_MODE"] >> DROP_PROCESS_MODE;
+    arm["FACE_INIT_LIMIT"] >> FACE_INIT_LIMIT;
+    arm["TARGET_INIT_LIMIT"] >> TARGET_INIT_LIMIT;
 
     arm["cam_module"] >> cam_module;
     arm["INVERT_ON"] >> INVERT_ON;

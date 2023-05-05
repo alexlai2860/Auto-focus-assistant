@@ -40,7 +40,7 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
         cv::Rect2i center_rect(point.x - half_lenght, point.y - half_lenght, length, length);
         for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
         {
-            const uint16_t* data_y = depth_frame.ptr<uint16_t>(y);
+            const uint16_t *data_y = depth_frame.ptr<uint16_t>(y);
             for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
             {
                 if (x > 0 && y > 0)
@@ -79,6 +79,13 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     int width = rect.width;
     int location = 0;
     float wh_ratio = (float)width / (float)height;
+    // 补丁
+    int min_lenght = MIN(height, width);
+    if (min_lenght <= 20)
+    {
+        cv::Point2i center(rect.x + width / 2, rect.y + width / 2);
+        return getPointDepth(depth_frame, center);
+    }
     if (type == 0)
     {
         // 基于人体框的长宽比，盲猜头部的位置:
