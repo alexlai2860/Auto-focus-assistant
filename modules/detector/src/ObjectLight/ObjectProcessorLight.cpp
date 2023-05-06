@@ -272,7 +272,9 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                         boxes.push_back(Rect(left, top, (int)(w * ratiow), (int)(h * ratioh)));
 
                         cout << "param-DBM" << param.DRAW_BOX_MIN << endl;
-                        if (boxes.back().area() > param.DRAW_BOX_MIN * param.DRAW_BOX_MIN)
+                        int min_area = param.DRAW_BOX_MIN * param.DRAW_BOX_MIN;
+                        int min_lenght = MIN(boxes.back().width, boxes.back().height);
+                        if (boxes.back().area() > min_area && min_lenght >= 20)
                         {
                             if (classIdPoint.x == 0 && box_score * max_class_socre > 0.3)
                             {

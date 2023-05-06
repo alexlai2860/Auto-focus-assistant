@@ -26,6 +26,15 @@ add_library(ObjectProcessorLight STATIC ${OBJECT_LIGHT_DIRS})
 target_include_directories(ObjectProcessorLight PUBLIC ${detector_INCLUDE_DIRS}
                                          PUBLIC include/ObjectLight)
 target_link_libraries(ObjectProcessorLight dis)
+
+# face-light
+aux_source_directory(src FACE_LIGHT_DIRS)
+aux_source_directory(src/FaceLight FACE_LIGHT_DIRS)
+add_library(FaceProcessorLight STATIC ${FACE_LIGHT_DIRS})
+target_include_directories(FaceProcessorLight PUBLIC ${detector_INCLUDE_DIRS}
+                                         PUBLIC include/FaceLight)
+target_link_libraries(FaceProcessorLight dis)
+
 # aux_source_directory(src detector_DIRS)
 # aux_source_directory(src/face detector_DIRS)
 # aux_source_directory(src/body detector_DIRS)

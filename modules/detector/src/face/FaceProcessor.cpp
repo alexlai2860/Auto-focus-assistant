@@ -81,6 +81,9 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
                 SingleFace single_face;
                 single_face.center = center;
                 single_face.single_face = selected_face;
+                cv::Rect2i current_face_rect(int(selected_face.at<float>(i, 0)), int(selected_face.at<float>(i, 1)),
+                                             int(selected_face.at<float>(i, 2)), int(selected_face.at<float>(i, 3)));
+                single_face.face_rect = current_face_rect;
                 single_face.cam_dis = depth.getPointDepth(depth_frame, center);
                 single_face.detected = 1;
                 current_faces.push_back(single_face);
@@ -123,7 +126,6 @@ bool Face::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
         return 0;
     }
 }
-
 
 bool Face::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
@@ -201,7 +203,8 @@ bool Face::isValidFace(cv::Mat &faces, int i)
     // 筛除面积过大/面积过小/处于ROI区域外的faces
     int frame_area = param.RS_height * param.RS_width;
     cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
-    cv::Point2i ROI(param.RS_width / 2, param.RS_height / 2);
+    float zoom_rate = (float)param.LENS_LENGTH / 24.f;
+    cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
     cv::Rect2i face_box(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)),
                         int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3)));
     int border_x = (param.RS_width - ROI.x) / 2;

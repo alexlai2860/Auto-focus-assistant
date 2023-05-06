@@ -12,12 +12,33 @@ using namespace std;
 
 bool FaceLight::detect(cv::Mat &color_frame, cv::Mat &depth_frame)
 {
+	// init
 	if (!init)
-    {
-        scrfd.init(this->default_cfg);
-        init = 1;
-    }
-	
+	{
+		scrfd.init(this->default_cfg);
+		init = 1;
+	}
+	// detect
+	if (scrfd.detect(color_frame, depth_frame))
+	{
+		cout << "face-detect-over" << endl;
+		face.push_back(scrfd.scrfd_face.back());
+		cout << "face-size " << face.size() << endl;
+		if (face.size() >= param.FACE_DEQUE)
+		{
+			face.pop_front();
+		}
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+bool FaceLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
+{
+	return 0;
 }
 
 bool SCRFD::init(Net_config config)
@@ -25,6 +46,7 @@ bool SCRFD::init(Net_config config)
 	this->confThreshold = config.confThreshold;
 	this->nmsThreshold = config.nmsThreshold;
 	this->net = readNet(config.modelfile);
+	return 1;
 }
 
 Mat SCRFD::resize_image(Mat srcimg, int *newh, int *neww, int *top, int *left)
@@ -60,7 +82,7 @@ Mat SCRFD::resize_image(Mat srcimg, int *newh, int *neww, int *top, int *left)
 	return dstimg;
 }
 
-void SCRFD::detect(Mat &frame)
+bool SCRFD::detect(Mat &frame, Mat &depth_frame)
 {
 	int newh = 0, neww = 0, padh = 0, padw = 0;
 	Mat img = this->resize_image(frame, &newh, &neww, &padh, &padw);
@@ -116,6 +138,7 @@ void SCRFD::detect(Mat &frame)
 	// Perform non maximum suppression to eliminate redundant overlapping boxes with
 	// lower confidences
 	vector<int> indices;
+	vector<SingleFace> current_faces;
 	dnn::NMSBoxes(boxes, confidences, this->confThreshold, this->nmsThreshold, indices);
 	for (i = 0; i < indices.size(); ++i)
 	{
@@ -127,6 +150,15 @@ void SCRFD::detect(Mat &frame)
 			circle(frame, Point(landmarks[idx][k], landmarks[idx][k + 1]), 1, Scalar(0, 255, 0), -1);
 		}
 
+		SingleFace single_face;
+		cv::Point2i center(box.x + box.width / 2, box.y + box.height / 2);
+		single_face.center = center;
+		// single_face.single_face = selected_face;
+		single_face.cam_dis = depth.getPointDepth(depth_frame, center);
+		single_face.face_rect = box;
+		single_face.detected = 1;
+		current_faces.push_back(single_face);
+
 		// Get the label for the class name and its confidence
 		string label = format("%.2f", confidences[idx]);
 		// Display the label at the top of the bounding box
@@ -136,19 +168,43 @@ void SCRFD::detect(Mat &frame)
 		// rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
 		putText(frame, label, Point(box.x, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 255, 0), 1);
 	}
+	this->scrfd_face.push_back(current_faces);
+	return 1;
 }
 
-// int main()
-// {
-// 	Net_config cfg = { 0.5, 0.5, "weights/scrfd_2.5g_kps.onnx" };  ///choices = ["weights/scrfd_500m_kps.onnx", "weights/scrfd_2.5g_kps.onnx", "weights/scrfd_10g_kps.onnx"]
-// 	SCRFD mynet(cfg);
-// 	string imgpath = "selfie.jpg";
-// 	Mat srcimg = imread(imgpath);
-// 	mynet.detect(srcimg);
-
-// 	static const string kWinName = "Deep learning object detection in OpenCV";
-// 	namedWindow(kWinName, WINDOW_NORMAL);
-// 	imshow(kWinName, srcimg);
-// 	waitKey(0);
-// 	destroyAllWindows();
-// }
+/**
+ * @brief 面部识别结果筛选函数（异常结果/超出roi）
+ *
+ * @param faces 储存的面部数据
+ * @param i 第i个面部
+ * @return true valid_face
+ * @return false invalid_face
+ */
+bool SCRFD::isValidFace(SingleFace single_face)
+{
+	// 筛除面积过大/面积过小/处于ROI区域外的faces
+	int frame_area = param.RS_height * param.RS_width;
+	cv::Point2f center = single_face.center;
+	float zoom_rate = (float)param.LENS_LENGTH / 24.f;
+	cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
+	cv::Rect2i face_box = single_face.face_rect;
+	int border_x = (param.RS_width - ROI.x) / 2;
+	int border_y = (param.RS_height - ROI.y) / 2;
+	if (face_box.area()> 0.25 * frame_area)
+	{
+		return 0;
+	}
+	else if (center.x < param.RS_width - border_x - ROI.x || center.x > param.RS_width - border_x)
+	{
+		return 0;
+	}
+	else if (center.y < param.RS_height - border_y - ROI.y || center.y > param.RS_height - border_y)
+	{
+		return 0;
+	}
+	else if (face_box.area() < param.DRAW_BOX_MIN * (param.DRAW_BOX_MIN + 10))
+	{
+		return 0;
+	}
+	return 1;
+}

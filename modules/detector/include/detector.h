@@ -19,7 +19,8 @@ class SingleFace
 {
 public:
     cv::Point2f center;
-    cv::Mat single_face;
+    cv::Mat single_face;  // 仅用于yunet绘制
+    cv::Rect2i face_rect; // 通用
     SingleFace *forward_face = nullptr;
     SingleFace *backward_face = nullptr;
     int drop_count = 0;

@@ -12,6 +12,7 @@
 
 #include <opencv2/dnn.hpp>
 #include <opencv2/opencv.hpp>
+#include <onnxruntime_cxx_api.h>
 #include <fstream>
 #include <sstream>
 #include "detector.h"
@@ -27,7 +28,10 @@ class SCRFD
 {
 public:
     bool init(Net_config config);
-    void detect(cv::Mat &frame);
+    bool detect(cv::Mat &frame, cv::Mat &depth_frame);
+    vector<cv::Rect> boxes;
+    deque<vector<SingleFace>> scrfd_face;
+    Depth depth;
 
 private:
     const float stride[3] = {8.0, 16.0, 32.0};
@@ -37,13 +41,14 @@ private:
     float nmsThreshold;
     const bool keep_ratio = true;
     cv::dnn::Net net;
+    bool isValidFace(SingleFace single_face);
     cv::Mat resize_image(cv::Mat srcimg, int *newh, int *neww, int *top, int *left);
 };
 
 class FaceLight : public Detector
 {
 public:
-    Net_config default_cfg = {0.5, 0.5, "weights/scrfd_2.5g_kps.onnx"};
+    Net_config default_cfg = {0.4, 0.5, "../onnx/scrfd_500m_kps.onnx"};
     SCRFD scrfd;
     bool init = 0;
     bool virtual detect(cv::Mat &, cv::Mat &) override;

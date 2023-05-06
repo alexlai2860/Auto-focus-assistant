@@ -171,7 +171,8 @@ void FocusController::rsProcessFrame(int64 &t0)
     float runtime_counter = 0;
     __reader = make_shared<RsReader>();
     __decider = make_shared<decider>();
-    __face = make_shared<Face>();
+    // __face = make_shared<Face>();
+    __face = make_shared<FaceLight>();
     __object = make_shared<ObjectLight>();
 
     // ROI计算

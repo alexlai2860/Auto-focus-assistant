@@ -13,6 +13,7 @@
 
 #include "dis.h"
 #include "face.h"
+#include "FaceLight.h"
 #include "object.h"
 #include "ObjectLight.h"
 #include "detector.h"

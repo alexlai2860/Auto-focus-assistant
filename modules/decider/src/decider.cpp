@@ -317,12 +317,9 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
             if (__face->face.back().at(i).face_init_trigger == -1)
             {
                 cout << "test03" << endl;
-                cv::Mat current_face;
-                current_face = __face->face.back().at(i).single_face;
+                cv::Rect2i current_face_rect = __face->face.back().at(i).face_rect;
                 float current_face_dis = __face->face.back().at(i).cam_dis;
-                cv::Rect2i current_face_rect(int(current_face.at<float>(i, 0)), int(current_face.at<float>(i, 1)),
-                                             int(current_face.at<float>(i, 2)), int(current_face.at<float>(i, 3)));
-
+                int face_area = current_face_rect.area();
                 cv::Point2i tl = current_face_rect.tl();
                 cv::Point2i tr(current_face_rect.x + current_face_rect.width, current_face_rect.y);
                 cv::Point2i dl(current_face_rect.x, current_face_rect.y + current_face_rect.height);
@@ -334,12 +331,20 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
                     if (__object->target.back().at(j).init_trigger == -1)
                     {
                         bool matched_face = 0;
+                        int object_area = __object->target.back().at(j).single_object_box.area();
                         bool tl_inside = __object->target.back().at(j).single_object_box.contains(tl);
                         bool tr_inside = __object->target.back().at(j).single_object_box.contains(tr);
                         bool dl_inside = __object->target.back().at(j).single_object_box.contains(dl);
                         bool dr_inside = __object->target.back().at(j).single_object_box.contains(dr);
                         bool center_inside = __object->target.back().at(j).single_object_box.contains(center);
                         matched_face = tl_inside || tr_inside || dl_inside || dr_inside;
+                        float area_ratio = (float)object_area / (float)face_area;
+                        cout << "AREA_RATIO" << area_ratio << endl;
+                        if (area_ratio < 2 || area_ratio > 30)
+                        {
+                            // 面部占比限制(较宽松)
+                            matched_face = 0;
+                        }
                         if (matched_face)
                         {
                             if (__object->target.back().at(j).single_face_in_object.empty())
@@ -510,7 +515,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                             single_new_face = single_current_face;
                             single_new_face.backward_dis = 0; // 重要
                             uninserted = 0;
-                            cout << "insert-in-vector:" << single_new_face.single_face << endl;
+                            cout << "insert-in-vector:" << single_new_face.face_rect << endl;
                             break;
                         }
                     }
@@ -519,7 +524,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     {
                         // 找不到就新增
                         new_faces.push_back(single_current_face);
-                        cout << "pushback-in-vector:" << single_current_face.single_face << endl;
+                        cout << "pushback-in-vector:" << single_current_face.face_rect << endl;
                     }
                 }
             }
@@ -538,7 +543,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     erase_num++;
                     continue;
                 }
-                if (new_faces.at(i).single_face.empty())
+                if (new_faces.at(i).face_rect.empty())
                 {
                     cout << "DANGEROUS!!!-EMPTY-FACE-OCCUR!!!" << endl;
                     auto iter = new_faces_copy.erase(new_faces_copy.begin() + i - erase_num); // 删除指定元素
@@ -550,7 +555,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
             cout << "new-faces-copy-size " << new_faces_copy.size() << endl;
             for (auto face : new_faces_copy)
             {
-                cout << face.single_face << endl;
+                cout << face.face_rect << endl;
             }
             // face_init_trigger处理
             bool exist_triggered_face = 0;
@@ -994,14 +999,17 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
 bool decider::isSameFace(SingleFace &last_face, SingleFace &current_face, logic_ptr &__tool)
 {
     cout << "face-judge-init" << endl;
-    cout << "lst-face" << last_face.single_face << endl;
-    cout << "crt-face" << current_face.single_face << endl;
+    cout << "lst-face" << last_face.face_rect << endl;
+    cout << "crt-face" << current_face.face_rect << endl;
 
     bool is_same_face = 0;
-    cv::Rect2i last_face_box(int(last_face.single_face.at<float>(0, 0)), int(last_face.single_face.at<float>(0, 1)),
-                             int(last_face.single_face.at<float>(0, 2)), int(last_face.single_face.at<float>(0, 3)));
-    cv::Rect2i current_face_box(int(current_face.single_face.at<float>(0, 0)), int(current_face.single_face.at<float>(0, 1)),
-                                int(current_face.single_face.at<float>(0, 2)), int(current_face.single_face.at<float>(0, 3)));
+    // cv::Rect2i last_face_box(int(last_face.single_face.at<float>(0, 0)), int(last_face.single_face.at<float>(0, 1)),
+    //                          int(last_face.single_face.at<float>(0, 2)), int(last_face.single_face.at<float>(0, 3)));
+    // cv::Rect2i current_face_box(int(current_face.single_face.at<float>(0, 0)), int(current_face.single_face.at<float>(0, 1)),
+    //                             int(current_face.single_face.at<float>(0, 2)), int(current_face.single_face.at<float>(0, 3)));
+    cv::Rect2i last_face_box = last_face.face_rect;
+    cv::Rect2i current_face_box = current_face.face_rect;
+
     float area_ratio = float(last_face_box.area()) / float(current_face_box.area());
     cv::Point2i last_tl = last_face_box.tl();
     cv::Point2i current_tl = current_face_box.tl();
