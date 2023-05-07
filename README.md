@@ -96,6 +96,8 @@ cd build
 cmake ..
 make
 ```
+
++ 执行程序
 若编译成功，则可以进一步执行程序<br>
 ```
 ./AF_assistant
@@ -117,6 +119,76 @@ make
 ```
 以直接执行对焦功能为例，输入镜头编号(如2),回车即系统开始运行<br>
 
+#### 设置开机自启动<br>
+由于本项目需要用到imshow，所以开机自启动的设置会略为复杂，也希望有大佬提出改进建议<br>
+若采用传统的systemd去启动程序，由于imshow的存在会报错<br>
+故本项目自启动思路如下:将项目做成快捷方式，再用系统自带的开机自启动去启动快捷方式<br>
+操作步骤如下<br>
++ 在 /usr/local/下创建一个文件夹，名为af-assistant
++ 进入该文件夹，在文件夹内部创建两个.sh文件，分别命名为af-start.sh和gtk-launch.sh(权限问题不再赘述)
++ 前者用于进入项目文件夹并启动项目代码，后者用于进入快捷方式文件夹并启动快捷方式
++ 前者内容示例如下(可根据代码位置修改)
+```
+#!/bin/bash
+
+cd /home/alex/AF_assistant/auto-focus-assistant/build
+./AF_assistant
+```
++ 后者内容示例如下(可根据代码位置修改)
+```
+#!/bin/bash
+
+cd /usr/share/applications/
+gtk-launch af-start.desktop
+```
++ 随后进入/usr/share/applications/,在该文件夹下创建文件，名为 af-start.desktop
++ 内容如下:
+```
+[Desktop Entry]
+Version=2.0
+Type=Application
+Name=AF_assistant
+Exec=/usr/local/af-assistant/af_start.sh
+Terminal=true
+Comment=execute af_start.sh
+```
++ 最后在桌面应用中，找到名为"启动应用程序"的应用，打开
++ 点击添加，名称可以随意填写，命令填写gtk-launch.sh的地址(/usr/local/af-assistant/gtk-launch.sh)
+
+#### 功率限制<br>
+操作步骤如下<br>
++ 在/usr/local/下创建一个文件夹，名为powerlimit
++ 进入该文件夹，创建名为powersave-mode的.sh文件
++ 文件内容如下(需要对应具体线程数量进行修改!)(以下以8c16t的4800U处理器为例):
+```
+#!/bin/sh
+
+cpufreq-set -g powersave -c 0
+cpufreq-set -g powersave -c 1
+cpufreq-set -g powersave -c 2
+cpufreq-set -g powersave -c 3
+cpufreq-set -g powersave -c 4
+cpufreq-set -g powersave -c 5
+cpufreq-set -g powersave -c 6
+cpufreq-set -g powersave -c 7
+cpufreq-set -g powersave -c 8
+cpufreq-set -g powersave -c 9
+cpufreq-set -g powersave -c 10
+cpufreq-set -g powersave -c 11
+cpufreq-set -g powersave -c 12
+cpufreq-set -g powersave -c 13
+cpufreq-set -g powersave -c 14
+cpufreq-set -g powersave -c 15
+
+exit 0
+```
+自启动方面:<br>
++ 方便起见，可以直接在上述的af-start.desktop中进行修改
++ 在文件开头加入以下两行内容即可（修改为用户密码）
+```
+cd /usr/local/powerlimit/
+echo "你的密码"|sudo -S ./powersave-mode.sh
+```
 
 #### 控制逻辑<br>
 + NucleusN手柄控制逻辑 & 决策器控制逻辑

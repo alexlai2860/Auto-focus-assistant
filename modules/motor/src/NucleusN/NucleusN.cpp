@@ -25,14 +25,16 @@ int NucleusN::init(TransferData &readData, TransferData &writeData)
     int lens_num = 0;
     // 初始化
     cout << "即将执行自动校准,输入1确认,输入2跳过:" << endl;
-    cin >> key;
+    // cin >> key;
+    key = param.AUTO_CAL;
     if (key == 1)
     {
         __data->write(6, writeData);
     }
     // 确定镜头编号，判断是否需要新建镜头
     cout << "请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认" << endl;
-    cin >> key;
+    // cin >> key;
+    key = param.LENS_NUM;
     if (key != 0)
     {
         lens_num = key;

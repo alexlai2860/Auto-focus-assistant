@@ -29,6 +29,8 @@ Param::Param(const string &param)
     arm["A"] >> A;
     arm["KALMAN_PROCESS"] >> KALMAN_PROCESS;
     arm["KALMAN_MEASURE"] >> KALMAN_MEASURE;
+    arm["LENS_NUM"] >> LENS_NUM;
+    arm["AUTO_CAL"] >> AUTO_CAL;
 
     arm["MAX_DROP_FRAME_FACE"] >> MAX_DROP_FRAME_FACE;
     arm["MAX_DROP_FRAME_OBJECT"] >> MAX_DROP_FRAME_OBJECT;

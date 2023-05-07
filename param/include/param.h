@@ -25,6 +25,8 @@ struct Param
     int A;
     float KALMAN_PROCESS;
     float KALMAN_MEASURE;
+    int LENS_NUM;
+    int AUTO_CAL;
 
     int MAX_DROP_FRAME_OBJECT;
     int MAX_DROP_FRAME_FACE;

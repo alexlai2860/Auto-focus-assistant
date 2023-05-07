@@ -47,6 +47,10 @@ A: 255
 KALMAN_PROCESS: 0.02
 # 距离滤波:kalman-measure(0.01:FAST/0.02:NORMAL/0.04:SLOW)
 KALMAN_MEASURE: 0.01
+# 镜头代号(1/2/3/4/5，设置为0会进入校准模式)
+LENS_NUM: 2
+# 是否开机自动校准(1:是/2:否)
+AUTO_CAL: 1
 
 # ****************深度相机相关*************
 # 相机型号(0:astra/1:realsense)
