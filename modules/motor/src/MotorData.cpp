@@ -132,19 +132,35 @@ TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
     // 判空
     if (!data.empty())
     {
-        // for (auto d : data)
-        // {
-        //     cout << "********FULL-DATA*********" << endl;
-        //     cout << d.read_data << endl;
-        // }
-        __receive_nucleusn_data = data.back();
-        // 整合得到传递数据
+        cout << "DATA-SIZE" << data.size() << endl;
         TransferData transfer_data;
-        for (int i = 0; i < 14; i++)
+        for (int i = 0; i < data.size(); i++)
         {
-            transfer_data.read2[i] = data.back().read_data[i];
+            __receive_nucleusn_data = data.at(data.size() - 1 - i);
+            if (__receive_nucleusn_data.read_data[1] == 1 && !transfer_data.pos_data_init)
+            {
+                // 01开头
+                for (int i = 0; i < 14; i++)
+                {
+                    transfer_data.read2_position[i] = __receive_nucleusn_data.read_data[i];
+                }
+                transfer_data.pos_data_init = 1;
+            }
+            else if (__receive_nucleusn_data.read_data[1] != 1 && !transfer_data.com_data_init)
+            {
+                // 不是01开头
+                for (int i = 0; i < 14; i++)
+                {
+                    transfer_data.read2_command[i] = __receive_nucleusn_data.read_data[i];
+                }
+                transfer_data.com_data_init = 1;
+                transfer_data.current_com_pos = i;
+            }
+            else if (transfer_data.com_data_init && transfer_data.pos_data_init)
+            {
+                break;
+            }
         }
-        // 更新信息数据
         __last_data = transfer_data;
     }
     // cout << "********LAST-DATA*********" << endl;

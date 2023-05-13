@@ -109,7 +109,7 @@ void SerialPort::open()
 
     // cout << "正在打开串口 " << file_name << endl;
     // cout << "正在打开电机 " << tilta_motor << endl;
-    cout << "正在打开手柄 " << tilta_hand_unit << endl;
+    cout << "正在打开原力N " << tilta_hand_unit << endl;
 
     // fd = ::open(file_name.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);        // 非堵塞情况，steppingmotor
     // fd1 = ::open(tilta_motor.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);     // tilta电机

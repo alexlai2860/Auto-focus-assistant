@@ -14,6 +14,8 @@
 #include <string.h>
 #include <vector>
 
+#include <iostream>
+
 #define S_TIMEOUT 1
 
 class SerialPort
@@ -43,6 +45,8 @@ public:
     const int SIZE = sizeof(T);
     unsigned char read_buffer[LENGTH] = {0};
     ssize_t len_result = this->read(read_buffer, LENGTH);
+    std::cout << "len_result" << len_result << std::endl;
+    std::cout << "size" << SIZE << std::endl;
     for (ssize_t i = 0; (i + SIZE + 1) < len_result; i++)
     {
       if (read_buffer[i] == head && read_buffer[i + SIZE + 1] == tail)

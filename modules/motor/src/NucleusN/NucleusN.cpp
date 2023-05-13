@@ -142,18 +142,14 @@ void NucleusN::write(int position, int speed)
 /**
  * @brief read函数在NucleusN中，用不同的int值表示读取到不同的指令
  *
- * @return int 0-9999:编码器值
- *             -1:cal
- *             -2:long cal
- *             -3:rec on
- *             -4:rec off
- *             -5:empty or error
+ * @return int 1:正常情况
+ *             -5:pos和com均未初始化/代码有误
  */
 int NucleusN::read()
 {
     TransferData read_data;
-    bool is_data_empty = 1;
     read_data = __data->readNucleusN(0x3A, 0x0D);
+    bool is_data_empty = !(read_data.com_data_init || read_data.pos_data_init);
     read_datas.push_back(read_data);
     if (read_datas.size() > 20)
     {
@@ -161,13 +157,13 @@ int NucleusN::read()
     }
 
     // 先判断读取数据是否为空
-    for (int i = 0; i < 14; i++)
-    {
-        if (read_data.read2[i] != 0x00)
-        {
-            is_data_empty = 0;
-        }
-    }
+    // for (int i = 0; i < 14; i++)
+    // {
+    //     if (read_data.read2[i] != 0x00)
+    //     {
+    //         is_data_empty = 0;
+    //     }
+    // }
     if (is_data_empty)
     {
         // cout << "read-data-empty!!!" << endl;
@@ -182,13 +178,13 @@ int NucleusN::read()
     }
 
     // 数据非空，进一步判断数据类别
-    if (read_data.read2[1] == '1')
+    if (read_data.pos_data_init)
     {
         // :01开头，表示传输编码器数值
-        uint8_t num_1 = read_data.read2[8];
-        uint8_t num_2 = read_data.read2[9];
-        uint8_t num_3 = read_data.read2[10];
-        uint8_t num_4 = read_data.read2[11];
+        uint8_t num_1 = read_data.read2_position[8];
+        uint8_t num_2 = read_data.read2_position[9];
+        uint8_t num_3 = read_data.read2_position[10];
+        uint8_t num_4 = read_data.read2_position[11];
         uint8_t num_h = __data->Ascii2Hex(num_1, num_2);
         uint8_t num_l = __data->Ascii2Hex(num_3, num_4);
         uint16_t num = num_h << 8 | num_l;
@@ -197,59 +193,131 @@ int NucleusN::read()
         {
             key_trigger = 0;
             last_position = (int)num;
-            return (int)num;
+            this->position.push_back((int)num);
+            if (this->position.size() > 20)
+            {
+                this->position.pop_front();
+            }
+            // return (int)num;
         }
         else
         {
             return -5;
         }
     }
-    else
+
+    if (read_data.com_data_init)
     {
-        if (key_trigger == 1)
+        int current_command = -5;
+        if (read_data.read2_command[0] == '9')
         {
-            // 只有当读取到的数组发生变化时，才会返回指令
-            if (last_data.read2[11] == read_data.read2[11])
+            if (read_data.read2_command[1] == '6')
             {
-                // 否则持续返回位置
-                return last_position;
+                // cal指令
+                current_command = -1;
             }
         }
-        last_data = read_data;
-        key_trigger = 1;
+        if (read_data.read2_command[0] == '3')
+        {
+            if (read_data.read2_command[1] == 'F')
+            {
+                // longcal指令
+                current_command = -2;
+            }
+        }
+        if (read_data.read2_command[0] == 'C')
+        {
+            if (read_data.read2_command[1] == '9')
+            {
+                if (read_data.read2_command[11] == '1')
+                {
+                    // recon指令
+                    current_command = -3;
+                }
+                if (read_data.read2_command[11] == '0')
+                {
+                    // recoff指令
+                    current_command = -4;
+                }
+            }
+        }
+        if (current_command == -5)
+        {
+            // 如果还是-5，直接return
+            return -5;
+        }
+
+        if (this->command.back() != current_command)
+        {
+            // 和之前的命令不一样:认为出现新命令
+            this->last_com_pos = read_data.current_com_pos;
+            this->command.push_back(current_command);
+            this->command_init = 1;
+        }
+        else if (this->last_com_pos > read_data.current_com_pos)
+        {
+            // 比之前的命令位置更近:也认为出现新命令
+            this->last_com_pos = read_data.current_com_pos;
+            this->command.push_back(current_command);
+            this->command_init = 1;
+        }
+
+        // else
+        // {
+        //     this->command_init = 0;
+        // }
+
+        if (this->command.size() > 20)
+        {
+            this->command.pop_front();
+        }
+
+        // if (key_trigger == 1)
+        // {
+        //     // 只有当读取到的数组发生变化时，才会返回指令
+        //     if (last_data.read2_command[11] == read_data.read2_command[11])
+        //     {
+        //         // 否则持续返回位置
+        //         return last_position;
+        //     }
+        // }
+        // last_data = read_data;
+        // key_trigger = 1;
     }
 
-    if (read_data.read2[0] == '9')
+    return 1;
+}
+
+/**
+ * @brief 读取指令
+ *
+ * @return int 0-9999
+ */
+int NucleusN::readCommand()
+{
+    // 当command队列不为空，且有新的命令加入队列时，允许返回命令
+    if (!this->command.empty() && this->command_init)
     {
-        if (read_data.read2[1] == '6')
-        {
-            // cal指令
-            return -1;
-        }
+        // 并将init置零，等待下次出现新的命令
+        this->command_init = 0;
+        return command.back();
     }
-    if (read_data.read2[0] == '3')
+    return -5;
+}
+
+/**
+ * @brief 读取位置
+ *
+ * @return int -1:cal
+ *             -2:long-cal
+ *             -3:rec-on
+ *             -4:rec-off
+ */
+int NucleusN::readPosition()
+{
+    if (!this->position.empty())
     {
-        if (read_data.read2[1] == 'F')
-        {
-            // longcal指令
-            return -2;
-        }
-    }
-    if (read_data.read2[0] == 'C')
-    {
-        if (read_data.read2[1] == '9')
-        {
-            if (read_data.read2[11] == '1')
-            {
-                // recon指令
-                return -3;
-            }
-            if (read_data.read2[11] == '0')
-            {
-                // recoff指令
-                return -4;
-            }
-        }
+        return position.back();
     }
     return -5;
 }

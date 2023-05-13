@@ -23,7 +23,11 @@ public:
     uint8_t command2;
 
     uint8_t read1[4] = {0x00, 0x00, 0x00, 0x00};
-    uint8_t read2[14];
+    uint8_t read2_position[14];
+    uint8_t read2_command[14];
+    int current_com_pos; // 当前读取到的command在buffer中的位置
+    bool pos_data_init = 0;
+    bool com_data_init = 0;
 
     uint8_t byte1 = 0xFD;         // 默认使用位置模式控制
     uint8_t direction_and_speed1; // 高半字节表示方向（0/1），其余表示速度（最大为4FF）

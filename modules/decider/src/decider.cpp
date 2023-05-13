@@ -309,14 +309,14 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
     int overall_situation = 0;
     if (face_situation == 1 && object_situation == 2)
     {
-        cout << "test01" << endl;
+        // cout << "test01" << endl;
         // face和object都检测到
         for (int i = 0; i < __face->face.back().size(); i++)
         {
-            cout << "test02" << endl;
+            // cout << "test02" << endl;
             if (__face->face.back().at(i).face_init_trigger == -1)
             {
-                cout << "test03" << endl;
+                // cout << "test03" << endl;
                 cv::Rect2i current_face_rect = __face->face.back().at(i).face_rect;
                 float current_face_dis = __face->face.back().at(i).cam_dis;
                 int face_area = current_face_rect.area();
@@ -339,7 +339,7 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
                         bool center_inside = __object->target.back().at(j).single_object_box.contains(center);
                         matched_face = tl_inside || tr_inside || dl_inside || dr_inside;
                         float area_ratio = (float)object_area / (float)face_area;
-                        cout << "AREA_RATIO" << area_ratio << endl;
+                        // cout << "AREA_RATIO" << area_ratio << endl;
                         if (area_ratio < 2 || area_ratio > 30)
                         {
                             // 面部占比限制(较宽松)
@@ -446,13 +446,13 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     }
                 }
             }
-            cout << "stage-1" << endl;
+            // cout << "stage-1" << endl;
             // 加入临时筛选策略（-2剔除）
             for (int i = 0; i < current_faces.size(); i++)
             {
                 if (current_faces.at(i).backward_dis == -2.f)
                 {
-                    cout << "delect-current-" << i << endl;
+                    // cout << "delect-current-" << i << endl;
                     auto iter = current_faces.erase(current_faces.begin() + i);
                 }
             }
@@ -494,11 +494,11 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     }
                 }
             }
-            cout << "stage-2" << endl;
+            // cout << "stage-2" << endl;
             // 检查是否存在未能成功配对的current_face（新增）（后做新增处理）
             for (auto &single_current_face : current_faces)
             {
-                cout << "stage-2-1" << endl;
+                // cout << "stage-2-1" << endl;
                 if (single_current_face.backward_dis < 0)
                 {
                     if (single_current_face.face_init_trigger != -1)
@@ -515,30 +515,30 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                             single_new_face = single_current_face;
                             single_new_face.backward_dis = 0; // 重要
                             uninserted = 0;
-                            cout << "insert-in-vector:" << single_new_face.face_rect << endl;
+                            // cout << "insert-in-vector:" << single_new_face.face_rect << endl;
                             break;
                         }
                     }
-                    cout << "stage-2-2" << endl;
+                    // cout << "stage-2-2" << endl;
                     if (uninserted)
                     {
                         // 找不到就新增
                         new_faces.push_back(single_current_face);
-                        cout << "pushback-in-vector:" << single_current_face.face_rect << endl;
+                        // cout << "pushback-in-vector:" << single_current_face.face_rect << endl;
                     }
                 }
             }
-            cout << "stage-3" << endl;
+            // cout << "stage-3" << endl;
             // 后处理
             int size = new_faces.size();
             auto new_faces_copy = new_faces;
             int erase_num = 0;
             for (int i = 0; i < size; i++)
             {
-                cout << "drop_count_" << i << new_faces.at(i).drop_count << endl;
+                // cout << "drop_count_" << i << new_faces.at(i).drop_count << endl;
                 if (new_faces.at(i).drop_count > max_drop_num)
                 {
-                    cout << "erase-" << i << endl;
+                    // cout << "erase-" << i << endl;
                     auto iter = new_faces_copy.erase(new_faces_copy.begin() + i - erase_num); // 删除指定元素
                     erase_num++;
                     continue;
@@ -551,8 +551,8 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                     continue;
                 }
             }
-            cout << "stage-4" << endl;
-            cout << "new-faces-copy-size " << new_faces_copy.size() << endl;
+            // cout << "stage-4" << endl;
+            // cout << "new-faces-copy-size " << new_faces_copy.size() << endl;
             for (auto face : new_faces_copy)
             {
                 cout << face.face_rect << endl;
@@ -561,7 +561,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
             bool exist_triggered_face = 0;
             for (auto &face : new_faces_copy)
             {
-                cout << "TRIGGER:" << face.face_init_trigger << endl;
+                // cout << "TRIGGER:" << face.face_init_trigger << endl;
                 if (face.face_init_trigger >= param.FACE_INIT_LIMIT || face.face_init_trigger == -1)
                 {
                     // 允许触发
@@ -591,13 +591,13 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                 if (__detector->face.back().empty())
                 {
                     __detector->draw_face_box = 0;
-                    cout << "empty" << endl;
+                    // cout << "empty" << endl;
                     return 0;
                 }
                 else
                 {
                     __detector->draw_face_box = 1;
-                    cout << "!empty" << endl;
+                    // cout << "!empty" << endl;
                     return 1;
                 }
             }
@@ -642,7 +642,7 @@ int decider::facePerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &__d
                 bool exist_triggered_face = 0;
                 for (auto target : __detector->face.back())
                 {
-                    cout << "init-trigger-face:" << target.face_init_trigger << endl;
+                    // cout << "init-trigger-face:" << target.face_init_trigger << endl;
                     if (target.face_init_trigger == -1)
                     {
                         exist_triggered_face = 1;
@@ -998,9 +998,9 @@ int decider::objectPerceptron(cv::Mat &d16, detector_ptr &__detector, dis_ptr &_
  */
 bool decider::isSameFace(SingleFace &last_face, SingleFace &current_face, logic_ptr &__tool)
 {
-    cout << "face-judge-init" << endl;
-    cout << "lst-face" << last_face.face_rect << endl;
-    cout << "crt-face" << current_face.face_rect << endl;
+    // cout << "face-judge-init" << endl;
+    // cout << "lst-face" << last_face.face_rect << endl;
+    // cout << "crt-face" << current_face.face_rect << endl;
 
     bool is_same_face = 0;
     // cv::Rect2i last_face_box(int(last_face.single_face.at<float>(0, 0)), int(last_face.single_face.at<float>(0, 1)),
@@ -1016,15 +1016,15 @@ bool decider::isSameFace(SingleFace &last_face, SingleFace &current_face, logic_
     cv::Point2i last_center(last_tl.x + last_face_box.x / 2, last_tl.y + last_face_box.y / 2);
     cv::Point2i currnet_center(current_tl.x + current_face_box.x / 2, current_tl.y + current_face_box.y / 2);
 
-    cout << "last-center " << last_center << endl;
-    cout << "current-center " << currnet_center << endl;
+    // cout << "last-center " << last_center << endl;
+    // cout << "current-center " << currnet_center << endl;
 
     float tl_dis = __tool->getPointDis(last_tl, current_tl);
     float center_dis = __tool->getPointDis(last_center, currnet_center);
     float last_cam_dis = last_face.cam_dis;
     float current_cam_dis = current_face.cam_dis;
-    cout << "current_dis" << current_cam_dis << endl;
-    cout << "last_cam_dis" << last_cam_dis << endl;
+    // cout << "current_dis" << current_cam_dis << endl;
+    // cout << "last_cam_dis" << last_cam_dis << endl;
     float dis_ratio = last_cam_dis / current_cam_dis;
 
     // 动态判别参数：x = x0 + b
@@ -1119,7 +1119,7 @@ bool decider::isSameFace(SingleFace &last_face, SingleFace &current_face, logic_
     {
         // cout << "dis_ratio_unmatch:" << dis_ratio << endl;
     }
-    cout << "judge-complete:" << is_same_face << endl;
+    // cout << "judge-complete:" << is_same_face << endl;
     return is_same_face;
 }
 
@@ -1144,8 +1144,8 @@ bool decider::isSameObject(SingleObject &last_object, SingleObject &current_obje
     cv::Point2i last_center = last_object.center;
     cv::Point2i currnet_center = current_object.center;
 
-    cout << "last-center " << last_center << endl;
-    cout << "current-center " << currnet_center << endl;
+    // cout << "last-center " << last_center << endl;
+    // cout << "current-center " << currnet_center << endl;
 
     float tl_dis = __tool->getPointDis(last_tl, current_tl);
     float center_dis = __tool->getPointDis(last_center, currnet_center);
@@ -1249,7 +1249,7 @@ bool decider::isSameObject(SingleObject &last_object, SingleObject &current_obje
     // {
     //     cout << "dis_ratio_unmatch:" << dis_ratio << endl;
     // }
-    cout << "judge-complete:" << is_same_object << endl;
+    // cout << "judge-complete:" << is_same_object << endl;
     return is_same_object;
 }
 

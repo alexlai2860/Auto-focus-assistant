@@ -22,10 +22,16 @@ protected:
     TransferData last_data; // 上一次读到的data
     int last_position;      // 上一次读到的position
     bool key_trigger;       // 按键触发器
+    deque<int> position;
+    deque<int> command;
+    bool command_init = 0;
+    int last_com_pos; // 上一次读取到command在buffer中的位置
 
 public:
     virtual void write(int, int) override;
     virtual int read() override;
+    virtual int readPosition() override;
+    virtual int readCommand() override;
     void setZero();
     void enable();
     void test(int, int);

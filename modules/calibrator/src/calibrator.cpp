@@ -26,7 +26,9 @@ bool Calibrator::calibrate(int lens_num, dis_ptr &__dis, motor_ptr &__motor, rs2
 
     int center_dis = int(1000 * depth.get_distance(param.RS_width / 2, param.RS_height / 2));
     __dis->disCalculate(center_dis, d16, points);
-    int current_pulse = __motor->read();
+
+    __motor->read();
+    int current_pulse = __motor->readPosition();
 
     cv::putText(color, cv::format("%d", center_dis), cv::Point2i(30, 30), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 3);
     cv::circle(color, center, 6, cv::Scalar(0, 0, 255), -1);
@@ -147,12 +149,14 @@ bool Calibrator::nucleusCalibrate(int lens_num, dis_ptr &__dis, motor_ptr &__mot
     int center_dis = int(1000 * depth.get_distance(param.RS_width / 2, param.RS_height / 2));
     __dis->disCalculate(center_dis, d16, points);
     int current_pulse = 0;
-    int read_result = __motor->read();
-    if (read_result >= 0)
+    __motor->read();
+    int read_position = __motor->readPosition();
+    int read_command = __motor->readCommand();
+    if (read_position >= 0)
     {
-        current_pulse = read_result;
+        current_pulse = read_position;
         this->last_pulse = current_pulse;
-        __motor->write(read_result, 0);
+        __motor->write(read_position, 0);
     }
 
     cv::putText(color, cv::format("%d", center_dis), cv::Point2i(50, 50), cv::FONT_HERSHEY_SIMPLEX, 2, cv::Scalar(200, 200, 255), 2);
@@ -194,7 +198,7 @@ bool Calibrator::nucleusCalibrate(int lens_num, dis_ptr &__dis, motor_ptr &__mot
     char key1 = (char)cv::waitKey(1);
     int x;
     // if (key1 == 'g')
-    if (read_result == -2 && last_pulse != 0)
+    if (read_command == -2 && last_pulse != 0)
     {
         // cv::waitKey(1);
         if (!cal_points.empty())
@@ -217,7 +221,7 @@ bool Calibrator::nucleusCalibrate(int lens_num, dis_ptr &__dis, motor_ptr &__mot
     }
 
     // if (key1 == 'c')
-    if (read_result == -3 || read_result == -4)
+    if (read_command == -3 || read_command == -4)
     {
         int n = 6;
         switch (-lens_num)

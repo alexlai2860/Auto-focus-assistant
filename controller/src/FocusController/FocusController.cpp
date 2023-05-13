@@ -144,6 +144,7 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
         for (int j = delta_cols; j < resized_color.cols; j++)
         {
             data1[j] = data2[j - delta_cols];
+            // data1[j] = 0.2 * data1[j] + 0.8 * data2[j - delta_cols];
         }
     }
 
@@ -173,6 +174,7 @@ void FocusController::rsProcessFrame(int64 &t0)
     __decider = make_shared<decider>();
     // __face = make_shared<Face>();
     __face = make_shared<FaceLight>();
+    // __face = make_shared<Body>();  // 借指针一用
     __object = make_shared<ObjectLight>();
 
     // ROI计算
@@ -248,12 +250,12 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 检测器，判断该帧是否需要进行目标检测
         if (__logic->timeTrigger(t0, 10))
         {
+            cout << "********** OBJECT-DETECT **********" << endl;
             int64 t2 = cv::getTickCount();
-            // detected = __face->detect(color_copy, depth);
-            // __detector = __face;
+            // __face->detect(color_copy, depth);
             detected = __object->detect(color_copy, depth);
+            // detected = 0;
             __detector = __object;
-            // detect_flag = 1;
             detect_flag = 1;
             face_trigger = 1;
             float run_time1 = 1000 * ((cv::getTickCount() - t2) / cv::getTickFrequency());
@@ -264,11 +266,15 @@ void FocusController::rsProcessFrame(int64 &t0)
             // 目标检测后搭配一次面部检测
             if (face_trigger)
             {
+                cout << "********** FACE-DETECT **********" << endl;
+                int64 t2 = cv::getTickCount();
                 detected = __face->detect(color_copy, depth);
                 // detected = 0;
                 __detector = __face;
                 face_trigger = 0;
                 detect_flag = 0;
+                float run_time1 = 1000 * ((cv::getTickCount() - t2) / cv::getTickFrequency());
+                cout << "run time face-detect = " << run_time1 << " ms" << endl;
             }
             else
             {
@@ -278,15 +284,18 @@ void FocusController::rsProcessFrame(int64 &t0)
         // }
 
         cout << "********** READ **********" << endl;
-        int result = __motor->read();
-        cout << "read-result:" << result << endl;
-        cv::putText(color, cv::format("%d", result), cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        if (result == -3 && !MF_trigger)
+        __motor->read();
+        int command = __motor->readCommand();
+        int position = __motor->readPosition();
+        cout << "read-result:" << position << endl;
+        string current_position = "pos:" + cv::format("%d", position);
+        cv::putText(color, current_position, cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        if (command == -3 && !MF_trigger)
         {
             // rec_on:触发手动模式
             MF_trigger = 1;
         }
-        else if (result == -4)
+        else if (command == -4)
         {
             // rec_off:关闭手动模式
             MF_trigger = 0;
@@ -304,7 +313,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         //     }
         // }
         // 暂停运行(低功耗)
-        if (result == -2)
+        if (command == -2)
         {
             while (1)
             {
@@ -320,7 +329,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         cout << "********** DECIDE **********" << endl;
         int64 t3 = cv::getTickCount();
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
-        DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, result);
+        DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
 
         float run_time2 = 1000 * ((cv::getTickCount() - t3) / cv::getTickFrequency());
         cout << "run time decide = " << run_time2 << " ms" << endl;
@@ -342,30 +351,26 @@ void FocusController::rsProcessFrame(int64 &t0)
         int64 t4 = cv::getTickCount();
         if (MF_trigger)
         {
-            if (result >= 0 && result <= 9999)
+            if (position >= 0 && position <= 9999)
             {
-                if (result > (MF_init_result + 10) || result < (MF_init_result - 10))
+                if (position > (MF_init_result + 10) || position < (MF_init_result - 10))
                 {
-                    __motor->write(result, 0);
+                    __motor->write(position, 0);
                 }
             }
-            // 不能直接套interPolater，是反函数
-            // depthReProjection(depth, __decider->pulseInterPolater(result), 0);
         }
         else
         {
-            if (result >= 0 && result <= 9999)
+            if (position >= 0 && position <= 9999)
             {
-                MF_init_result = result;
+                MF_init_result = position;
             }
             __motor->write(last_target_pulse, 0);
         }
         cv::putText(color, cv::format("%d", real_fps), cv::Point2i(15, 400), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        depthReProjection(depth, DIS, __decider->pulseInterPolater(result));
+        depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
 
         // 输出彩色图和深度图
-        // imshow("Depth", depth * 10);
-        // imshow("Color", color);
         colorDepthMix(reprojected_depth, color);
         float run_time3 = 1000 * ((cv::getTickCount() - t4) / cv::getTickFrequency());
         cout << "run time reproject = " << run_time3 << " ms" << endl;
