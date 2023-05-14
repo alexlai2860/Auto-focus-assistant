@@ -136,19 +136,22 @@ TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
         TransferData transfer_data;
         for (int i = 0; i < data.size(); i++)
         {
+            cout << "data-at-" << data.size() - 1 - i << endl;
             __receive_nucleusn_data = data.at(data.size() - 1 - i);
-            if (__receive_nucleusn_data.read_data[1] == 1 && !transfer_data.pos_data_init)
+            if (__receive_nucleusn_data.read_data[1] == '1' && !transfer_data.pos_data_init)
             {
                 // 01开头
+                cout << "data-type-1" << endl;
                 for (int i = 0; i < 14; i++)
                 {
                     transfer_data.read2_position[i] = __receive_nucleusn_data.read_data[i];
                 }
                 transfer_data.pos_data_init = 1;
             }
-            else if (__receive_nucleusn_data.read_data[1] != 1 && !transfer_data.com_data_init)
+            else if (__receive_nucleusn_data.read_data[1] != '1' && !transfer_data.com_data_init)
             {
                 // 不是01开头
+                cout << "data-type-2" << endl;
                 for (int i = 0; i < 14; i++)
                 {
                     transfer_data.read2_command[i] = __receive_nucleusn_data.read_data[i];
@@ -161,6 +164,11 @@ TransferData Data::readNucleusN(uint8_t head, uint8_t tail)
                 break;
             }
         }
+        __last_data = transfer_data;
+    }
+    else
+    {
+        TransferData transfer_data;
         __last_data = transfer_data;
     }
     // cout << "********LAST-DATA*********" << endl;

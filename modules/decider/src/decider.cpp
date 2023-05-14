@@ -100,6 +100,14 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         {
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
+        else if (param.DROP_PROCESS_MODE == 2)
+        {
+            // 较原先的0.3和0.7进行一定的修正
+            cv::Point2i tl(param.RS_width * 0.35, param.RS_height * 0.3);
+            cv::Point2i dr(param.RS_width * 0.65, param.RS_height * 0.7);
+            cv::Rect2i ROI(tl, dr);
+            cv::rectangle(color, ROI, cv::Scalar(200, 0, 0), 3);
+        }
         DIS = __dis->target_dis.back();
         __face->face.clear();
         // __object->target.clear();
@@ -1330,8 +1338,8 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
 /**
  * @brief 内插法计算目标脉冲
  *
- * @param dis
- * @return int
+ * @param dis 输入距离(0-INF)
+ * @return int 输出脉冲(0-9999)
  */
 int decider::disInterPolater(int &dis)
 {
@@ -1402,10 +1410,10 @@ int decider::disInterPolater(int &dis)
 }
 
 /**
- * @brief 内插法计算目标脉冲
- *
- * @param dis
- * @return int
+ * @brief 由脉冲反向计算距离
+ * 
+ * @param pulse 输入脉冲(0-9999)
+ * @return int 输出距离(0-INF)
  */
 int decider::pulseInterPolater(int &pulse)
 {

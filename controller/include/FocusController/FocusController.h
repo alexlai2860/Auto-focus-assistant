@@ -30,6 +30,7 @@ protected:
     detector_ptr __detector;
 
     bool face_trigger;
+    bool forced_drop_trigger = 0;
     bool MF_trigger = 0;
     int MF_init_result = -1;
     int last_target_pulse;
@@ -38,6 +39,7 @@ protected:
     cv::Mat mixed_output;
     void depthReProjection(cv::Mat &depth, int, int);
     void colorDepthMix(cv::Mat &depth, cv::Mat &color);
+    void handUnitController();
 
 public:
     int init(int64 &, int) override;

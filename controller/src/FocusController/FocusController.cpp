@@ -231,12 +231,12 @@ void FocusController::rsProcessFrame(int64 &t0)
             }
             float run_time0_1 = 1000 * ((cv::getTickCount() - t1) / cv::getTickFrequency());
             cout << "run time draw-box 1 = " << run_time0_1 << " ms" << endl;
-            string AF = "AF-mode";
+            string AF = "AF";
             cv::putText(color, AF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
         else
         {
-            string MF = "MF-mode";
+            string MF = "MF";
             cv::putText(color, MF, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         }
         cv::rectangle(color, ROI, cv::Scalar(180, 180, 180), 3);
@@ -284,41 +284,49 @@ void FocusController::rsProcessFrame(int64 &t0)
         // }
 
         cout << "********** READ **********" << endl;
+        // cv::waitKey(100);
         __motor->read();
         int command = __motor->readCommand();
         int position = __motor->readPosition();
         cout << "read-result:" << position << endl;
         string current_position = "pos:" + cv::format("%d", position);
+        string current_command = "com:" + cv::format("%d", command);
         cv::putText(color, current_position, cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        if (command == -3 && !MF_trigger)
+        cv::putText(color, current_command, cv::Point2i(15, 140), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+
+        if(command == -3 || command == -4)
         {
-            // rec_on:触发手动模式
-            MF_trigger = 1;
+            if(!MF_trigger)
+            {
+                MF_trigger = 1;
+            }
+            else
+            {
+                MF_trigger = 0;
+            }
         }
-        else if (command == -4)
+
+        // 自动模式下，CAL控制对焦模式
+        if (command == -1)
         {
-            // rec_off:关闭手动模式
-            MF_trigger = 0;
+            if (forced_drop_trigger)
+            {
+                forced_drop_trigger = 0;
+            }
+            else
+            {
+                forced_drop_trigger = 1;
+            }
         }
-        // if (result == -3 || result == -4)
-        // {
-        //     // rec按键按下:切换手动和自动
-        //     if (MF_trigger == 1)
-        //     {
-        //         MF_trigger = 0;
-        //     }
-        //     else
-        //     {
-        //         MF_trigger = 1;
-        //     }
-        // }
+
         // 暂停运行(低功耗)
         if (command == -2)
         {
             while (1)
             {
                 cv::waitKey(2000);
-                int result2 = __motor->read();
+                __motor->read();
+                int result2 = __motor->readCommand();
                 if (result2 == -3 || result2 == -4)
                 {
                     break;
@@ -329,7 +337,22 @@ void FocusController::rsProcessFrame(int64 &t0)
         cout << "********** DECIDE **********" << endl;
         int64 t3 = cv::getTickCount();
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
-        DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
+
+        if (forced_drop_trigger && !MF_trigger)
+        {
+            // 中心区域对焦(触发强制掉帧)
+            cv::putText(color, "center mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, 0, 3, position);
+        }
+        else
+        {
+            // 智能识别对焦
+            if (!MF_trigger)
+            {
+                cv::putText(color, "AI mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            }
+            DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
+        }
 
         float run_time2 = 1000 * ((cv::getTickCount() - t3) / cv::getTickFrequency());
         cout << "run time decide = " << run_time2 << " ms" << endl;
@@ -343,14 +366,28 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 计算目标脉冲值-方案二:使用插值法
         int target_pulse = __decider->disInterPolater(DIS);
         last_target_pulse = target_pulse;
-        cv::putText(color, cv::format("%d", last_target_pulse), cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+        string target_position = "target-pos:" + cv::format("%d", last_target_pulse);
+        cv::putText(color, target_position, cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         // 计算差值，写入串口，同时进行异常处理，驱动镜头
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
         int64 t4 = cv::getTickCount();
-        if (MF_trigger)
+        if (MF_trigger && forced_drop_trigger)
         {
+            cv::putText(color, "0-10m reprojection", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+            if (position >= 0 && position <= 9999)
+            {
+                if (position > (MF_init_result + 10) || position < (MF_init_result - 10))
+                {
+                    __motor->write(__decider->disInterPolater(position), 0);
+                }
+            }
+            depthReProjection(depth, DIS, position);
+        }
+        else if (MF_trigger && !forced_drop_trigger)
+        {
+            cv::putText(color, "full scale projection", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             if (position >= 0 && position <= 9999)
             {
                 if (position > (MF_init_result + 10) || position < (MF_init_result - 10))
@@ -358,6 +395,7 @@ void FocusController::rsProcessFrame(int64 &t0)
                     __motor->write(position, 0);
                 }
             }
+            depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
         }
         else
         {
@@ -365,10 +403,10 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 MF_init_result = position;
             }
+            depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
             __motor->write(last_target_pulse, 0);
         }
         cv::putText(color, cv::format("%d", real_fps), cv::Point2i(15, 400), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-        depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
 
         // 输出彩色图和深度图
         colorDepthMix(reprojected_depth, color);

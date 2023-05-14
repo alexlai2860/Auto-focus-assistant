@@ -149,11 +149,15 @@ int NucleusN::read()
 {
     TransferData read_data;
     read_data = __data->readNucleusN(0x3A, 0x0D);
+    cout << "read_data-complete" << endl;
     bool is_data_empty = !(read_data.com_data_init || read_data.pos_data_init);
-    read_datas.push_back(read_data);
-    if (read_datas.size() > 20)
+    if (!is_data_empty)
     {
-        read_datas.pop_front();
+        read_datas.push_back(read_data);
+        if (read_datas.size() > 20)
+        {
+            read_datas.pop_front();
+        }
     }
 
     // 先判断读取数据是否为空
@@ -166,20 +170,28 @@ int NucleusN::read()
     // }
     if (is_data_empty)
     {
-        // cout << "read-data-empty!!!" << endl;
+        cout << "read-data-empty!!!" << endl;
         return -5;
     }
-    else
-    {
-        // cout << "read_valid";
-        // for (int i = 0; i < 14; i++)
-        //     cout << hex << read_data.read2[i];
-        // cout << endl;
-    }
+    // else if (read_data.com_data_init)
+    // {
+    //     cout << "read_valid_com";
+    //     for (int i = 0; i < 14; i++)
+    //         cout << hex << read_data.read2_command[i];
+    //     cout << endl;
+    // }
+    // else if (read_data.pos_data_init)
+    // {
+    //     cout << "read_valid_pos";
+    //     for (int i = 0; i < 14; i++)
+    //         cout << hex << read_data.read2_position[i];
+    //     cout << endl;
+    // }
 
     // 数据非空，进一步判断数据类别
     if (read_data.pos_data_init)
     {
+        cout << "pos-init" << endl;
         // :01开头，表示传输编码器数值
         uint8_t num_1 = read_data.read2_position[8];
         uint8_t num_2 = read_data.read2_position[9];
@@ -208,6 +220,7 @@ int NucleusN::read()
 
     if (read_data.com_data_init)
     {
+        cout << "com-init" << endl;
         int current_command = -5;
         if (read_data.read2_command[0] == '9')
         {
@@ -246,25 +259,35 @@ int NucleusN::read()
             // 如果还是-5，直接return
             return -5;
         }
+        cout << "current-com" << (int)current_command << endl;
 
-        if (this->command.back() != current_command)
-        {
-            // 和之前的命令不一样:认为出现新命令
-            this->last_com_pos = read_data.current_com_pos;
-            this->command.push_back(current_command);
-            this->command_init = 1;
-        }
-        else if (this->last_com_pos > read_data.current_com_pos)
-        {
-            // 比之前的命令位置更近:也认为出现新命令
-            this->last_com_pos = read_data.current_com_pos;
-            this->command.push_back(current_command);
-            this->command_init = 1;
-        }
+        //  直接PUSH即可，BUFFER每次循环都会更新
+        this->last_com_pos = read_data.current_com_pos;
+        this->command.push_back(current_command);
+        this->command_init = 1;
 
+        // if (!this->command.empty())
+        // {
+        //     if (this->command.back() != current_command)
+        //     {
+        //         // 和之前的命令不一样:认为出现新命令
+        //         this->last_com_pos = read_data.current_com_pos;
+        //         this->command.push_back(current_command);
+        //         this->command_init = 1;
+        //     }
+        //     else if (this->last_com_pos > read_data.current_com_pos)
+        //     {
+        //         // 比之前的命令位置更近:也认为出现新命令
+        //         this->last_com_pos = read_data.current_com_pos;
+        //         this->command.push_back(current_command);
+        //         this->command_init = 1;
+        //     }
+        // }
         // else
         // {
-        //     this->command_init = 0;
+        //     this->last_com_pos = read_data.current_com_pos;
+        //     this->command.push_back(current_command);
+        //     this->command_init = 1;
         // }
 
         if (this->command.size() > 20)
