@@ -143,7 +143,7 @@ bool Face::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
         // 画人脸框
         int thickness = 2;
         cv::rectangle(color_frame, cv::Rect2i(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3))), cv::Scalar(0, 255, 0), thickness);
-
+        
         // 画方框中心
         cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
         cv::circle(color_frame, center, 2, cv::Scalar(0, 200, 200), 5);

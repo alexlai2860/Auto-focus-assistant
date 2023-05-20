@@ -149,6 +149,18 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
         // 此时背景面积较大，倾向于选择较近的点
         location = depth_deque.size() / 7;
     }
+    if (type == -1)
+    {
+        // 1定义为面部侧对
+        // 此时背景面积较大，倾向于选择较近的点
+        location = depth_deque.size() / 4;
+    }
+    if (type == -2)
+    {
+        // 1定义为面部正对
+        // 此时背景面积较小，取中值
+        location = depth_deque.size() / 2;
+    }
     return depth_deque.at(location);
     // int temp_depth = getPointDepth(depth_frame, center);
     // return temp_depth;

@@ -232,7 +232,7 @@ bool SCRFD::detect(Mat &frame, Mat &depth_frame)
 			}
 		}
 	}
-	
+
 	// for (auto box : boxes)
 	// {
 	// 	rectangle(frame, Point(box.x, box.y), Point(box.x + box.width, box.y + box.height), Scalar(0, 0, 255), 2);
@@ -248,17 +248,31 @@ bool SCRFD::detect(Mat &frame, Mat &depth_frame)
 	{
 		int idx = indices[i];
 		Rect box = boxes[idx];
-		rectangle(frame, Point(box.x, box.y), Point(box.x + box.width, box.y + box.height), Scalar(0, 0, 255), 2);
-		for (k = 0; k < 10; k += 2)
-		{
-			circle(frame, Point(landmarks[idx][k], landmarks[idx][k + 1]), 1, Scalar(0, 255, 0), -1);
-		}
+		cv::Point2i eye1(landmarks[idx][0], landmarks[idx][1]);
+		cv::Point2i eye2(landmarks[idx][2], landmarks[idx][3]);
+		// rectangle(frame, Point(box.x, box.y), Point(box.x + box.width, box.y + box.height), Scalar(0, 0, 255), 2);
+		// for (k = 0; k < 10; k += 2)
+		// {
+		// 	circle(frame, Point(landmarks[idx][k], landmarks[idx][k + 1]), 1, Scalar(0, 255, 0), -1);
+		// }
 
 		SingleFace single_face;
 		cv::Point2i center(box.x + box.width / 2, box.y + box.height / 2);
 		single_face.center = center;
-		// single_face.single_face = selected_face;
-		single_face.cam_dis = depth.getPointDepth(depth_frame, center);
+		// landmarks : 0-3 represent eyes ; 4-5 represent eyes distance
+		single_face.landmarks = landmarks[idx];
+		single_face.landmarks[4] = depth.getPointDepth(depth_frame, Point(landmarks[idx][0], landmarks[idx][1]));
+		single_face.landmarks[5] = depth.getPointDepth(depth_frame, Point(landmarks[idx][2], landmarks[idx][3]));
+		// single_face.cam_dis = depth.getPointDepth(depth_frame, center);
+		int eye_dis = sqrt(pow(eye1.x - eye2.x, 2) + pow(eye1.y - eye2.y, 2));
+		if (eye_dis < box.width / 4)
+		{
+			single_face.cam_dis = depth.getTargetDepth(depth_frame, box, -2);
+		}
+		else
+		{
+			single_face.cam_dis = depth.getTargetDepth(depth_frame, box, -1);
+		}
 		single_face.face_rect = box;
 		single_face.detected = 1;
 		current_faces.push_back(single_face);

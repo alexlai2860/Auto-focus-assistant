@@ -23,6 +23,7 @@ struct Param
     int WAIT_TIME;
     int SPEED;
     int A;
+    bool KALMAN_ON;
     float KALMAN_PROCESS;
     float KALMAN_MEASURE;
     int LENS_NUM;
@@ -42,14 +43,15 @@ struct Param
     int RS_width;
     int RS_height;
     int RS_fps;
-    int width_compensate;
-    int height_compensate;
 
     float DRAW_BOX_MIN;
     float DIS_RATIO_MAX;
     float AREA_RATIO_COEF;
     float POINT_DIS_COEF;
     int LENS_LENGTH;
+    int ROI_LENGTH;
+    int width_compensate;
+    int height_compensate;
 
     string param_path;
 

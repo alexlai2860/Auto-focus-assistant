@@ -11,8 +11,15 @@ FACE_DEQUE: 10
 MOVE_JUDGE: 25
 # 允许的最小框边长
 DRAW_BOX_MIN: 25
-# 视场角(焦段/mm)(大于24会开启视角限缩)
-LENS_LENGTH: 30
+# 视场角(镜头等效焦段/mm)(大于24会开启视角限缩)
+LENS_LENGTH: 55
+# ROI焦距设置(建议大于视场角设置值，必须大于24)
+ROI_LENGTH: 75
+# width补偿量
+width_compensate: 0
+# height补偿量
+height_compensate: 0
+
 
 # ****************对焦逻辑相关*************
 # 掉帧切换目标阈值
@@ -43,9 +50,11 @@ WAIT_TIME: 4
 SPEED: 20
 # 电机加速度(0-255)
 A: 255
+# 距离滤波器开关(关闭后为FASTEST最快模式，开启后可以调整快慢)（0为关闭，1为开启）
+KALMAN_ON: 0
 # 距离滤波:kalman-process
-KALMAN_PROCESS: 0.02
-# 距离滤波:kalman-measure(0.01:FAST/0.02:NORMAL/0.04:SLOW)
+KALMAN_PROCESS: 0.01
+# 距离滤波:kalman-measure(推荐值0.01:FAST/0.02:NORMAL/0.04:SLOW)
 KALMAN_MEASURE: 0.01
 # 镜头代号(1/2/3/4/5，设置为0会进入校准模式)
 LENS_NUM: 2
@@ -57,7 +66,7 @@ AUTO_CAL: 1
 cam_module: 1
 # 是否倒置(0:否/1:是)
 INVERT_ON: 0
-# 是否开启ROI区域(0:否/1:是)
+# 是否开启ROI区域(0:否/1:是)(废弃，默认启用)
 ROI_ON: 0
 # astra 分辨率
 ASTRA_width: 640
@@ -67,7 +76,3 @@ RS_width: 848
 RS_height: 480
 # realsense 帧率(建议在低光照环境下降低帧率，否则面部识别容易受到噪点干扰)
 RS_fps: 30
-# width补偿量
-width_compensate: 40
-# height补偿量
-height_compensate: 20

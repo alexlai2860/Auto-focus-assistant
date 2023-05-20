@@ -19,6 +19,7 @@ class SingleFace
 {
 public:
     cv::Point2f center;
+    vector<int> landmarks;
     cv::Mat single_face;  // 仅用于yunet绘制
     cv::Rect2i face_rect; // 通用
     SingleFace *forward_face = nullptr;
@@ -36,6 +37,7 @@ class SingleObject
 public:
     cv::Point2f center;
     cv::Rect single_face_in_object; // (if possible)
+    vector<int> face_landmarks;      // (if possible)
     cv::Rect single_object_box;
     SingleObject *forward_object = nullptr;
     SingleObject *backward_object = nullptr;

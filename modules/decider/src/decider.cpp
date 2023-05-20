@@ -96,16 +96,25 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         // 掉帧处理/无目标检测
         // situation=0:进入掉帧处理
         this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
-        if (param.DROP_PROCESS_MODE == 1 && param.cam_module == REALSENSE)
+        if (param.DROP_PROCESS_MODE == 1)
         {
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
         }
         else if (param.DROP_PROCESS_MODE == 2)
         {
-            // 较原先的0.3和0.7进行一定的修正
-            cv::Point2i tl(param.RS_width * 0.35, param.RS_height * 0.3);
-            cv::Point2i dr(param.RS_width * 0.65, param.RS_height * 0.7);
-            cv::Rect2i ROI(tl, dr);
+            // 中央对焦区ROI计算
+            float zoom_rate;
+            cv::Rect2i ROI;
+            if ((float)param.ROI_LENGTH > 24.f)
+            {
+                zoom_rate = (float)param.ROI_LENGTH / 24.f;
+                int ROI_height = (float)param.RS_height / zoom_rate;
+                int ROI_width = (float)param.RS_width / zoom_rate;
+                int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+                int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+                cv::Rect2i ROI_cal(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
+                ROI = ROI_cal;
+            }
             cv::rectangle(color, ROI, cv::Scalar(200, 0, 0), 3);
         }
         DIS = __dis->target_dis.back();
@@ -171,8 +180,30 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     {
                         if (delta_dis < 500)
                         {
-                            // 认定为面部距离可靠
-                            dis = face_dis;
+                            // 认定为面部距离可靠，进一步判断眼部距离是否可靠
+                            int eye_dis_1 = __object->target.back().at(i).face_landmarks[4];
+                            int eye_dis_2 = __object->target.back().at(i).face_landmarks[5];
+                            int delta_dis_1 = abs(face_dis - eye_dis_1);
+                            int delta_dis_2 = abs(face_dis - eye_dis_2);
+                            if (delta_dis_1 < 100 && delta_dis_2 < 100)
+                            {
+                                // cv::putText(color, "eyes-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                                dis = MIN(eye_dis_1, eye_dis_2);
+                            }
+                            else if (delta_dis_1 < 100)
+                            {
+                                // cv::putText(color, "eye1-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                                dis = eye_dis_1;
+                            }
+                            else if (delta_dis_2 < 100)
+                            {
+                                // cv::putText(color, "eye2-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                                dis = eye_dis_2;
+                            }
+                            else
+                            {
+                                dis = face_dis;
+                            }
                             cout << "face-dis-valid" << endl;
                         }
                     }
@@ -359,6 +390,7 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
                             {
                                 __object->target.back().at(j).face_dis = current_face_dis;
                                 __object->target.back().at(j).single_face_in_object = current_face_rect;
+                                __object->target.back().at(j).face_landmarks = __face->face.back().at(i).landmarks;
                             }
                             else
                             {
@@ -367,6 +399,7 @@ int decider::situationJudger(int face_situation, int object_situation, detector_
                                 {
                                     __object->target.back().at(j).face_dis = current_face_dis;
                                     __object->target.back().at(j).single_face_in_object = current_face_rect;
+                                    __object->target.back().at(j).face_landmarks = __face->face.back().at(i).landmarks;
                                 }
                             }
                             break;
@@ -1307,15 +1340,36 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
         }
         if (param.cam_module == REALSENSE)
         {
+
+            // 中央对焦区ROI计算
+            float zoom_rate;
+            cv::Rect2i ROI;
+            if ((float)param.ROI_LENGTH > 24.f)
+            {
+                zoom_rate = (float)param.ROI_LENGTH / 24.f;
+                int ROI_height = (float)param.RS_height / zoom_rate;
+                int ROI_width = (float)param.RS_width / zoom_rate;
+                int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+                int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+                cv::Rect2i ROI_cal(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
+                ROI = ROI_cal;
+            }
+
             // 选取1/5 * 1/5中心区域
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
-            int min_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
-            for (int i = 0.3 * img_width + param.width_compensate; i <= 0.7 * img_width + param.width_compensate; i++)
+            int stride = (float)(0.4 * img_height) / (float)20;
+            if (stride == 0)
             {
-                for (int j = 0.3 * img_height + param.height_compensate; j <= 0.7 * img_height + param.height_compensate; j++)
+                stride = 1;
+            }
+            int min_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
+            for (int i = ROI.tl().x; i <= ROI.tl().x + ROI.width; i = i + stride)
+            {
+                for (int j = ROI.tl().y; j <= ROI.tl().y + ROI.height; j = j + stride)
                 {
+
                     // cout << "i:" << i << " j:" << j << endl;
                     current_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(i, j));
                     // cout << "current-dis:" << current_dis << endl;
@@ -1411,7 +1465,7 @@ int decider::disInterPolater(int &dis)
 
 /**
  * @brief 由脉冲反向计算距离
- * 
+ *
  * @param pulse 输入脉冲(0-9999)
  * @return int 输出距离(0-INF)
  */

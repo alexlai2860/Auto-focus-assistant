@@ -23,64 +23,75 @@ Dis::Dis()
 
 int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
 {
-    // select the point
-    int current_dis;
-    if (param.cam_module == ASTRA)
-    {
-        uint16_t dis = d16.at<uint16_t>(int(points.back().y), int(points.back().x));
-        // uint16_t dis = d16.at<uint16_t>(393,232);
-        // cout << "selected_point: " << points.back() << endl;
-        // output and store the distance
-        current_dis = int(dis) * 8000 / 65535;
-    }
-    if (param.cam_module == REALSENSE)
-    {
-        current_dis = rs_dis;
-    }
-
-    // 卡尔曼滤波需要使用t
-    this->t.push_front(cv::getTickCount());
-    if (t.size() > 10)
-    {
-        t.pop_back();
-    }
-
     if (target_dis.size() >= param.DIS_DEQUE)
     {
         target_dis.pop_front();
     }
-    // ERROR process
-    if (current_dis != 0)
-    {
-        if (errorJudge(current_dis))
-        {
-            target_dis.push_back(current_dis);
-            // cout << "error_dis_dize : " << error_dis.size() << endl;
-            this->updateFilter();
-            // cout << "newest_dis : " << target_dis.back() << endl;
 
-            return target_dis.back();
+    if (!param.KALMAN_ON)
+    {
+        cout << "rs-dis" << rs_dis << endl;
+        target_dis.push_back(rs_dis);
+        return rs_dis;
+    }
+    else
+    {
+        // select the point
+        int current_dis;
+        if (param.cam_module == ASTRA)
+        {
+            uint16_t dis = d16.at<uint16_t>(int(points.back().y), int(points.back().x));
+            // uint16_t dis = d16.at<uint16_t>(393,232);
+            // cout << "selected_point: " << points.back() << endl;
+            // output and store the distance
+            current_dis = int(dis) * 8000 / 65535;
+        }
+        if (param.cam_module == REALSENSE)
+        {
+            current_dis = rs_dis;
+        }
+
+        // 卡尔曼滤波需要使用t
+        this->t.push_front(cv::getTickCount());
+        if (t.size() > 10)
+        {
+            t.pop_back();
+        }
+
+        // ERROR process
+        if (current_dis != 0)
+        {
+            if (errorJudge(current_dis))
+            {
+                target_dis.push_back(current_dis);
+                // cout << "error_dis_dize : " << error_dis.size() << endl;
+                this->updateFilter();
+                // cout << "newest_dis : " << target_dis.back() << endl;
+
+                return target_dis.back();
+            }
+            else if (!target_dis.empty())
+            {
+                target_dis.push_back(target_dis.back());
+                this->updateFilter();
+                return target_dis.back();
+            }
         }
         else if (!target_dis.empty())
         {
             target_dis.push_back(target_dis.back());
             this->updateFilter();
+            // cout << "dis : " << this->target_dis.back() << " (currection) " << endl;
             return target_dis.back();
         }
+        else
+        {
+            target_dis.push_back(1000);
+            cout << "OUT OF DETECT LIMIT" << endl;
+            return -1;
+        }
     }
-    else if (!target_dis.empty())
-    {
-        target_dis.push_back(target_dis.back());
-        this->updateFilter();
-        // cout << "dis : " << this->target_dis.back() << " (currection) " << endl;
-        return target_dis.back();
-    }
-    else
-    {
-        target_dis.push_back(1000);
-        cout << "OUT OF DETECT LIMIT" << endl;
-        return -1;
-    }
+
     return 0;
 }
 

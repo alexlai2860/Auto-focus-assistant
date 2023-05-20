@@ -84,6 +84,11 @@ bool ObjectLight::drawBox(cv::Mat &color_frame, cv::Mat &depth_frame)
             {
                 cv::Rect2i face_box = object_vector.at(i).single_face_in_object;
                 rectangle(color_frame, face_box.tl(), cv::Point2i(face_box.x + face_box.width, face_box.y + face_box.height), Scalar(0, 255, 255), 3);
+
+                for (int k = 0; k < 4; k += 2)
+                {
+                    cv::circle(color_frame, Point(object_vector.at(i).face_landmarks[k], object_vector.at(i).face_landmarks[k + 1]), 2, Scalar(0, 255, 0), -1);
+                }
             }
 
             cout << "draw-objects-vector-" << i << ":" << target_box << endl;

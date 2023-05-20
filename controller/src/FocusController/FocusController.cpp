@@ -177,7 +177,7 @@ void FocusController::rsProcessFrame(int64 &t0)
     // __face = make_shared<Body>();  // 借指针一用
     __object = make_shared<ObjectLight>();
 
-    // ROI计算
+    // 总体识别区ROI计算
     float zoom_rate;
     cv::Rect2i ROI;
     if ((float)param.LENS_LENGTH > 24.f)
@@ -294,9 +294,9 @@ void FocusController::rsProcessFrame(int64 &t0)
         cv::putText(color, current_position, cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         cv::putText(color, current_command, cv::Point2i(15, 140), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
-        if(command == -3 || command == -4)
+        if (command == -3 || command == -4)
         {
-            if(!MF_trigger)
+            if (!MF_trigger)
             {
                 MF_trigger = 1;
             }
@@ -380,7 +380,15 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 if (position > (MF_init_result + 10) || position < (MF_init_result - 10))
                 {
-                    __motor->write(__decider->disInterPolater(position), 0);
+                    if (position > 500)
+                    {
+                        __motor->write(__decider->disInterPolater(position), 0);
+                    }
+                    else
+                    {
+                        int currected_position = 500 - (500 - position) / 10;
+                        __motor->write(__decider->disInterPolater(currected_position), 0);
+                    }
                 }
             }
             depthReProjection(depth, DIS, position);
@@ -392,7 +400,10 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 if (position > (MF_init_result + 10) || position < (MF_init_result - 10))
                 {
-                    __motor->write(position, 0);
+                    if (position > 500)
+                    {
+                        __motor->write(position, 0);
+                    }
                 }
             }
             depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
