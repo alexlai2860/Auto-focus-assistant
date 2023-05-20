@@ -27,7 +27,7 @@ public:
 
     bool init(string modelpath, float objThreshold, float confThreshold, float nmsThreshold);
     bool detect(cv::Mat &srcimg, const cv::Mat &depth_frame);
-    bool insideROI(cv::Point2f &);
+    bool insideROI(cv::Point2f &, cv::Rect2i &);
     void simpleNMS(vector<SingleObject> &);
     void drawPred(cv::Mat &frame, const cv::Mat &depth_frame);
     void drawSinglePred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat &frame, const cv::Mat &depth_frame);

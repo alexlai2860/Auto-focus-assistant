@@ -105,9 +105,9 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             // 中央对焦区ROI计算
             float zoom_rate;
             cv::Rect2i ROI;
-            if ((float)param.ROI_LENGTH > 24.f)
+            if ((float)param.ROI_LENGTH > 26.f)
             {
-                zoom_rate = (float)param.ROI_LENGTH / 24.f;
+                zoom_rate = (float)param.ROI_LENGTH / 26.f;
                 int ROI_height = (float)param.RS_height / zoom_rate;
                 int ROI_width = (float)param.RS_width / zoom_rate;
                 int ROI_tl_x = (param.RS_width - ROI_width) / 2;
@@ -1340,15 +1340,15 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
         }
         if (param.cam_module == REALSENSE)
         {
-
             // 中央对焦区ROI计算
             float zoom_rate;
             cv::Rect2i ROI;
-            if ((float)param.ROI_LENGTH > 24.f)
+            if ((float)param.ROI_LENGTH > 26.f)
             {
-                zoom_rate = (float)param.ROI_LENGTH / 24.f;
+                zoom_rate = (float)param.ROI_LENGTH / 26.f;
                 int ROI_height = (float)param.RS_height / zoom_rate;
                 int ROI_width = (float)param.RS_width / zoom_rate;
+                cout << "ROI-W" << ROI_width << endl;
                 int ROI_tl_x = (param.RS_width - ROI_width) / 2;
                 int ROI_tl_y = (param.RS_height - ROI_height) / 2;
                 cv::Rect2i ROI_cal(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
@@ -1359,7 +1359,7 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
-            int stride = (float)(0.4 * img_height) / (float)20;
+            int stride = (float)(0.4 * img_height) / (float)25;
             if (stride == 0)
             {
                 stride = 1;
@@ -1369,7 +1369,6 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
             {
                 for (int j = ROI.tl().y; j <= ROI.tl().y + ROI.height; j = j + stride)
                 {
-
                     // cout << "i:" << i << " j:" << j << endl;
                     current_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(i, j));
                     // cout << "current-dis:" << current_dis << endl;

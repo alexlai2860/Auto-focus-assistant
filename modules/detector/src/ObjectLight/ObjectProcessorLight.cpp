@@ -202,20 +202,44 @@ void yolo_fast::drawSinglePred(int classId, float conf, int left, int top, int r
  * @return true
  * @return false
  */
-bool yolo_fast::insideROI(cv::Point2f &center)
+bool yolo_fast::insideROI(cv::Point2f &center, cv::Rect2i &box)
 {
-    if ((float)param.LENS_LENGTH > 24.f)
+    if ((float)param.LENS_LENGTH > 26.f)
     {
         float zoom_rate;
-        zoom_rate = (float)param.LENS_LENGTH / 24.f;
+        zoom_rate = (float)param.LENS_LENGTH / 26.f;
         int ROI_height = (float)param.RS_height / zoom_rate;
         int ROI_width = (float)param.RS_width / zoom_rate;
         int ROI_tl_x = (param.RS_width - ROI_width) / 2;
         int ROI_tl_y = (param.RS_height - ROI_height) / 2;
-        cv::Rect2i ROI(ROI_tl_x, ROI_tl_y, ROI_width, ROI_height);
+        cv::Rect2i ROI(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
         if (ROI.contains(center))
         {
             return 1;
+        }
+        else
+        {
+            // 用NMS的思路，判断重叠面积
+            cv::Rect2i object_i = ROI;
+            cv::Rect2i object_j = box;
+            float left = std::max(object_i.x, object_j.x);
+            float right = std::min(object_i.x + object_i.width, object_j.x + object_j.width);
+            float top = std::max(object_i.y, object_j.y);
+            float bottom = std::min(object_i.y + object_i.height, object_j.y + object_j.height);
+            float width = std::max(right - left + 1, 0.f);
+            float height = std::max(bottom - top + 1, 0.f);
+            float u_area = height * width;
+            // float iou = (u_area) / (area[i] + area[j] - u_area);
+            // cout << "IOU-1" << iou << endl;
+            float overlap_rate = (u_area) / (float)(object_i.area());
+            if (overlap_rate > 0.2f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
         return 0;
     }
@@ -293,7 +317,7 @@ bool yolo_fast::detect(Mat &frame, const cv::Mat &depth_frame)
                                 cout << "half-done" << endl;
                                 single_object.center = cv::Point2i(left + (int)(w * ratiow) / 2, top + (int)(h * ratioh) / 2);
                                 single_object.detected = 1;
-                                if (insideROI(single_object.center))
+                                if (insideROI(single_object.center, single_object.single_object_box))
                                 {
                                     current_objects.push_back(single_object);
                                     cout << "new-box-added:" << current_objects.size() << endl;

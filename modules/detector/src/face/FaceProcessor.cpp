@@ -203,21 +203,30 @@ bool Face::isValidFace(cv::Mat &faces, int i)
     // 筛除面积过大/面积过小/处于ROI区域外的faces
     int frame_area = param.RS_height * param.RS_width;
     cv::Point2f center(faces.at<float>(i, 0) + faces.at<float>(i, 2) / 2, faces.at<float>(i, 1) + faces.at<float>(i, 3) / 2);
-    float zoom_rate = (float)param.LENS_LENGTH / 24.f;
-    cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
+    
+    float zoom_rate = 1;
+    cv::Rect2i ROI;
+    if ((float)param.LENS_LENGTH > 26.f)
+    {
+        zoom_rate = (float)param.LENS_LENGTH / 26.f;
+        int ROI_height = (float)param.RS_height / zoom_rate;
+        int ROI_width = (float)param.RS_width / zoom_rate;
+        int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+        int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+        cv::Rect2i ROI_cal(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
+        ROI = ROI_cal;
+    }
+    // float zoom_rate = (float)param.LENS_LENGTH / 26.f;
+    // cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
     cv::Rect2i face_box(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)),
                         int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3)));
-    int border_x = (param.RS_width - ROI.x) / 2;
-    int border_y = (param.RS_height - ROI.y) / 2;
+    // int border_x = (param.RS_width - ROI.x) / 2;
+    // int border_y = (param.RS_height - ROI.y) / 2;
     if (int(faces.at<float>(i, 2)) * int(faces.at<float>(i, 3)) > 0.25 * frame_area)
     {
         return 0;
     }
-    else if (center.x < param.RS_width - border_x - ROI.x || center.x > param.RS_width - border_x)
-    {
-        return 0;
-    }
-    else if (center.y < param.RS_height - border_y - ROI.y || center.y > param.RS_height - border_y)
+    else if (!ROI.contains(center))
     {
         return 0;
     }

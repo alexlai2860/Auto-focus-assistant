@@ -30,8 +30,36 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
 
     if (!param.KALMAN_ON)
     {
-        cout << "rs-dis" << rs_dis << endl;
-        target_dis.push_back(rs_dis);
+        if (target_dis.size() > 5)
+        {
+            if (rs_dis != 0)
+            {
+                cout << "rs-dis" << rs_dis << endl;
+                if (errorJudge(rs_dis))
+                {
+                    target_dis.push_back(rs_dis);
+                }
+                else
+                {
+                    target_dis.push_back(target_dis.back());
+                }
+            }
+            else
+            {
+                target_dis.push_back(target_dis.back());
+            }
+        }
+        else
+        {
+            if (rs_dis != 0)
+            {
+                target_dis.push_back(rs_dis);
+            }
+            else
+            {
+                target_dis.push_back(1000);
+            }
+        }
         return rs_dis;
     }
     else

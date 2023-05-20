@@ -275,16 +275,20 @@ bool SCRFD::detect(Mat &frame, Mat &depth_frame)
 		}
 		single_face.face_rect = box;
 		single_face.detected = 1;
-		current_faces.push_back(single_face);
 
-		// Get the label for the class name and its confidence
-		string label = format("%.2f", confidences[idx]);
-		// Display the label at the top of the bounding box
-		int baseLine;
-		Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
-		int top = max(box.y, labelSize.height);
-		// rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
-		cv::putText(frame, label, Point(box.x, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 255, 0), 1);
+		if (isValidFace(single_face))
+		{
+			current_faces.push_back(single_face);
+		}
+
+		// // Get the label for the class name and its confidence
+		// string label = format("%.2f", confidences[idx]);
+		// // Display the label at the top of the bounding box
+		// int baseLine;
+		// Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+		// int top = max(box.y, labelSize.height);
+		// // rectangle(frame, Point(left, top - int(1.5 * labelSize.height)), Point(left + int(1.5 * labelSize.width), top + baseLine), Scalar(0, 255, 0), FILLED);
+		// cv::putText(frame, label, Point(box.x, top), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 255, 0), 1);
 	}
 	this->scrfd_face.push_back(current_faces);
 	return 1;
@@ -303,20 +307,29 @@ bool SCRFD::isValidFace(SingleFace single_face)
 	// 筛除面积过大/面积过小/处于ROI区域外的faces
 	int frame_area = param.RS_height * param.RS_width;
 	cv::Point2f center = single_face.center;
-	float zoom_rate = (float)param.LENS_LENGTH / 24.f;
-	cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
+
+	float zoom_rate = 1;
+    cv::Rect2i ROI;
+    if ((float)param.LENS_LENGTH > 26.f)
+    {
+        zoom_rate = (float)param.LENS_LENGTH / 26.f;
+        int ROI_height = (float)param.RS_height / zoom_rate;
+        int ROI_width = (float)param.RS_width / zoom_rate;
+        int ROI_tl_x = (param.RS_width - ROI_width) / 2;
+        int ROI_tl_y = (param.RS_height - ROI_height) / 2;
+        cv::Rect2i ROI_cal(ROI_tl_x + param.width_compensate, ROI_tl_y + param.height_compensate, ROI_width, ROI_height);
+        ROI = ROI_cal;
+    }
+	// float zoom_rate = (float)param.LENS_LENGTH / 26.f;
+	// cv::Point2i ROI(param.RS_width / zoom_rate, param.RS_height / zoom_rate);
 	cv::Rect2i face_box = single_face.face_rect;
-	int border_x = (param.RS_width - ROI.x) / 2;
-	int border_y = (param.RS_height - ROI.y) / 2;
+	// int border_x = (param.RS_width - ROI.x) / 2;
+	// int border_y = (param.RS_height - ROI.y) / 2;
 	if (face_box.area() > 0.25 * frame_area)
 	{
 		return 0;
 	}
-	else if (center.x < param.RS_width - border_x - ROI.x || center.x > param.RS_width - border_x)
-	{
-		return 0;
-	}
-	else if (center.y < param.RS_height - border_y - ROI.y || center.y > param.RS_height - border_y)
+	else if (!ROI.contains(center))
 	{
 		return 0;
 	}
