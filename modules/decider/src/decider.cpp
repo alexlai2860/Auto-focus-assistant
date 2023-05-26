@@ -93,9 +93,11 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     {
     case 0:
     {
+        // cv::putText(color, "case-0", cv::Point2i(300, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         // 掉帧处理/无目标检测
         // situation=0:进入掉帧处理
-        this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
+        int dis = this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
+        // cv::putText(color, cv::format("%d", dis), cv::Point2i(300, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         if (param.DROP_PROCESS_MODE == 1)
         {
             cv::circle(color, cv::Point2f(param.RS_width / 2, param.RS_height / 2), 4, cv::Scalar(0, 0, 255), 5); // 用红色圆点表示对焦位置
@@ -124,6 +126,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     }
     case 1:
     {
+        cv::putText(color, "case-1", cv::Point2i(300, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         if (param.cam_module == REALSENSE)
         {
             DIS = 25000;  // 目标距离限制
@@ -161,6 +164,13 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             {
                 if (__object->target.back().at(i).init_trigger == -1)
                 {
+                    // 新增:更新距离,使控制频率理论值翻倍
+                    string target_position = "drop-count:" + cv::format("%d", __object->target.back().at(i).drop_count);
+                    cv::putText(color, target_position, cv::Point2i(300, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+                    if (__object->target.back().at(i).drop_count <= 1)
+                    {
+                        __object->depth.updateDis(d16, __object->target.back().at(i));
+                    }
                     cout << "deciding-target-back-" << i << endl;
                     cout << "target-back-size-" << __object->target.back().size() << endl;
                     // 先求出目标的dis
@@ -178,7 +188,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     int delta_dis = abs(face_dis - target_dis);
                     if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
                     {
-                        if (delta_dis < 500)
+                        if (delta_dis < 400)
                         {
                             // 认定为面部距离可靠，进一步判断眼部距离是否可靠
                             int eye_dis_1 = __object->target.back().at(i).face_landmarks[4];
@@ -248,8 +258,16 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                         {
                             // 锁定目标
                             cv::putText(color, "tracking", cv::Point2i(15, 160), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                            __object->target_label = last_label;
-                            DIS = __object->target.back().at(__object->target_label).cam_dis;
+                            if (i == __object->target_label)
+                            {
+                                // __object->target_label = last_label;
+                                // DIS = __object->target.back().at(__object->target_label).cam_dis;
+                                DIS = current_dis;
+                            }
+                            else
+                            {
+                                continue;
+                            }
                         }
                         else
                         {
@@ -279,6 +297,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         }
         else
         {
+            // 非REALSENSE情况
             deque<cv::Point2f> empty;
             DIS = __dis->disCalculate(1, d16, empty);
             break;
@@ -1301,7 +1320,7 @@ bool decider::isSameObject(SingleObject &last_object, SingleObject &current_obje
  * @param dis
  * @param d16
  */
-void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__reader)
+int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__reader)
 {
     cout << "mode : " << mode << endl;
     switch (mode)
@@ -1325,6 +1344,7 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
             cout << "CENTER_DIS:" << center_dis << endl;
             __dis->disCalculate(center_dis, d16, points);
         }
+        return 0;
         break;
     }
     // 中心重点区域对焦
@@ -1359,7 +1379,7 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
-            int stride = (float)(0.4 * img_height) / (float)25;
+            int stride = (float)(ROI.width) / (float)25;
             if (stride == 0)
             {
                 stride = 1;
@@ -1378,14 +1398,18 @@ void decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__
                     }
                 }
             }
+
             cout << "MIN-DIS: " << min_dis << endl;
-            __dis->disCalculate(min_dis, d16, points);
+            // cv::waitKey(300);
+            int dis2 = __dis->disCalculate(min_dis, d16, points);
+            return dis2;
         }
         break;
     }
     default:
         break;
     }
+    return 0;
 }
 
 /**

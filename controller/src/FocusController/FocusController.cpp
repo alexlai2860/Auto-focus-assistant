@@ -154,6 +154,85 @@ void FocusController::colorDepthMix(cv::Mat &reprojected_depth, cv::Mat &color)
 }
 
 /**
+ * @brief 拉格朗日插值计算
+ *
+ * @param dis
+ * @param n
+ * @return float
+ */
+float FocusController::lagrange(float dis, int n, int flag)
+{
+    float yResult = 0.0;
+    if (dis > 500)
+    {
+        // 参数载入
+        float arrX[8] = {
+            500.f,
+            1500.f,
+            2500.f,
+            4000.f,
+            6000.f,
+            8000.f,
+            25000.f};
+        float arrY[8] = {
+            float(lens_param.A),
+            float(lens_param.B),
+            float(lens_param.C),
+            float(lens_param.D),
+            float(lens_param.E),
+            float(lens_param.F),
+            float(lens_param.G)};
+
+        if (flag != 0)
+        {
+            // 反向求解
+            float temp[n];
+            for (int i = 0; i < 7; i++)
+            {
+                temp[i] = arrX[i];
+                arrX[i] = arrY[i];
+                arrY[i] = temp[i];
+            }
+        }
+        const int N = 10;
+        // LValue[N]存放的是每次求解的插值基函数的通项
+        float LValue[N];
+        // 循环变量k,m
+        int k, m;
+        // 插值基函数中的上下累乘temp1,temp2
+        float temp1, temp2;
+
+        for (k = 0; k < n; k++)
+        {
+            temp1 = 1.0; // 分子和分母不能为0，所以初始化为1.0
+            temp2 = 1.0;
+            for (m = 0; m < n; m++)
+            {
+                if (m == k)
+                {
+                    continue;
+                }
+                temp1 *= (dis - arrX[m]);     // 插值公式的分子部分。(x-x1)(x-x2)
+                temp2 *= (arrX[k] - arrX[m]); // 插值公式的分母部分(x0-x1)(x1-x2)
+            }
+
+            LValue[k] = temp1 / temp2; // 求出的一个分式
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            yResult += arrY[i] * LValue[i]; // 求出和
+        }
+    }
+    else
+    {
+        return lens_param.A;
+    }
+
+    return yResult;
+}
+
+/**
  * @brief Realsense相机 帧处理函数
  *
  * @param face
@@ -338,11 +417,11 @@ void FocusController::rsProcessFrame(int64 &t0)
         int64 t3 = cv::getTickCount();
         // 简易追踪器 & 掉帧/对焦策略处理器 & 距离解算器
 
-        if (forced_drop_trigger && !MF_trigger)
+        if (!forced_drop_trigger && !MF_trigger)
         {
             // 中心区域对焦(触发强制掉帧)
             cv::putText(color, "center mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-            DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, 0, 3, position);
+            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, 0, 3, position);
         }
         else
         {
@@ -351,8 +430,10 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 cv::putText(color, "AI mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             }
-            DIS = __decider->decide(d16, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
+            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
         }
+        cv::putText(color, cv::format("%d",DIS), cv::Point2i(200, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
+
 
         float run_time2 = 1000 * ((cv::getTickCount() - t3) / cv::getTickFrequency());
         cout << "run time decide = " << run_time2 << " ms" << endl;
@@ -364,7 +445,8 @@ void FocusController::rsProcessFrame(int64 &t0)
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
 
         // 计算目标脉冲值-方案二:使用插值法
-        int target_pulse = __decider->disInterPolater(DIS);
+        // int target_pulse = __decider->disInterPolater(DIS);
+        int target_pulse = this->lagrange(DIS, 7, 0);
         last_target_pulse = target_pulse;
         string target_position = "target-pos:" + cv::format("%d", last_target_pulse);
         cv::putText(color, target_position, cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);

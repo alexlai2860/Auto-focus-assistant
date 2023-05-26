@@ -12,9 +12,9 @@ MOVE_JUDGE: 25
 # 允许的最小框边长
 DRAW_BOX_MIN: 25
 # 视场角(镜头等效焦段/mm)(必须大于26)(建议设成略小于镜头焦段的值，以提升系统感知能力)
-LENS_LENGTH: 75
+LENS_LENGTH: 55
 # ROI焦距设置(建议大于视场角设置值，必须大于26)
-ROI_LENGTH: 90
+ROI_LENGTH: 75
 # width补偿量
 width_compensate: 20
 # height补偿量
@@ -46,9 +46,9 @@ POINT_DIS_COEF: 1.25
 # ****************电机控制相关*************
 # 读取指令waitkey时间(ms)
 WAIT_TIME: 4
-# 电机速度(0-255)
+# 电机速度(0-255)(废弃)
 SPEED: 20
-# 电机加速度(0-255)
+# 电机加速度(0-255)(废弃)
 A: 255
 # 距离滤波器开关(关闭后为FASTEST最快模式，开启后可以调整快慢)（0为关闭，1为开启）
 KALMAN_ON: 0

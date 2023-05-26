@@ -30,37 +30,22 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
 
     if (!param.KALMAN_ON)
     {
-        if (target_dis.size() > 5)
+        if (rs_dis != 0)
         {
-            if (rs_dis != 0)
-            {
-                cout << "rs-dis" << rs_dis << endl;
-                if (errorJudge(rs_dis))
-                {
-                    target_dis.push_back(rs_dis);
-                }
-                else
-                {
-                    target_dis.push_back(target_dis.back());
-                }
-            }
-            else
-            {
-                target_dis.push_back(target_dis.back());
-            }
+            target_dis.push_back(rs_dis);
         }
         else
         {
-            if (rs_dis != 0)
+            if (!target_dis.empty())
             {
-                target_dis.push_back(rs_dis);
+                target_dis.push_back(target_dis.back());
             }
             else
             {
                 target_dis.push_back(1000);
             }
         }
-        return rs_dis;
+        return target_dis.back();
     }
     else
     {
@@ -172,7 +157,7 @@ bool Dis::errorJudge(int current_dis)
     if (target_dis.size() > 1)
     {
         // cout << "avg_dis : " << avg_dis << endl;
-        // 比较平均值和当前值，若偏差过大（默认为0.25倍的平均值）认为出现错误
+        // 比较前一帧值和当前值，若偏差过大（默认为0.25倍的前一帧值）认为出现错误
         if (abs(target_dis.at(target_dis.size() - 1) - current_dis) > target_dis.at(target_dis.size() - 1) * 0.25)
         {
             // cout << abs(avg_dis - current_dis) << endl;

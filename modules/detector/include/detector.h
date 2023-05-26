@@ -37,7 +37,7 @@ class SingleObject
 public:
     cv::Point2f center;
     cv::Rect single_face_in_object; // (if possible)
-    vector<int> face_landmarks;      // (if possible)
+    vector<int> face_landmarks;     // (if possible)
     cv::Rect single_object_box;
     SingleObject *forward_object = nullptr;
     SingleObject *backward_object = nullptr;
@@ -58,14 +58,16 @@ class Depth
 public:
     int getPointDepth(const cv::Mat &, const cv::Point2i &);
     int getTargetDepth(const cv::Mat &, const cv::Rect2i &, const int type);
+    void updateDis(cv::Mat &depth_frame, SingleObject & object);
 };
 
 class Detector
 {
 protected:
-    Depth depth;
 
 public:
+    Depth depth;
+
     bool draw_face_box = 0;
     bool draw_object_box = 0;
     bool draw_human_box = 0;
@@ -79,11 +81,13 @@ public:
 
     virtual bool detect(cv::Mat &, cv::Mat &) = 0;
     virtual bool drawBox(cv::Mat &, cv::Mat &) = 0;
+
     inline bool isValideFace() { return draw_face_box; }
     inline bool isValideObject() { return draw_object_box; }
     inline float getPointDis(const cv::Point2f &pt_1, const cv::Point2f &pt_2)
     {
         return sqrt(pow(pt_1.x - pt_2.x, 2) + pow(pt_1.y - pt_2.y, 2));
     }
+
 };
 using detector_ptr = shared_ptr<Detector>;

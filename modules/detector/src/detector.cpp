@@ -40,11 +40,14 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
         cv::Rect2i center_rect(point.x - half_lenght, point.y - half_lenght, length, length);
         for (int y = center_rect.y; y < center_rect.y + center_rect.height; y++)
         {
+            // cout << "y" << y << endl;
             const uint16_t *data_y = depth_frame.ptr<uint16_t>(y);
             for (int x = center_rect.x; x < center_rect.x + center_rect.width; x++)
             {
+                // cout << "x" << x << endl;
                 if (x > 0 && y > 0)
                 {
+                    // cout << "dis" << data_y[x] << endl;
                     // int dis = depth_frame.at<uint16_t>(y, x);
                     int dis = data_y[x];
                     if (dis < min_dis)
@@ -146,6 +149,7 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     location = depth_deque.size() / 2;
     if (type == 0)
     {
+        // 0定义为人体识别框
         // 此时背景面积较大，倾向于选择较近的点
         location = depth_deque.size() / 7;
     }
@@ -164,4 +168,65 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     return depth_deque.at(location);
     // int temp_depth = getPointDepth(depth_frame, center);
     // return temp_depth;
+}
+
+/**
+ * @brief 距离刷新函数
+ *
+ * @param depth_frame
+ * @param object
+ */
+void Depth::updateDis(cv::Mat &depth_frame, SingleObject &object)
+{
+    if (object.single_face_in_object.empty())
+    {
+        int new_dis = this->getTargetDepth(depth_frame, object.single_object_box, 0);
+        if (abs(new_dis - object.cam_dis) < 400)
+        {
+            object.cam_dis = new_dis;
+        }
+    }
+    else
+    {
+        cv::Point2i eye1(object.face_landmarks[0], object.face_landmarks[1]);
+        cv::Point2i eye2(object.face_landmarks[2], object.face_landmarks[3]);
+        int new_dis_1 = this->getTargetDepth(depth_frame, object.single_object_box, 0);
+        int eye_dis_1 = this->getPointDepth(depth_frame, eye1);
+        int eye_dis_2 = this->getPointDepth(depth_frame, eye2);
+        int face_dis;
+        int eye_dis = sqrt(pow(eye1.x - eye2.x, 2) + pow(eye1.y - eye2.y, 2));
+        if (eye_dis < object.single_object_box.width / 4)
+        {
+            face_dis = this->getTargetDepth(depth_frame, object.single_face_in_object, -2);
+        }
+        else
+        {
+            face_dis = this->getTargetDepth(depth_frame, object.single_face_in_object, -1);
+        }
+        // 判断可靠性(对快速运动目标可能失效)
+        if (abs(new_dis_1 - object.cam_dis) < 400.f)
+        {
+            // string target_position = "delta-1:" + cv::format("%d", abs(new_dis_1 - object.cam_dis));
+            // cv::putText(depth_frame, target_position, cv::Point2i(15, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+            object.cam_dis = new_dis_1;
+        }
+        if (abs(eye_dis_1 - object.face_landmarks[4]) < 300.f)
+        {
+            // string target_position = "delta-2:" + cv::format("%d", abs(eye_dis_1 - object.face_landmarks[4]));
+            // cv::putText(depth_frame, target_position, cv::Point2i(15, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+            object.face_landmarks[4] = eye_dis_1;
+        }
+        if (abs(eye_dis_2 - object.face_landmarks[4]) < 300.f)
+        {
+            // string target_position = "delta-3:" + cv::format("%d", abs(eye_dis_2 - object.face_landmarks[4]));
+            // cv::putText(depth_frame, target_position, cv::Point2i(15, 120), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+            object.face_landmarks[4] = eye_dis_2;
+        }
+        if (abs(face_dis - object.face_dis) < 400.f)
+        {
+            // string target_position = "delta-4:" + cv::format("%d", abs(face_dis - object.face_dis));
+            // cv::putText(depth_frame, target_position, cv::Point2i(15, 150), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+            object.face_dis = face_dis;
+        }
+    }
 }

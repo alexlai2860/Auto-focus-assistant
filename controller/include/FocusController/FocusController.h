@@ -40,6 +40,7 @@ protected:
     void depthReProjection(cv::Mat &depth, int, int);
     void colorDepthMix(cv::Mat &depth, cv::Mat &color);
     void handUnitController();
+    float lagrange(float t, int n, int flag);
 
 public:
     int init(int64 &, int) override;
