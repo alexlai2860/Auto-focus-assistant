@@ -4,9 +4,25 @@
 
 #### this is a system using a depth camera to detect objects and control a follow focus motor, aiming to drive the focus ring and achieve auto focus.<br>
 
-#### 本项目基于GPL3.0协议开源，依据协议要求，后续基于此代码的项目需保持GPL3.0开源<br>
-#### 代码主要内容包括：英特尔RealSense相机数据读取  &  铁头原力N马达和手柄通信协议解析  &  多种目标检测网络部署  &  简易追踪逻辑和模式切换  &  便于拓展的代码框架搭建 & 基于拉格朗日插值的对焦曲线计算 & 支持多镜头(默认5支，可自行按需添加)的校准和数据写入 & 简易对焦UI绘制<br>
-#### 希望能以我微薄的力量，推动影视工业化和智能化发展<br>
+### **preface/前言**
+
+##### 本项目基于GPL3.0协议开源，依据协议要求，后续基于此代码的项目需保持GPL3.0开源<br>
+##### 代码主要内容包括：
+- 英特尔RealSense相机数据读取和参数设置
+- 铁头原力N马达和手柄通信协议解析
+- 多种目标检测网络部署
+- 简易追踪逻辑和模式切换
+- 便于拓展的代码框架搭建
+- 基于拉格朗日插值的对焦曲线计算
+- 支持多镜头(默认5支，可自行按需添加)的校准和数据写入
+- 简易对焦UI绘制<br>
+##### 希望能以我微薄的力量，推动影视工业化和智能化发展<br>
+
+### **project introduction/项目介绍**
+##### 英文版项目介绍，截取自个人作品集（对比部分可能不严谨哈各位轻喷）
+![5](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/b766791b-7a17-43dc-b47d-e891f787f9be)
+![6](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/b9f0e13f-10d6-4984-8c4b-ce46924f2e43)
+
 
 ### **background/研究背景**
 近年来，随着个人Vlog和短视频的兴起，视频拍摄的门槛越来越低，用户对于摄影机性能的要求也越来越高<br>
