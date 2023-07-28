@@ -28,6 +28,7 @@ protected:
     int detect_count;
     map<int, int> face_dropcount;
     map<int, int> object_dropcount;
+    std::deque<int> current_dis_deque;
     const int detect_rate = 30 / param.FPS;
     const string logicFile = "../param/logic.names";
     std::vector<string> logic;

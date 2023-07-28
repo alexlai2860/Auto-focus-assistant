@@ -226,7 +226,24 @@ float FocusController::lagrange(float dis, int n, int flag)
     }
     else
     {
-        return lens_param.A;
+        int closest_pulse;
+        if ((lens_param.B - lens_param.A) < 0)
+        {
+            closest_pulse = 9990;
+        }
+        else
+        {
+            closest_pulse = 0;
+        }
+        if (dis > lens_param.INIT_DIS)
+        {
+            int target_pulse = closest_pulse + (lens_param.A - closest_pulse) * (dis - lens_param.INIT_DIS) / (500 - lens_param.INIT_DIS);
+            return target_pulse;
+        }
+        else
+        {
+            return closest_pulse;
+        }
     }
 
     return yResult;
@@ -432,8 +449,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             }
             DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
         }
-        cv::putText(color, cv::format("%d",DIS), cv::Point2i(200, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-
+        cv::putText(color, cv::format("%d", DIS), cv::Point2i(260, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         float run_time2 = 1000 * ((cv::getTickCount() - t3) / cv::getTickFrequency());
         cout << "run time decide = " << run_time2 << " ms" << endl;
@@ -465,13 +481,15 @@ void FocusController::rsProcessFrame(int64 &t0)
                     if (position > 500)
                     {
                         __motor->write(__decider->disInterPolater(position), 0);
+                        __motor->write(this->lagrange(position, 7, 0), 0);
                     }
                     else
                     {
                         // test stratage
                         int position = 501;
                         int currected_position = 500 - ((500 - position) / 10);
-                        __motor->write(__decider->disInterPolater(position) - (500 - position), 0);
+                        // __motor->write(__decider->disInterPolater(position) - (500 - position), 0);
+                        __motor->write(this->lagrange(position, 7, 0), 0);
                     }
                 }
             }

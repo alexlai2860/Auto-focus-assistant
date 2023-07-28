@@ -73,7 +73,7 @@ struct SendData5
     // extreme_left:010606000000F3
     // uint8_t command[15] = ":010600010001F7";
     uint8_t start = ':';              // 起始位(:)
-    uint8_t model[2] = {'0', '1'};    // 电机序号(01)
+    uint8_t model[2] = {'0', '1'};    // 电机序号(01)(怪)
     uint8_t command[2] = {'0', '6'};  // 指令flag(默认对焦)
     uint8_t param_h[2] = {'0', '6'};  // 参数h
     uint8_t param_l[2] = {'0', '0'};  // 参数l

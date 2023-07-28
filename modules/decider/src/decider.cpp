@@ -167,7 +167,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     // 新增:更新距离,使控制频率理论值翻倍
                     string target_position = "drop-count:" + cv::format("%d", __object->target.back().at(i).drop_count);
                     cv::putText(color, target_position, cv::Point2i(300, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-                    if (__object->target.back().at(i).drop_count <= 1)
+                    if (__object->target.back().at(i).drop_count == 0)
                     {
                         __object->depth.updateDis(d16, __object->target.back().at(i));
                     }
@@ -256,6 +256,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                         }
                         else if (__object->target.back().size() > last_label)
                         {
+                            // 最好修改此处逻辑（掉帧自动顺延目标），目前加入补丁防止距离突变
                             // 锁定目标
                             cv::putText(color, "tracking", cv::Point2i(15, 160), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
                             if (i == __object->target_label)
@@ -263,6 +264,28 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                                 // __object->target_label = last_label;
                                 // DIS = __object->target.back().at(__object->target_label).cam_dis;
                                 DIS = current_dis;
+
+                                // 补丁，防止距离突变
+                                if (!this->current_dis_deque.empty())
+                                {
+                                    if (DIS > 1.35 * current_dis_deque.back() || DIS < 0.75 * current_dis_deque.back())
+                                    {
+                                        DIS = current_dis_deque.back();
+                                    }
+                                    else
+                                    {
+                                        current_dis_deque.push_back(DIS);
+                                    }
+
+                                    if (this->current_dis_deque.size() > 3)
+                                    {
+                                        current_dis_deque.pop_front();
+                                    }
+                                }
+                                else
+                                {
+                                    this->current_dis_deque.push_back(DIS);
+                                }
                             }
                             else
                             {

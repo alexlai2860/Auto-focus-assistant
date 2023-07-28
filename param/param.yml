@@ -12,11 +12,11 @@ MOVE_JUDGE: 25
 # 允许的最小框边长
 DRAW_BOX_MIN: 25
 # 视场角(镜头等效焦段/mm)(必须大于26)(建议设成略小于镜头焦段的值，以提升系统感知能力)
-LENS_LENGTH: 55
-# ROI焦距设置(建议大于视场角设置值，必须大于26)
-ROI_LENGTH: 75
+LENS_LENGTH: 50
+# 区域对焦ROI焦距设置(建议大于视场角设置值，必须大于26)
+ROI_LENGTH: 85
 # width补偿量
-width_compensate: 20
+width_compensate: -10
 # height补偿量
 height_compensate: 0
 
