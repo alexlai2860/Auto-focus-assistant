@@ -36,12 +36,12 @@ target_include_directories(FaceProcessorLight PUBLIC ${detector_INCLUDE_DIRS}
 target_link_libraries(FaceProcessorLight dis)
 
 # body
-aux_source_directory(src BODY_DIRS)
-aux_source_directory(src/body BODY_DIRS)
-add_library(BodyProcessor STATIC ${BODY_DIRS})
-target_include_directories(BodyProcessor PUBLIC ${detector_INCLUDE_DIRS}
-                                         PUBLIC include/body)
-target_link_libraries(BodyProcessor dis)
+# aux_source_directory(src BODY_DIRS)
+# aux_source_directory(src/body BODY_DIRS)
+# add_library(BodyProcessor STATIC ${BODY_DIRS})
+# target_include_directories(BodyProcessor PUBLIC ${detector_INCLUDE_DIRS}
+#                                          PUBLIC include/body)
+# target_link_libraries(BodyProcessor dis)
 
 # aux_source_directory(src detector_DIRS)
 # aux_source_directory(src/face detector_DIRS)

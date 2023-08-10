@@ -16,7 +16,7 @@
 #include "FaceLight.h"
 #include "object.h"
 #include "ObjectLight.h"
-#include "body.h"
+// #include "body.h"
 #include "detector.h"
 #include "RsReader.h"
 #include "LogicTools.h"

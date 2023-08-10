@@ -44,12 +44,13 @@ bool E2Pose::init(string model_path, float confThreshold)
 	sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_BASIC);
 	const wchar_t *path = L"PATH";
 	ort_session = new Session(env, model_path.data(), sessionOptions);
-	size_t numInputNodes = ort_session->GetInputCount();
+	size_t numInputNodes = ort_session->tCount();
 	size_t numOutputNodes = ort_session->GetOutputCount();
 	AllocatorWithDefaultOptions allocator;
 	for (int i = 0; i < numInputNodes; i++)
 	{
-		input_names.push_back(ort_session->GetInputName(i, allocator));
+		AllocatedStringPtr input_name_Ptr = ort_session->GetInputNameAllocated(i, allocator);
+		input_names.push_back(input_name_Ptr.get());
 		Ort::TypeInfo input_type_info = ort_session->GetInputTypeInfo(i);
 		auto input_tensor_info = input_type_info.GetTensorTypeAndShapeInfo();
 		auto input_dims = input_tensor_info.GetShape();
@@ -57,7 +58,8 @@ bool E2Pose::init(string model_path, float confThreshold)
 	}
 	for (int i = 0; i < numOutputNodes; i++)
 	{
-		output_names.push_back(ort_session->GetOutputName(i, allocator));
+		AllocatedStringPtr output_name_Ptr= ort_session->GetInputNameAllocated(i, allocator);
+		output_names.push_back(output_name_Ptr.get());
 		Ort::TypeInfo output_type_info = ort_session->GetOutputTypeInfo(i);
 		auto output_tensor_info = output_type_info.GetTensorTypeAndShapeInfo();
 		auto output_dims = output_tensor_info.GetShape();

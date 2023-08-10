@@ -1,0 +1,32 @@
+安装git并克隆仓库：
+sudo apt install git
+git init
+git clone https://github.com/alexlai2860/Auto-focus-assistant.git
+
+安装cmake和g++
+sudo apt install cmake
+sudo apt install cmake-qt-gui
+sudo apt install g++
+
+安装opencv（采用祖传轻量编译法）
+首先安装依赖项（经典咒语）：
+sudo apt-get install build-essential libgtk2.0-dev libgtk-3-dev libavcodec-dev libavformat-dev 	libjpeg-dev libswscale-dev libtiff5-dev
+(sudo apt install ffmpeg)
+
+下载opencv 4.6.0 sourcecode并自行解压（我放在～/opencv/文件夹内）
+填入source code路径和build文件夹路径
+先点击一次configure
+然后开始设置：
+(注意选择uinx-makefile进行configure 否则会失败)
+(勾选openvino相关选项)
+(取消勾选ffmpeg相关选项)
+(然后关闭gui，执行make-j4和sudo make install)
+
+安装realsense SDK
+
+sudo apt-get install freeglut3-dev
+https://blog.csdn.net/qq_41035283/article/details/119614972
+sudo make install 
+
+安装onnxruntime
+直接把 include 和 lib 两个文件夹复制到/usr/local下

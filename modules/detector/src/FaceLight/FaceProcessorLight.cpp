@@ -63,7 +63,16 @@ bool SCRFD::OrtInit(string model_path, float confThreshold)
 	AllocatorWithDefaultOptions allocator;
 	for (int i = 0; i < numInputNodes; i++)
 	{
-		input_names.push_back(ort_session->GetInputName(i, allocator));
+		std::vector<AllocatedStringPtr> inputNodeNameAllocatedStrings;
+		auto inputNodesNum = ort_session->GetInputCount();
+		for (int i = 0; i < inputNodesNum; i++) 
+		{
+		auto input_name = ort_session->GetInputNameAllocated(i, allocator);
+		inputNodeNameAllocatedStrings.push_back(std::move(input_name));
+		input_names.push_back(inputNodeNameAllocatedStrings.back().get());
+		}
+		//AllocatedStringPtr input_name_Ptr = ort_session->GetInputNameAllocated(i, allocator);
+		//input_names.push_back(input_name_Ptr.get());
 		Ort::TypeInfo input_type_info = ort_session->GetInputTypeInfo(i);
 		auto input_tensor_info = input_type_info.GetTensorTypeAndShapeInfo();
 		auto input_dims = input_tensor_info.GetShape();
@@ -71,7 +80,16 @@ bool SCRFD::OrtInit(string model_path, float confThreshold)
 	}
 	for (int i = 0; i < numOutputNodes; i++)
 	{
-		output_names.push_back(ort_session->GetOutputName(i, allocator));
+		std::vector<AllocatedStringPtr> outputNodeNameAllocatedStrings;
+		auto inputNodesNum = ort_session->GetOutputCount();
+		for (int i = 0; i < inputNodesNum; i++) 
+		{
+		auto output_name = ort_session->GetOutputNameAllocated(i, allocator);
+		outputNodeNameAllocatedStrings.push_back(std::move(output_name));
+		output_names.push_back(outputNodeNameAllocatedStrings.back().get());
+		}
+		//AllocatedStringPtr output_name_Ptr= ort_session->GetInputNameAllocated(i, allocator);
+		//output_names.push_back(output_name_Ptr.get());
 		Ort::TypeInfo output_type_info = ort_session->GetOutputTypeInfo(i);
 		auto output_tensor_info = output_type_info.GetTensorTypeAndShapeInfo();
 		auto output_dims = output_tensor_info.GetShape();
