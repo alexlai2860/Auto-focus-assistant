@@ -119,7 +119,8 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             }
             cv::rectangle(color, ROI, cv::Scalar(200, 0, 0), 3);
         }
-        DIS = __dis->target_dis.back();
+        // DIS = __dis->target_dis.back();
+        DIS = dis;
         __face->face.clear();
         // __object->target.clear();
         break;
@@ -217,7 +218,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                             cout << "face-dis-valid" << endl;
                         }
                     }
-                    // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理、
+                    // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
                     // 不同object对应不同的距离滤波器
                     deque<cv::Point2f> empty;
                     int current_dis = __object->target.back().at(i).dis.disCalculate(dis, d16, empty);
@@ -322,7 +323,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         {
             // 非REALSENSE情况
             deque<cv::Point2f> empty;
-            DIS = __dis->disCalculate(1, d16, empty);
+            // DIS = __dis->disCalculate(1, d16, empty);
             break;
         }
     }
@@ -368,9 +369,12 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
     }
     else
     {
-        DIS = 1000;
-        cout << "ERROR!-距离队列异常" << endl;
+        DIS = 500;
+        cout << "ERROR!-距离为0" << endl;
     }
+    // deque<cv::Point2f> empty;
+    // DIS = __dis->disCalculate(DIS, d16, empty);
+    // cv::putText(color, cv::format("%d", DIS), cv::Point2i(15, 320), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
     cout << "decide-done" << endl;
     return DIS;
 }
@@ -1355,9 +1359,9 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
         if (param.cam_module == ASTRA)
         {
             // 选取中心点
-            cv::Point2f center(param.ASTRA_width + param.width_compensate / 2, param.ASTRA_height + param.height_compensate / 2);
-            points.push_back(center);
-            int center_dis = __dis->disCalculate(0, d16, points);
+            // cv::Point2f center(param.ASTRA_width + param.width_compensate / 2, param.ASTRA_height + param.height_compensate / 2);
+            // points.push_back(center);
+            // int center_dis = __dis->disCalculate(0, d16, points);
         }
         if (param.cam_module == REALSENSE)
         {
@@ -1377,9 +1381,9 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
         if (param.cam_module == ASTRA)
         {
             // 选取中心点
-            cv::Point2f center(param.ASTRA_width / 2, param.ASTRA_height / 2);
-            points.push_back(center);
-            int center_dis = __dis->disCalculate(0, d16, points);
+            // cv::Point2f center(param.ASTRA_width / 2, param.ASTRA_height / 2);
+            // points.push_back(center);
+            // int center_dis = __dis->disCalculate(0, d16, points);
         }
         if (param.cam_module == REALSENSE)
         {
@@ -1398,14 +1402,14 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
                 ROI = ROI_cal;
             }
 
-            // 选取1/5 * 1/5中心区域
+            // 选取中心区域
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
             int stride = (float)(ROI.width) / (float)25;
             if (stride == 0)
             {
-                stride = 1;
+                stride = 1; // 保障采样长度不小于1
             }
             int min_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(param.RS_width / 2, param.RS_height / 2));
             for (int i = ROI.tl().x; i <= ROI.tl().x + ROI.width; i = i + stride)
@@ -1425,6 +1429,14 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
             cout << "MIN-DIS: " << min_dis << endl;
             // cv::waitKey(300);
             int dis2 = __dis->disCalculate(min_dis, d16, points);
+            // if (min_dis != 0)
+            // {
+            //     return min_dis;
+            // }
+            // else
+            // {
+            //     return 500;
+            // }
             return dis2;
         }
         break;

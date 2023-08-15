@@ -26,7 +26,7 @@ bool RsReader::camInit()
     cfg.enable_stream(RS2_STREAM_COLOR, param.RS_width, param.RS_height, RS2_FORMAT_BGR8, param.RS_fps); // 向配置添加所需的流
     cfg.enable_stream(RS2_STREAM_DEPTH, param.RS_width, param.RS_height, RS2_FORMAT_Z16, param.RS_fps);
 
-    std::ifstream file("../param/test2.json");
+    std::ifstream file("../param/test3.json");
     if (file.good())
     {
         std::string str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -35,7 +35,7 @@ bool RsReader::camInit()
         if (auto advanced = prof.get_device().as<rs400::advanced_mode>())
         {
             advanced.load_json(str);
-            cout << "json load success 1" << endl;
+            // cout << "json load success 1" << endl;
         }
         cout << "json load success 2" << endl;
     }

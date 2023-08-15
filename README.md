@@ -191,14 +191,14 @@ make
 + 在 /usr/local/下创建一个文件夹，名为af-assistant
 + 进入该文件夹，在文件夹内部创建两个.sh文件，分别命名为af-start.sh和gtk-launch.sh(权限问题不再赘述)
 + 前者用于进入项目文件夹并启动项目代码，后者用于进入快捷方式文件夹并启动快捷方式
-+ 前者内容示例如下(可根据代码位置修改)
++ 前者内容示例如下**(可根据代码位置修改)**
 ```
 #!/bin/bash
 
 cd /home/alex/AF_assistant/auto-focus-assistant/build
 ./AF_assistant
 ```
-+ 后者内容示例如下(可根据代码位置修改)
++ 后者内容示例如下
 ```
 #!/bin/bash
 
@@ -216,8 +216,15 @@ Exec=/usr/local/af-assistant/af_start.sh
 Terminal=true
 Comment=execute af_start.sh
 ```
-+ 最后在桌面应用中，找到名为"启动应用程序"的应用，打开
-+ 点击添加，名称可以随意填写，命令填写gtk-launch.sh的地址(/usr/local/af-assistant/gtk-launch.sh)
++ 打开文件夹，把这个文件拖到桌面文件夹下，获得桌面图标
++ 将桌面图标设置为可执行文件（右键，允许运行）
++ 最后在终端输入 gnome-session-properties
++ 点击添加add，名称可以随意填写，命令填写gtk-launch.sh的地址(/usr/local/af-assistant/gtk-launch.sh)
++ 注意排查名称是否对应正确
+
++ 串口相关问题：
++ 驱动问题或异常占用：https://blog.csdn.net/a1058191679/article/details/129111054
++ 权限问题：https://blog.csdn.net/Android_WPF/article/details/120892617
 
 #### power limit/功率限制<br>
 操作步骤如下<br>

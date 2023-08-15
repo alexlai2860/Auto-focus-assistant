@@ -24,6 +24,7 @@ protected:
     bool key_trigger;       // 按键触发器
     deque<int> position;
     deque<int> command;
+    deque<int> writeposition;
     bool command_init = 0;
     int last_com_pos; // 上一次读取到command在buffer中的位置
 

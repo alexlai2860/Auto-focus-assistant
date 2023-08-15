@@ -37,18 +37,27 @@ class Dis
 {
 protected:
     KalmanFilter22 dis_filter;
+    KalmanFilter22 num_filter;
     deque<int64> t;
+    deque<int64> t2;
     bool __is_filter_init;
+    bool __is_filter2_init;
     vector<int> error_dis;
 
 public:
     Dis();
     deque<int> target_dis;
+    deque<int> num;
+    int last_distance = 0;
+    int last_distance2 = 0;
+
     void updateFilter();
-    void disProcessor();
+    void updateFilter2();
     bool errorJudge(int);
     int disCalculate(int, cv::Mat &, deque<cv::Point2f> &);
+    int kalmanFilter(int);
     bool movDecider(int64 &, deque<cv::Point2f> &);
+    void disProcessor();
 };
 
 using dis_ptr = shared_ptr<Dis>;

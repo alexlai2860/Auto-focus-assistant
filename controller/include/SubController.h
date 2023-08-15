@@ -40,7 +40,7 @@ class SubController
 protected:
     logic_ptr __logic;
     reader_ptr __reader;
-    dis_ptr __dis;
+    dis_ptr __dis, __filter;
     data_ptr __data;
     motor_ptr __motor;
 

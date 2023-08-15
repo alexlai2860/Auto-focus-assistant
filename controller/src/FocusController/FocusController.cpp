@@ -25,6 +25,7 @@ int FocusController::init(int64 &t0, int lens_num)
     TransferData writeData;
     __data = make_shared<Data>();
     __dis = make_shared<Dis>();
+    __filter = make_shared<Dis>();
     // __motor = make_shared<SteppingMotor>();
     __motor = make_shared<NucleusN>();
     __logic = make_shared<LogicTools>();
@@ -242,7 +243,8 @@ float FocusController::lagrange(float dis, int n, int flag)
         }
         else
         {
-            return closest_pulse;
+            // return closest_pulse;
+            return lens_param.A;
         }
     }
 
@@ -301,7 +303,7 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         int DIS = 0;
         int detect_flag = 0;
-        int preserve = 0;
+        int final_write_position = 0;
         bool detected = 0;
 
         cv::Mat d16, dColor;
@@ -415,9 +417,10 @@ void FocusController::rsProcessFrame(int64 &t0)
             }
         }
 
-        // 暂停运行(低功耗)
+        // 长按，校准并暂停运行(低功耗)
         if (command == -2)
         {
+            __motor->write(-1, 0); // 行程校准
             while (1)
             {
                 cv::waitKey(2000);
@@ -436,13 +439,13 @@ void FocusController::rsProcessFrame(int64 &t0)
 
         if (!forced_drop_trigger && !MF_trigger)
         {
-            // 中心区域对焦(触发强制掉帧)
+            // 中心区域对焦(触发强制掉帧),situation = 0;
             cv::putText(color, "center mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, 0, 3, position);
         }
         else
         {
-            // 智能识别对焦
+            // 智能识别对焦,situation = detected;
             if (!MF_trigger)
             {
                 cv::putText(color, "AI mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
@@ -460,8 +463,13 @@ void FocusController::rsProcessFrame(int64 &t0)
         // 计算目标脉冲值-方案一:使用四次函数拟合，五次函数不稳定，A暂时废弃
         // int target_pulse = (lens_param.B * pow(DIS, 4) + lens_param.C * pow(DIS, 3) + lens_param.D * pow(DIS, 2) + lens_param.E * DIS + lens_param.F);
 
-        // 计算目标脉冲值-方案二:使用插值法
+        // 计算目标脉冲值-方案二:使用线性插值
         // int target_pulse = __decider->disInterPolater(DIS);
+        if (DIS < 500)
+        {
+            DIS = 500;
+        }
+        // 计算目标脉冲值-方案三:拉格朗日插值
         int target_pulse = this->lagrange(DIS, 7, 0);
         last_target_pulse = target_pulse;
         string target_position = "target-pos:" + cv::format("%d", last_target_pulse);
@@ -480,16 +488,18 @@ void FocusController::rsProcessFrame(int64 &t0)
                 {
                     if (position > 500)
                     {
-                        __motor->write(__decider->disInterPolater(position), 0);
-                        __motor->write(this->lagrange(position, 7, 0), 0);
+                        // __motor->write(__decider->disInterPolater(position), 0);
+                        // __motor->write(this->lagrange(position, 7, 0), 0);
+                        final_write_position = this->lagrange(position, 7, 0);
                     }
                     else
                     {
                         // test stratage
-                        int position = 501;
-                        int currected_position = 500 - ((500 - position) / 10);
+                        // int position = 501;
+                        // int currected_position = 500 - ((500 - position) / 10);
                         // __motor->write(__decider->disInterPolater(position) - (500 - position), 0);
-                        __motor->write(this->lagrange(position, 7, 0), 0);
+                        // __motor->write(this->lagrange(lens_param.A, 7, 0), 0);
+                        final_write_position = lens_param.A;
                     }
                 }
             }
@@ -497,6 +507,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         }
         else if (MF_trigger && !forced_drop_trigger)
         {
+            // 该模式还有待测试
             cv::putText(color, "full scale projection", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             if (position >= 0 && position <= 9999)
             {
@@ -504,7 +515,12 @@ void FocusController::rsProcessFrame(int64 &t0)
                 {
                     if (position > 500)
                     {
-                        __motor->write(position, 0);
+                        // __motor->write(position, 0);
+                        final_write_position = position;
+                    }
+                    else
+                    {
+                        final_write_position = 500;
                     }
                 }
             }
@@ -518,8 +534,29 @@ void FocusController::rsProcessFrame(int64 &t0)
                 MF_init_result = position;
             }
             depthReProjection(depth, DIS, 9999 - position);
-            __motor->write(last_target_pulse, 0);
+            // __motor->write(last_target_pulse, 0);
+            final_write_position = last_target_pulse;
         }
+        // 最终补丁
+        // final_write_position = __filter->kalmanFilter(final_write_position);
+        cv::putText(color, cv::format("%d", final_write_position), cv::Point2i(15, 330), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+        if (final_write_position < lens_param.A && final_write_position > lens_param.G)
+        {
+            __motor->write(final_write_position, 0);
+        }
+        else if (final_write_position < lens_param.G && final_write_position > lens_param.A)
+        {
+            __motor->write(final_write_position, 0);
+        }
+        else
+        {
+            int dis1 = abs(final_write_position - lens_param.A);
+            int dis2 = abs(final_write_position - lens_param.G);
+            int position = (dis1 < dis2) ? lens_param.A : lens_param.G;
+            __motor->write(position, 0);
+        }
+
+        // 打印FPS
         cv::putText(color, cv::format("%d", real_fps), cv::Point2i(15, 400), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
         // 输出彩色图和深度图

@@ -17,8 +17,38 @@ using namespace std;
 Dis::Dis()
 {
     __is_filter_init = false;
+    __is_filter2_init = false;
     dis_filter = KalmanFilter22(param.KALMAN_PROCESS, param.KALMAN_MEASURE);
     dis_filter.setH(cv::Matx22f::eye());
+    num_filter = KalmanFilter22(param.KALMAN_PROCESS, param.KALMAN_MEASURE);
+    num_filter.setH(cv::Matx22f::eye());
+}
+
+int Dis::kalmanFilter(int input_num)
+{
+    // 卡尔曼滤波需要使用t
+    this->t2.push_front(cv::getTickCount());
+    if (t2.size() > 10)
+    {
+        t2.pop_back();
+    }
+    if (num.size() > 10)
+    {
+        num.pop_front();
+    }
+
+    if (input_num != 0)
+    {
+        num.push_back(input_num);
+        // cout << "error_dis_dize : " << error_dis.size() << endl;
+        this->updateFilter2();
+        // cout << "newest_dis : " << target_dis.back() << endl;
+        return num.back();
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
@@ -216,7 +246,7 @@ bool Dis::movDecider(int64 &t0, deque<cv::Point2f> &points)
 void Dis::updateFilter()
 {
     int &distance = target_dis.back();
-    static int last_distance = 0;
+    // static int last_distance = 0;
     if (__is_filter_init)
     {
         float time = ((t[0] - t[1]) / cv::getTickFrequency());
@@ -238,4 +268,33 @@ void Dis::updateFilter()
         __is_filter_init = true;
     }
     last_distance = distance;
+}
+
+/**
+ * @brief 更新距离滤波器
+ */
+void Dis::updateFilter2()
+{
+    int &distance = num.back();
+    if (__is_filter2_init)
+    {
+        float time = ((t2[0] - t2[1]) / cv::getTickFrequency());
+        // 设置状态转移矩阵
+        num_filter.setA(cv::Matx22f{1, time,
+                                    0, 1});
+        int delta_distance = distance - last_distance2;
+        // 预测
+        num_filter.predict();
+        // 更新
+        cv::Matx21f correct_vec = num_filter.correct({(float)distance,
+                                                      (float)delta_distance});
+        distance = correct_vec(0);
+    }
+    else
+    {
+        cv::Matx21f init_vec = {(float)distance, 0};
+        num_filter.init(init_vec, 1e-2);
+        __is_filter2_init = true;
+    }
+    last_distance2 = distance;
 }
