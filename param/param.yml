@@ -51,11 +51,11 @@ SPEED: 20
 # 电机加速度(0-255)(废弃)
 A: 255
 # 距离滤波器开关(关闭后为FASTEST最快模式，开启后可以调整快慢)（0为关闭，1为开启）
-KALMAN_ON: 0
+KALMAN_ON: 1
 # 距离滤波:kalman-process
 KALMAN_PROCESS: 0.005
 # 距离滤波:kalman-measure(推荐值0.01:FAST/0.02:NORMAL/0.04:SLOW)
-KALMAN_MEASURE: 0.04
+KALMAN_MEASURE: 0.02
 # 镜头代号(1/2/3/4/5，设置为0会进入校准模式)
 LENS_NUM: 1
 # 是否开机自动校准(1:是/2:否)

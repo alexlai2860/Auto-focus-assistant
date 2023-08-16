@@ -1406,6 +1406,8 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
             int img_width = param.RS_width;
             int img_height = param.RS_height;
             int current_dis = 0;
+            priority_queue<int> dis_points_temp;
+            deque<int> dis_points;
             int stride = (float)(ROI.width) / (float)25;
             if (stride == 0)
             {
@@ -1418,25 +1420,53 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
                 {
                     // cout << "i:" << i << " j:" << j << endl;
                     current_dis = int(1000 * __reader->rsDepthFrames.back().get_distance(i, j));
-                    // cout << "current-dis:" << current_dis << endl;
-                    if (current_dis < min_dis && current_dis != 0)
+                    if (current_dis != 0)
                     {
-                        min_dis = current_dis;
+                        dis_points_temp.push(current_dis);
+                    }
+                    // cout << "current-dis:" << current_dis << endl;
+                    // if (current_dis < min_dis && current_dis != 0)
+                    // {
+                    //     min_dis = current_dis;
+                    // }
+                }
+            }
+            cout << "DPT-SIZE:" << dis_points_temp.size() << endl;
+            while (!dis_points_temp.empty())
+            {
+                dis_points.push_back(dis_points_temp.top()); // 远距离先进入队列
+                dis_points_temp.pop();
+            }
+            cout << "DP-SIZE:" << dis_points.size() << endl;
+            // 可靠性判据：不能完全解决抽搐问题，只是缓解并改变抽搐的触发条件
+            if (!dis_points.empty())
+            {
+                int nearest_point_dis = dis_points.at(dis_points.size() - 1);
+                int near_point_95 = dis_points.at(dis_points.size() * 0.95);
+                int near_point_90 = dis_points.at(dis_points.size() * 0.9);
+                int windows_size = dis_points.size() * 0.15; // 设置滑动窗口大小: ROI中15%的面积中，所有（采样）点距离的极差小于0.12倍的点中的最近距离
+                cout << "NEAREST:" << nearest_point_dis << endl;
+                cout << "NEAR95:" << near_point_95 << endl;
+                cout << "NEAR90:" << near_point_90 << endl;
+                min_dis = 500;
+                for (int i = 1; i < (dis_points.size() - windows_size); i++)
+                {
+                    int delta_windows_dis = dis_points.at(dis_points.size() - i - windows_size) - dis_points.at(dis_points.size() - i);
+                    if (delta_windows_dis < dis_points.at(dis_points.size() - i) * 0.12)
+                    {
+                        min_dis = dis_points.at(dis_points.size() - i);
+                        break;
                     }
                 }
+            }
+            else
+            {
+                min_dis = 500;
             }
 
             cout << "MIN-DIS: " << min_dis << endl;
             // cv::waitKey(300);
             int dis2 = __dis->disCalculate(min_dis, d16, points);
-            // if (min_dis != 0)
-            // {
-            //     return min_dis;
-            // }
-            // else
-            // {
-            //     return 500;
-            // }
             return dis2;
         }
         break;
