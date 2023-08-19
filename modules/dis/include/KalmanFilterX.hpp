@@ -59,10 +59,10 @@ public:
 	{
 		// 1. 预测状态
 		xhatminus = A * xhat;
-
+		cout << "xhatminus:" << xhatminus << endl;
 		// 2. 预测误差协方差
 		Pminus = A * P * AT + Q;
-
+		cout << "Pminus:" << Pminus << endl;
 		return xhatminus;
 	}
 
@@ -72,12 +72,13 @@ public:
 
 		// 3. 计算卡尔曼增益
 		K = Pminus * HT * (H * Pminus * HT + R).inv();
-
+		cout << "k:" << K << endl;
 		// 4. 用测量值更新估计
 		xhat = xhatminus + K * (z - H * xhatminus);
-
+		cout << "xhat:" << xhat << endl;
 		// 5. 更新误差协方差
 		P = (Q - K * H) * Pminus;
+		cout << "p:" << P << endl;
 
 		return xhat;
 	};

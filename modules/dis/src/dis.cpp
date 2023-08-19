@@ -60,6 +60,7 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
 
     if (!param.KALMAN_ON)
     {
+        cout << "KALMAN-OFF" << endl;
         if (rs_dis != 0)
         {
             target_dis.push_back(rs_dis);
@@ -80,6 +81,7 @@ int Dis::disCalculate(int rs_dis, cv::Mat &d16, deque<cv::Point2f> &points)
     else
     {
         // select the point
+        cout << "KALMAN-ON" << endl;
         int current_dis;
         if (param.cam_module == ASTRA)
         {
@@ -276,19 +278,27 @@ void Dis::updateFilter()
 void Dis::updateFilter2()
 {
     int &distance = num.back();
+    float time = ((t2[0] - t2[1]) / cv::getTickFrequency());
+    if (time > 1.f)
+    {
+        __is_filter2_init = false;
+    }
+    cout << "INPUT:" << distance << endl;
     if (__is_filter2_init)
     {
-        float time = ((t2[0] - t2[1]) / cv::getTickFrequency());
+        cout << "TIME:" << time << endl;
         // 设置状态转移矩阵
         num_filter.setA(cv::Matx22f{1, time,
                                     0, 1});
         int delta_distance = distance - last_distance2;
+        cout << "DELTA-DIS:" << delta_distance << endl;
         // 预测
         num_filter.predict();
         // 更新
         cv::Matx21f correct_vec = num_filter.correct({(float)distance,
                                                       (float)delta_distance});
         distance = correct_vec(0);
+        cout << "OUTPUT:" << distance << endl;
     }
     else
     {

@@ -50,7 +50,7 @@ public:
     int facePerceptron(cv::Mat &, detector_ptr &, dis_ptr &, logic_ptr &, bool, int);
     int disInterPolater(int &);   // dis2pulse
     int pulseInterPolater(int &); // pulse2dis
-    int dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &);
+    int dropProcess(int, cv::Mat &, dis_ptr &, reader_ptr &, int);
 };
 
 using decider_ptr = shared_ptr<decider>;

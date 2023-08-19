@@ -24,8 +24,9 @@ int FocusController::init(int64 &t0, int lens_num)
     Dis dis1;
     TransferData writeData;
     __data = make_shared<Data>();
-    __dis = make_shared<Dis>();
-    __filter = make_shared<Dis>();
+    __dis_filter1 = make_shared<Dis>();
+    __dis_filter2 = make_shared<Dis>();
+    __position_filter = make_shared<Dis>();
     // __motor = make_shared<SteppingMotor>();
     __motor = make_shared<NucleusN>();
     __logic = make_shared<LogicTools>();
@@ -441,7 +442,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         {
             // 中心区域对焦(触发强制掉帧),situation = 0;
             cv::putText(color, "center mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, 0, 3, position);
+            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis_filter1, __logic, 0, 3, position);
         }
         else
         {
@@ -450,7 +451,7 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 cv::putText(color, "AI mode", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
             }
-            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis, __logic, detected, detect_flag, position);
+            DIS = __decider->decide(depth, color, __reader, __face, __object, __dis_filter2, __logic, detected, detect_flag, position);
         }
         cv::putText(color, cv::format("%d", DIS), cv::Point2i(260, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
 
@@ -479,6 +480,7 @@ void FocusController::rsProcessFrame(int64 &t0)
         // __motor->write((target_pulse - current_pulse));
         cout << "********** WRITE **********" << endl;
         int64 t4 = cv::getTickCount();
+        int mf_dis = 0;
         if (MF_trigger && forced_drop_trigger)
         {
             cv::putText(color, "0-10m reprojection", cv::Point2i(60, 90), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
@@ -503,7 +505,8 @@ void FocusController::rsProcessFrame(int64 &t0)
                     }
                 }
             }
-            depthReProjection(depth, DIS, position);
+            mf_dis = position;
+            // depthReProjection(depth, DIS, position);
         }
         else if (MF_trigger && !forced_drop_trigger)
         {
@@ -524,8 +527,9 @@ void FocusController::rsProcessFrame(int64 &t0)
                     }
                 }
             }
+            mf_dis = __decider->pulseInterPolater(position);
             cv::putText(color, "test" + cv::format("%d", __decider->pulseInterPolater(position)), cv::Point2i(120, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
-            depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
+            // depthReProjection(depth, DIS, __decider->pulseInterPolater(position));
         }
         else
         {
@@ -533,13 +537,19 @@ void FocusController::rsProcessFrame(int64 &t0)
             {
                 MF_init_result = position;
             }
-            depthReProjection(depth, DIS, 9999 - position);
+            mf_dis = 9999 - position;
+            if(!forced_drop_trigger)
+            {
+                mf_dis = 0;
+            }
+            // depthReProjection(depth, DIS, 9999 - position);
             // __motor->write(last_target_pulse, 0);
             final_write_position = last_target_pulse;
         }
-        // 最终补丁
-        // final_write_position = __filter->kalmanFilter(final_write_position);
+        final_write_position = __position_filter->kalmanFilter(final_write_position);
         cv::putText(color, cv::format("%d", final_write_position), cv::Point2i(15, 330), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
+        depthReProjection(depth, DIS, mf_dis);
+        // 最终补丁
         if (final_write_position < lens_param.A && final_write_position > lens_param.G)
         {
             __motor->write(final_write_position, 0);

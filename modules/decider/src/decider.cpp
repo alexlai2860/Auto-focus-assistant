@@ -96,7 +96,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         // cv::putText(color, "case-0", cv::Point2i(300, 60), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         // 掉帧处理/无目标检测
         // situation=0:进入掉帧处理
-        int dis = this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
+        int dis = this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader, read_result);
         // cv::putText(color, cv::format("%d", dis), cv::Point2i(300, 100), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 0), 2);
         if (param.DROP_PROCESS_MODE == 1)
         {
@@ -109,7 +109,16 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
             cv::Rect2i ROI;
             if ((float)param.ROI_LENGTH > 26.f)
             {
-                zoom_rate = (float)param.ROI_LENGTH / 26.f;
+                zoom_rate = read_result / 350;
+                if (zoom_rate < param.LENS_LENGTH / 26.f)
+                {
+                    zoom_rate = param.LENS_LENGTH / 26.f;
+                }
+                else if (zoom_rate > 26)
+                {
+                    zoom_rate = 26;
+                }
+                // zoom_rate = (float)param.ROI_LENGTH / 26.f;
                 int ROI_height = (float)param.RS_height / zoom_rate;
                 int ROI_width = (float)param.RS_width / zoom_rate;
                 int ROI_tl_x = (param.RS_width - ROI_width) / 2;
@@ -187,41 +196,43 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
                     // cout << "deciding-1" << endl;
                     float dis_ratio = (float)face_dis / (float)target_dis;
                     int delta_dis = abs(face_dis - target_dis);
-                    if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
+                    // if (dis_ratio >= 0.75 && dis_ratio <= 1.25)
+                    // {
+                    //     if (delta_dis < 400)
+                    //     {
+                    if (dis_ratio > 0)
                     {
-                        if (delta_dis < 400)
+                        // 认定为面部距离可靠，进一步判断眼部距离是否可靠
+                        int eye_dis_1 = __object->target.back().at(i).face_landmarks[4];
+                        int eye_dis_2 = __object->target.back().at(i).face_landmarks[5];
+                        int delta_dis_1 = abs(face_dis - eye_dis_1);
+                        int delta_dis_2 = abs(face_dis - eye_dis_2);
+                        if (delta_dis_1 < 100 && delta_dis_2 < 100)
                         {
-                            // 认定为面部距离可靠，进一步判断眼部距离是否可靠
-                            int eye_dis_1 = __object->target.back().at(i).face_landmarks[4];
-                            int eye_dis_2 = __object->target.back().at(i).face_landmarks[5];
-                            int delta_dis_1 = abs(face_dis - eye_dis_1);
-                            int delta_dis_2 = abs(face_dis - eye_dis_2);
-                            if (delta_dis_1 < 100 && delta_dis_2 < 100)
-                            {
-                                // cv::putText(color, "eyes-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-                                dis = MIN(eye_dis_1, eye_dis_2);
-                            }
-                            else if (delta_dis_1 < 100)
-                            {
-                                // cv::putText(color, "eye1-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-                                dis = eye_dis_1;
-                            }
-                            else if (delta_dis_2 < 100)
-                            {
-                                // cv::putText(color, "eye2-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
-                                dis = eye_dis_2;
-                            }
-                            else
-                            {
-                                dis = face_dis;
-                            }
-                            cout << "face-dis-valid" << endl;
+                            // cv::putText(color, "eyes-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                            dis = MIN(eye_dis_1, eye_dis_2);
                         }
+                        else if (delta_dis_1 < 100)
+                        {
+                            // cv::putText(color, "eye1-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                            dis = eye_dis_1;
+                        }
+                        else if (delta_dis_2 < 100)
+                        {
+                            // cv::putText(color, "eye2-valid", cv::Point2i(100, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
+                            dis = eye_dis_2;
+                        }
+                        else
+                        {
+                            dis = face_dis;
+                        }
+                        cout << "face-dis-valid" << endl;
                     }
                     // 通过第一个int直接传入距离，函数中只是对距离进行滤波和错误处理
                     // 不同object对应不同的距离滤波器
                     deque<cv::Point2f> empty;
-                    int current_dis = __object->target.back().at(i).dis.disCalculate(dis, d16, empty);
+                    // int current_dis = __object->target.back().at(i).dis.disCalculate(dis, d16, empty);
+                    int current_dis = __object->target.back().at(i).dis.kalmanFilter(dis);
                     // int current_dis = dis;
                     cv::putText(color, cv::format("%d", (int)__object->target.back().size()), cv::Point2i(15, 220), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
                     cv::putText(color, cv::format("%d", current_dis), cv::Point2i(15, 250), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0), 2);
@@ -328,7 +339,7 @@ int decider::decide(cv::Mat &d16, cv::Mat &color, reader_ptr &__reader, detector
         }
     }
     default:
-        this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader);
+        this->dropProcess(param.DROP_PROCESS_MODE, d16, __dis, __reader, read_result);
         break;
     }
 
@@ -1347,7 +1358,7 @@ bool decider::isSameObject(SingleObject &last_object, SingleObject &current_obje
  * @param dis
  * @param d16
  */
-int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__reader)
+int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__reader, int read_position)
 {
     cout << "mode : " << mode << endl;
     switch (mode)
@@ -1369,7 +1380,8 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
             int img_height = param.RS_height;
             int center_dis = int(1000 * __reader->rsDepthFrames.back().get_distance((img_width + param.width_compensate) / 2, (img_height + param.height_compensate) / 2));
             cout << "CENTER_DIS:" << center_dis << endl;
-            __dis->disCalculate(center_dis, d16, points);
+            // __dis->disCalculate(center_dis, d16, points);
+            __dis->kalmanFilter(center_dis);
         }
         return 0;
         break;
@@ -1392,7 +1404,16 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
             cv::Rect2i ROI;
             if ((float)param.ROI_LENGTH > 26.f)
             {
-                zoom_rate = (float)param.ROI_LENGTH / 26.f;
+                zoom_rate = read_position / 350;
+                if (zoom_rate < param.LENS_LENGTH / 26.f)
+                {
+                    zoom_rate = param.LENS_LENGTH / 26.f;
+                }
+                else if (zoom_rate > 26)
+                {
+                    zoom_rate = 26;
+                }
+                // zoom_rate = (float)param.ROI_LENGTH / 26.f;
                 int ROI_height = (float)param.RS_height / zoom_rate;
                 int ROI_width = (float)param.RS_width / zoom_rate;
                 cout << "ROI-W" << ROI_width << endl;
@@ -1466,7 +1487,8 @@ int decider::dropProcess(int mode, cv::Mat &d16, dis_ptr &__dis, reader_ptr &__r
 
             cout << "MIN-DIS: " << min_dis << endl;
             // cv::waitKey(300);
-            int dis2 = __dis->disCalculate(min_dis, d16, points);
+            // int dis2 = __dis->disCalculate(min_dis, d16, points);
+            int dis2 = __dis->kalmanFilter(min_dis);
             return dis2;
         }
         break;

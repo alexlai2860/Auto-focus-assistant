@@ -69,10 +69,11 @@ int Depth::getPointDepth(const cv::Mat &depth_frame, const cv::Point2i &point)
 }
 
 /**
- * @brief 获取目标框的距离
+ * @brief 获取目标框(人体框)的距离
  *
  * @param depth_frame
  * @param rect
+ * @param type 0:默认人体；-1:面部侧对；-2面部正对
  * @return int
  */
 int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, const int type)
@@ -84,7 +85,7 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     float wh_ratio = (float)width / (float)height;
     // 补丁
     int min_lenght = MIN(height, width);
-    if (min_lenght <= 20)
+    if (min_lenght <= 30)
     {
         cv::Point2i center(rect.x + width / 2, rect.y + width / 2);
         return getPointDepth(depth_frame, center);
@@ -105,8 +106,8 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     deque<int> depth_deque;
     int invalid_point_num = 0;
     int valid_point_num = 0;
-    // 自动设置步长，确保采样点大于10*10
-    int stride = MIN(height, width) / 10;
+    // 自动设置步长，确保采样点大于15*15
+    int stride = MIN(height, width) / 15;
     // cout << "stride " << stride << endl;
     // 模仿相机对焦点的操作
     // 每 stride*stride 像素进行一次采样，降低计算压力（伪池化?）
@@ -149,21 +150,21 @@ int Depth::getTargetDepth(const cv::Mat &depth_frame, const cv::Rect2i &rect, co
     location = depth_deque.size() / 2;
     if (type == 0)
     {
-        // 0定义为人体识别框
+        // 0定义为默认人体识别框
         // 此时背景面积较大，倾向于选择较近的点
         location = depth_deque.size() / 7;
     }
     if (type == -1)
     {
-        // 1定义为面部侧对
+        // -1定义为面部侧对
         // 此时背景面积较大，倾向于选择较近的点
         location = depth_deque.size() / 4;
     }
     if (type == -2)
     {
-        // 1定义为面部正对
+        // -2定义为面部正对
         // 此时背景面积较小，取中值
-        location = depth_deque.size() / 2;
+        location = depth_deque.size() / 3;
     }
     return depth_deque.at(location);
     // int temp_depth = getPointDepth(depth_frame, center);
@@ -183,7 +184,7 @@ void Depth::updateDis(cv::Mat &depth_frame, SingleObject &object)
         int new_dis = this->getTargetDepth(depth_frame, object.single_object_box, 0);
         if (abs(new_dis - object.cam_dis) < 400)
         {
-            object.cam_dis = new_dis;
+            object.cam_dis = new_dis;   // 更新人体框的距离
         }
     }
     else
@@ -203,7 +204,7 @@ void Depth::updateDis(cv::Mat &depth_frame, SingleObject &object)
         {
             face_dis = this->getTargetDepth(depth_frame, object.single_face_in_object, -1);
         }
-        // 判断可靠性(对快速运动目标可能失效)
+        // 判断可靠性(对快速运动目标可能失效)，更新一系列距离
         if (abs(new_dis_1 - object.cam_dis) < 400.f)
         {
             // string target_position = "delta-1:" + cv::format("%d", abs(new_dis_1 - object.cam_dis));

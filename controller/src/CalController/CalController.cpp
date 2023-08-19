@@ -58,7 +58,7 @@ void CalController::rsCalibration(int lens_num, int64 &t0)
 
     __reader = make_shared<RsReader>();
     __cal = make_shared<Calibrator>();
-    __dis = make_shared<Dis>();
+    __dis_filter1 = make_shared<Dis>();
     __reader->camInit();
     cv::waitKey(1000);
 
@@ -69,7 +69,7 @@ void CalController::rsCalibration(int lens_num, int64 &t0)
         rs2::depth_frame depth = __reader->rsDepthFrames.back();
         cv::Mat color = __reader->color;
         // if (__cal->calibrate(lens_num, __dis, __motor, depth, color))
-        if (__cal->nucleusCalibrate(lens_num, __dis, __motor, depth, color))
+        if (__cal->nucleusCalibrate(lens_num, __dis_filter1, __motor, depth, color))
         {
             break;
         }

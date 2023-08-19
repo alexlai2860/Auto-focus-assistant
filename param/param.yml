@@ -14,7 +14,7 @@ DRAW_BOX_MIN: 20
 # 视场角(镜头等效焦段/mm)(必须大于26)(建议设成略小于镜头焦段的值，以提升系统感知能力)
 LENS_LENGTH: 75
 # 区域对焦ROI焦距设置(建议大于视场角设置值，必须大于26)
-ROI_LENGTH: 105
+ROI_LENGTH: 150
 # width补偿量
 width_compensate: -10
 # height补偿量
@@ -25,7 +25,7 @@ height_compensate: -10
 # 掉帧切换目标阈值
 MAX_DROP_FRAME_OBJECT: 10
 # 掉帧切换面部阈值
-MAX_DROP_FRAME_FACE: 5
+MAX_DROP_FRAME_FACE: 4
 # 掉帧后的处理模式(1:中心点对焦/2:中心区域对焦)
 DROP_PROCESS_MODE: 2
 # 面部确认限制(需要连续识别多少帧才允许新建面部)
@@ -54,10 +54,10 @@ A: 255
 KALMAN_ON: 1
 # 距离滤波:kalman-process
 KALMAN_PROCESS: 0.005
-# 距离滤波:kalman-measure(推荐值0.01:FAST/0.02:NORMAL/0.04:SLOW)
+# 距离滤波:kalman-measure(推荐值0.01:FAST/0.02:NORMAL/0.04:SLOW/0.08:SUPER SLOW)
 KALMAN_MEASURE: 0.02
 # 镜头代号(1/2/3/4/5，设置为0会进入校准模式)
-LENS_NUM: 1
+LENS_NUM: 5
 # 是否开机自动校准(1:是/2:否)
 AUTO_CAL: 1
 
