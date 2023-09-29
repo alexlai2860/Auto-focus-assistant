@@ -53,8 +53,9 @@
     + 综合考虑成本、体积重量和集成化，本方案所采用的处理器之一为英特尔的Computer Stick(电脑棒)，它采用X86架构，能够方便地进行程序开发和运行
     + 另一套方案是本项目当前采取的方案：即采用分布式方案，将算力平台和相机分离，以牺牲集成度的方式大幅降低了成本和重量，并且不需要妥协性能
     + 本项目(V2.0)版本测试平台为Yoga14s笔记本(4800u)，强制默频低功耗运行以降低发热；建议实际使用中替换为性能相近的NUC或迷你主机
-    + 已经有老哥将本项目移植至树莓派运行；个人认为最优的解决方案是使用RK3588等廉价且有高算力的平台作为处理器
-    + 4800u处理器如图所示：![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/99db38ab-26cb-42ad-b7b2-6816e6bf99ef)
+    + 更新：本项目最终版本已将平台更换为英特尔N100处理器，实测在默认状态下可以跑满30fps，能够满足性能需求
+    + 更新：已经有老哥将本项目移植至树莓派运行；个人认为最优的解决方案是使用RK3588等廉价且有高算力的平台作为处理器
+    + N100处理器规格如图所示：![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/da9dc753-2622-4c14-bf3e-feae9e97989a)
 
 + #### actuator/执行器<br>
     + 执行器是直接驱动镜头进行对焦的组件，一般分为内置的对焦马达和外置的跟焦电机
@@ -70,8 +71,10 @@
     + 在本项目中，通过逆向功能还原其通信协议，原力N系统的跟焦手柄被改造为控制手柄<br>
       本项目对按键和滚轮等功能进行了重映射，具体的使用方法见后文“控制逻辑”部分<br>
       除此之外，该手柄还承担给执行器电机供电的功能<br>
-    + 铁头原力N手柄如图所示：![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/12c825e1-4ce6-4bb3-9c1a-cd6a5a877f6f)
-    + 控制器接线如图所示（单片机端换成USB转串口模块即可）：![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/8b207e3b-c33f-4314-b58f-fe4231780c8e)
+    + 铁头原力N手柄如图所示：
+    + ![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/12c825e1-4ce6-4bb3-9c1a-cd6a5a877f6f)
+    + 控制器接线如图所示（单片机端换成USB转串口模块即可）：
+    + ![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/8b207e3b-c33f-4314-b58f-fe4231780c8e)
 
 + #### monitor/监视器<br>
     + 监视器是监控对焦模式和状态、展示对焦波形图的关键部件
@@ -299,7 +302,7 @@ echo "你的密码"|sudo -S ./powersave-mode.sh
     + 可能有部分描述与实际代码不符合，存在部分功能的删减和增添，具体功能以实际测试运行为准<br>
 
 ### **test platform/测试平台**
-- CPU: ryzen7 4800u
+- CPU: AMD ryzen7 4800u
 - 系统: ubuntu 20.04
 - 电池容量: 损耗后剩余46wh
 - 测试环境: 关闭wifi和蓝牙，内屏最低亮度，视野内持续追踪单一目标，所有核心限制在最低频率（1.4Ghz）
@@ -308,6 +311,16 @@ echo "你的密码"|sudo -S ./powersave-mode.sh
            续航时间(99% - 5%)约为2h20min(推算，可能会有浮动)
            以此类推，采用95wh希铁外接电池或99whV口电池可以供电4.5-5h
            采用77wh的F970电池或75wh的希铁外接电池可以供电3.5-4h
+更新：
+- CPU: Intel N100
+- 希铁: ubuntu 23.04
+- 功率：默认状态，不开启性能模式
+- 测试环境：默认状态，保持wifi和蓝牙开启，不对核心频率进行限制
+- 测试结果：
+  - 采用12v typec供电，功率约为20-25w，性能跑满30fps
+  - N100理论TDP为6w，牺牲一定性能可以进一步降低功耗
+  - 若进入BIOS对处理器pl1和pl2进行进一步调整，并选用功耗更低的硬盘，有望将功耗控制在15w以内，待后续验证
+  - 个人认为这是目前X86平台的极限了，但即使以15w功耗计算，依然无法做到机身即插即用（但可以通过铁头手柄12v输出供电）
 
 ### **BOM/物料清单**
 + #### essential components/必备部件
@@ -316,7 +329,7 @@ echo "你的密码"|sudo -S ./powersave-mode.sh
         - 15mm 碳纤维导管 / 15mm carbon fiber tube
         - 15mm 单孔管夹 / 15mm pipe clamp
         - 摄影多孔芝士板 / photography cheese plate
-        - 1/4 螺丝 / 1/4 screw
+        - 1/4 螺丝 / 1/4 screw                               
 
     - **其他配件**
         - 英特尔 D415/D435深度相机 / Intel Realsense D415/D435 depth camera
