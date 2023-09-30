@@ -107,9 +107,9 @@
   + **SubController/子控制器**
     + 以下两个控制器的基类，未来可能兼容更多的模式                      
   + **CalController/校准模式控制器**      
-    + 在校准模式下，调用控制各个modules   
+    + 在校准（例如新增镜头）模式下，调用控制各个modules      
   + **FocusController/对焦模式控制器** 
-    + 在对焦模式下，调用控制各个modules<br>   
+    + 在对焦（常规工作）模式下，调用控制各个modules<br>   
 
 + ***modules/核心模块:分为以下子模块***  
 + **calibrator/校准器**  
@@ -151,7 +151,7 @@
         + lens_param: 镜头标定参数，储存各个镜头的查找表数据，运行时可能改变（如校准/新建镜头）<br>
 
 ### **user instruction/使用方法**
-#### install dependent lib/安装依赖库<br>
+#### install dependent lib/安装依赖库
 + OpenCV 4.5.4或更新版本(推荐4.6.0及以上) 
 + Realsense SDK 2.0
 + ONNX runtime 1.13.1或更新版本(推荐1.15.1及以上)
@@ -233,7 +233,8 @@ Comment=execute af_start.sh
 + 权限问题：https://blog.csdn.net/Android_WPF/article/details/120892617
 
 #### power limit/功率限制<br>
-操作步骤如下<br>
+**注意**：不一定需要进行功率限制(如intel N100平台)，请综合考虑平台功耗和性能<br>
+操作步骤如下<br>          
 + 在/usr/local/下创建一个文件夹，名为powerlimit
 + 进入该文件夹，创建名为powersave-mode的.sh文件
 + 文件内容如下(需要对应具体线程数量进行修改!)(以下以8c16t的4800U处理器为例):
