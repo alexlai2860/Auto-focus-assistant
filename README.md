@@ -97,43 +97,41 @@
         + 红色框是人体识别框，1575是人物对焦距离(mm)，优先选择人物眼部距离进行对焦
         + 监视器画面右侧展示对焦波形图，波形图中用红线展示展示手柄滚轮编码器位置，用绿线展示电机实时对焦位置，曲线则为深度映射图(俯视图)
 
-### **software structure/代码文件结构**
+### **software structure/代码文件结构**<br>     
 
-#### up/上层<br>
-+ #### main<br>
-    + main函数：程序入口
-+ #### controller/控制器<br>
-    + 控制程序运行,负责切换校准模式和对焦模式
-+ #### SubController/子控制器<br>
-    + 以下两个控制器的基类，未来可能兼容更多的模式
-+ #### CalController/校准模式控制器<br>
-    + 在校准模式下，调用控制各个modules
-+ #### FocusController/对焦模式控制器<br>
-    + 在对焦模式下，调用控制各个modules
++ ***controller/控制器***                                               
+  + **main**                     
+    + main函数：程序入口      
+  + **controller/控制器**                    
+    + 控制程序运行,负责切换校准模式和对焦模式                                                            
+  + **SubController/子控制器**
+    + 以下两个控制器的基类，未来可能兼容更多的模式                      
+  + **CalController/校准模式控制器**      
+    + 在校准模式下，调用控制各个modules   
+  + **FocusController/对焦模式控制器** 
+    + 在对焦模式下，调用控制各个modules<br>   
 
-#### core/核心层<br>
-+ #### modules/核心模块:分为以下子模块<br>
-+ #### calibrator/校准器<br>
-    + 负责对镜头进行校准，建立查找表并写入lens_param.yml
-+ #### detector/识别器<br>
-    + 负责识别目标
-        + FaceDetector:基于卷积神经网络(Yunet)的面部识别，已部署
-        + FaceDetectorLight:基于SCRFD的面部识别，已部署
-        + ObjectDetector:基于YOLOv5s的目标检测网络，已部署但无法实时检测，暂时搁置
-        + ObjectDetectorLight:基于YOLO_fastestV2的目标检测网络，已部署
-+ #### dis/距离获取器<br>
-    + 负责距离的解算和滤波
-+ #### motor/电机驱动器<br>
-    + 负责与电机间通信
-        + 第一代AF_assistant:基于42闭环步进电机
-        + 第二代AF_assistant:基于铁头NucleusN电机
-+ #### reader/读取器<br>
-    + 负责从深度相机读取彩色视频流和深度信息流
-        + 第一代AF_assistant:基于奥比中光相机
-        + 第二代AF_assistant:基于Realsense相机
++ ***modules/核心模块:分为以下子模块***  
++ **calibrator/校准器**  
+  + 负责对镜头进行校准，建立查找表并写入lens_param.yml
++ **detector/识别器**       
+  + 负责识别目标
+    + FaceDetector:基于卷积神经网络(Yunet)的面部识别，已部署<br>
+    + FaceDetectorLight:基于SCRFD的面部识别，已部署<br>
+    + ObjectDetector:基于YOLOv5s的目标检测网络，已部署但无法实时检测，暂时搁置<br>
+    + ObjectDetectorLight:基于YOLO_fastestV2的目标检测网络，已部署<br>
++ **dis/距离获取器**                                                   
+  + 负责距离的解算和滤波
++ **motor/电机驱动器**
+  + 负责与电机间通信
+    + 第一代AF_assistant:基于42闭环步进电机
+    + 第二代AF_assistant:基于铁头NucleusN电机
++ **reader/读取器**
+  + 负责从深度相机读取彩色视频流和深度信息流
+    + 第一代AF_assistant:基于奥比中光相机
+    + 第二代AF_assistant:基于Realsense相机<br>                
 
-#### bottom/底层<br>
-+ #### serial/通信器<br>
++ ***serial/通信器***
     + 用于和电机/相机/单片机等进行串口通信，目前仅支持电机通信
     + Data类为总协议，分为以下子通信协议：
         + TransferData: 程序内部传递数据汇总
@@ -142,16 +140,21 @@
             + 5~6分别对应NucleusN电机的运动指令、校准指令
         + Read: 
             + 对于步进电机:程序从步进电机读取当前脉冲值
-            + 对于NucleusN:程序从手柄读取数据
-+ #### param/参数文件<br>
+            + 对于NucleusN:程序从手柄读取数据<br>      
+
++ ***onnx***    
+  + 存放各种模型文件，包括不同精度的版本，可以根据平台性能自行选择使用<br>
+
++ ***param/参数文件***                
     + 用于注入参数，目前分为以下两类参数：
-        + param：普通参数，为定值，运行前可以调整
-        + lens_param: 镜头标定参数，储存各个镜头的查找表数据，运行时可能改变（如校准/新建镜头）
+        + param：普通参数，为定值，运行前可以调整   
+        + lens_param: 镜头标定参数，储存各个镜头的查找表数据，运行时可能改变（如校准/新建镜头）<br>
 
 ### **user instruction/使用方法**
 #### install dependent lib/安装依赖库<br>
-+ OpenCV 4.5.0或更新版本(推荐4.5.4及以上)
++ OpenCV 4.5.4或更新版本(推荐4.6.0及以上) 
 + Realsense SDK 2.0
++ ONNX runtime 1.13.1或更新版本(推荐1.15.1及以上)
 
 #### run/运行程序<br>
 + 编译代码
@@ -160,7 +163,7 @@
 mkdir build
 cd build
 cmake ..
-make
+make -j4
 ```
 
 + 执行程序
@@ -184,7 +187,7 @@ make
 请输入镜头编号(1/2/3/4/5) 若新建镜头请按0 回车确认
 ```
 以直接执行对焦功能为例，输入镜头编号(如2),回车即系统开始运行<br>
-**注意** 如果需要开机自启动，可以在.yml文件中设置好上述参数，即可直接运行<br>
+**注意** 如果需要开机自启动，可以在.yml文件中设置好上述参数，即可直接运行，但切换镜头需要重新更改配置文件<br>
 
 #### auto start/设置开机自启动<br>
 由于本项目需要用到imshow，所以开机自启动的设置会略为复杂，也希望有大佬提出改进建议<br>
