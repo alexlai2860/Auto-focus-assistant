@@ -2,7 +2,9 @@
 
 ## 基于目标检测和立体视觉的辅助对焦系统<br>
 
-#### this is a system using a depth camera to detect objects and control a follow focus motor, aiming to drive the focus ring and achieve auto focus.<br>
+#### This project provides automatic and semi-automatic focusing assistance for various cameras by using depth cameras and artificial intelligence algorithms.<br>
+
+#### 该项目通过使用深度相机和人工智能算法，为各种相机提供自动及半自动对焦辅助功能.<br>
 
 ### **preface/前言**
 
@@ -57,7 +59,7 @@
     + 另一套方案是本项目当前采取的方案：即采用分布式方案，将算力平台和相机分离，以牺牲集成度的方式大幅降低了成本和重量，并且不需要妥协性能
     + 本项目(V2.0)版本测试平台为Yoga14s笔记本(4800u)，强制默频低功耗运行以降低发热；建议实际使用中替换为性能相近的NUC或迷你主机
     + 更新：本项目最终版本已将平台更换为英特尔N100处理器，实测在默认状态下可以跑满30fps，能够满足性能需求
-    + 更新：已经有老哥将本项目移植至树莓派运行；个人认为最优的解决方案是使用RK3588等廉价且有高算力的平台作为处理器
+    + 更新：已经有老哥将本项目移植至树莓派运行（地址:https://github.com/ArnoldHuang2017/AutoFocus）；个人认为最优的解决方案是使用RK3588等廉价且有高算力的平台作为处理器
     + N100处理器规格如图所示：![image](https://github.com/alexlai2860/Auto-focus-assistant/assets/71208694/da9dc753-2622-4c14-bf3e-feae9e97989a)
 
 + #### actuator/执行器<br>
@@ -381,3 +383,7 @@ echo "你的密码"|sudo -S ./powersave-mode.sh
     + 受realsense传感器焦段限制，无法跟随相机进行变焦，远距离物体识别难度较大
     + 软件上的解决方案就是训练并部署更高效的检测模型，建议尝试使用人体姿态检测
     + 硬件上可能可以换用更好的rgb摄像头，并进行匹配，但较为繁琐，不推荐
+
++ #### 后记 2023.10.21
++ 从去年十一月初步在深度相机上实现人脸检测开始，本项目持续了将近一年，绝大多数工作为我个人自掏腰包完成，希望各位能理解包容项目中的dirty code和可能存在的bug；很遗憾，虽然本项目已经实现了我曾经设想的各种功能（甚至可以说是超出预期），但受限于人机交互界面的缺失，本项目还是不具备实用性；有相关设备的爱好者可以根据使用指南进行测试，没有的话就不建议贸然尝试了，成本还是不低的。
++ 本项目至此就基本完结啦，由于研究兴趣的转移和资金的限制，在未来可能不会继续更新，也可能会更新一些模型文件给各位部署；另外，作为一个学生兼摄影爱好者，我也会继续做一些有趣的、有用的项目，希望各位继续关注。
